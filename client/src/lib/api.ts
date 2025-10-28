@@ -5,6 +5,7 @@ interface AuthResponse {
     id: number;
     name: string;
     email: string;
+    role: string;
     avatar?: string;
   };
   token: string;
@@ -117,6 +118,41 @@ export async function uploadFile(token: string, file: File): Promise<{ url: stri
 
   if (!response.ok) {
     throw new Error('File upload failed');
+  }
+
+  return response.json();
+}
+
+export async function createUserAsAdmin(token: string, data: {
+  name: string;
+  email: string;
+  password: string;
+  role?: 'admin' | 'user';
+}) {
+  const response = await fetch(`${API_BASE}/admin/users`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create user');
+  }
+
+  return response.json();
+}
+
+export async function getAdminUsers(token: string) {
+  const response = await fetch(`${API_BASE}/admin/users`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to get admin users');
   }
 
   return response.json();

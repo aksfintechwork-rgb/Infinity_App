@@ -2,19 +2,21 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Search, Hash, Moon, Sun } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
 import TypingIndicator from './TypingIndicator';
 import NewConversationModal from './NewConversationModal';
 import UserMenu from './UserMenu';
-import logoImage from '@assets/generated_images/SUPREMO_TRADERS_LLP_logo_12753d7f.png';
+import AdminPanel from './AdminPanel';
+import logoImage from '@assets/image_1761659890673.png';
 
 interface User {
   id: number;
   name: string;
   email: string;
+  role: string;
   avatar?: string;
 }
 
@@ -70,7 +72,11 @@ export default function ChatLayout({
   const [isNewConversationOpen, setIsNewConversationOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const [currentView, setCurrentView] = useState<'chat' | 'admin'>('chat');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const isAdmin = currentUser.role === 'admin';
+  const token = localStorage.getItem('auth_token') || '';
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
   const activeMessages = messages.filter((m) => m.conversationId === activeConversationId);
@@ -104,7 +110,7 @@ export default function ChatLayout({
       <div className="w-80 border-r border-border flex flex-col">
         <div className="h-16 border-b border-border flex items-center justify-between px-4 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <img src={logoImage} alt="Logo" className="w-8 h-8" />
+            <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-10 h-10 object-contain" data-testid="img-brand-logo" />
             <div>
               <h1 className="text-sm font-bold text-foreground">SUPREMO TRADERS</h1>
               <p className="text-xs text-muted-foreground">Team Chat</p>
@@ -112,42 +118,79 @@ export default function ChatLayout({
           </div>
         </div>
 
-        <div className="p-4 border-b border-border flex-shrink-0">
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search conversations..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-              data-testid="input-search-conversations"
-            />
+        {isAdmin && (
+          <div className="p-2 border-b border-border flex-shrink-0">
+            <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-md">
+              <Button
+                size="sm"
+                variant={currentView === 'chat' ? 'default' : 'ghost'}
+                onClick={() => setCurrentView('chat')}
+                className="h-8"
+                data-testid="button-view-chat"
+              >
+                <MessageSquare className="w-4 h-4 mr-1" />
+                Chat
+              </Button>
+              <Button
+                size="sm"
+                variant={currentView === 'admin' ? 'default' : 'ghost'}
+                onClick={() => setCurrentView('admin')}
+                className="h-8"
+                data-testid="button-view-admin"
+              >
+                <Shield className="w-4 h-4 mr-1" />
+                Admin
+              </Button>
+            </div>
           </div>
-          <Button
-            className="w-full"
-            onClick={() => setIsNewConversationOpen(true)}
-            data-testid="button-new-conversation"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Conversation
-          </Button>
-        </div>
+        )}
 
-        <ScrollArea className="flex-1">
-          <div className="p-2 space-y-1">
-            {filteredConversations.map((conv) => (
-              <ConversationItem
-                key={conv.id}
-                {...conv}
-                isActive={conv.id === activeConversationId}
-                onClick={() => {
-                  setActiveConversationId(conv.id);
-                  onConversationSelect?.(conv.id);
-                }}
-              />
-            ))}
+        {currentView === 'chat' ? (
+          <>
+            <div className="p-4 border-b border-border flex-shrink-0">
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search conversations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                  data-testid="input-search-conversations"
+                />
+              </div>
+              <Button
+                className="w-full"
+                onClick={() => setIsNewConversationOpen(true)}
+                data-testid="button-new-conversation"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                New Conversation
+              </Button>
+            </div>
+
+            <ScrollArea className="flex-1">
+              <div className="p-2 space-y-1">
+                {filteredConversations.map((conv) => (
+                  <ConversationItem
+                    key={conv.id}
+                    {...conv}
+                    isActive={conv.id === activeConversationId}
+                    onClick={() => {
+                      setActiveConversationId(conv.id);
+                      onConversationSelect?.(conv.id);
+                    }}
+                  />
+                ))}
+              </div>
+            </ScrollArea>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center p-4">
+            <p className="text-sm text-muted-foreground text-center">
+              Switch to Admin view to manage team members
+            </p>
           </div>
-        </ScrollArea>
+        )}
 
         <div className="h-16 border-t border-border flex items-center justify-between px-4 flex-shrink-0">
           <Button
@@ -163,7 +206,9 @@ export default function ChatLayout({
       </div>
 
       <div className="flex-1 flex flex-col">
-        {activeConversation ? (
+        {currentView === 'admin' ? (
+          <AdminPanel token={token} currentUserId={currentUser.id} />
+        ) : activeConversation ? (
           <>
             <div className="h-16 border-b border-border flex items-center justify-between px-6 flex-shrink-0">
               <div className="flex items-center gap-3">
