@@ -1,0 +1,512 @@
+# === Team Chat App — Single Repl (Express + Socket.IO + SQLite + React build) ===
+# What this does:
+# 1) Creates server (Express + Socket.IO + better-sqlite3 + JWT + Multer)
+# 2) Creates client (Vite + React), swaps in chat UI
+# 3) Builds client and serves / from Express (single port, Replit-friendly)
+# 4) Sets Replit run config
+
+set -e
+
+# Root files
+cat > package.json <<'JSON'
+{
+  "name": "team-chat-repl",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "setup": "npm --prefix server install && npm --prefix client install",
+    "build": "npm --prefix client run build",
+    "serve": "node server/index.js",
+    "start": "npm run setup && npm run build && npm run serve"
+  }
+}
+JSON
+
+cat > .replit <<'TXT'
+run = "bash -lc 'npm start'"
+hidden = [ "client/node_modules", "server/node_modules" ]
+TXT
+
+cat > replit.nix <<'NIX'
+{ pkgs }: {
+  deps = [
+    pkgs.nodejs_20
+    pkgs.nodePackages.npm
+    pkgs.sqlite
+  ];
+}
+NIX
+
+mkdir -p server client
+
+# ---------------------- SERVER ----------------------
+cat > server/package.json <<'JSON'
+{
+  "name": "team-chat-server",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.2",
+    "socket.io": "^4.7.5"
+  }
+}
+JSON
+
+cat > server/.env.example <<'ENV'
+# Replit provides PORT
+JWT_SECRET=supersecret_change_me
+UPLOAD_DIR=uploads
+ENV
+
+cat > server/index.js <<'JS'
+import 'dotenv/config'
+import express from 'express'
+import jwt from 'jsonwebtoken'
+import multer from 'multer'
+import Database from 'better-sqlite3'
+import path from 'path'
+import fs from 'fs'
+import { fileURLToPath } from 'url'
+import http from 'http'
+import { Server } from 'socket.io'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+const app = express()
+const server = http.createServer(app)
+const io = new Server(server)
+
+const PORT = process.env.PORT || 4000
+const JWT_SECRET = process.env.JWT_SECRET || 'devsecret'
+const UPLOAD_DIR = process.env.UPLOAD_DIR || 'uploads'
+
+// Ensure folders
+const uploadDirPath = path.join(__dirname, UPLOAD_DIR)
+if (!fs.existsSync(uploadDirPath)) fs.mkdirSync(uploadDirPath, { recursive: true })
+
+// SQLite (file next to index.js)
+const db = new Database(path.join(__dirname, 'chat.db'))
+db.pragma('journal_mode = WAL')
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS users(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS conversations(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT,
+  is_group INTEGER NOT NULL DEFAULT 0,
+  created_by INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS conversation_members(
+  conversation_id INTEGER,
+  user_id INTEGER,
+  role TEXT DEFAULT 'member',
+  PRIMARY KEY(conversation_id, user_id)
+);
+CREATE TABLE IF NOT EXISTS messages(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  conversation_id INTEGER NOT NULL,
+  sender_id INTEGER NOT NULL,
+  body TEXT,
+  attachment_url TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+`)
+
+app.use(express.json())
+app.use('/uploads', express.static(uploadDirPath))
+
+// Helper (DEMO ONLY — replace with bcrypt in prod)
+const unsafeHash = s => s
+const signToken = user => jwt.sign({ id: user.id, name: user.name, email: user.email }, JWT_SECRET, { expiresIn: '7d' })
+const auth = (req, res, next) => {
+  const hdr = req.headers.authorization || ''
+  const token = hdr.startsWith('Bearer ') ? hdr.slice(7) : null
+  if (!token) return res.status(401).json({ error: 'No token' })
+  try { req.user = jwt.verify(token, JWT_SECRET); next() }
+  catch { return res.status(401).json({ error: 'Invalid token' }) }
+}
+
+// Auth
+app.post('/api/register', (req, res) => {
+  const { name, email, password } = req.body || {}
+  if (!name || !email || !password) return res.status(400).json({ error: 'Missing fields' })
+  try {
+    const info = db.prepare('INSERT INTO users(name, email, password) VALUES (?, ?, ?)').run(name, email.toLowerCase(), unsafeHash(password))
+    const user = db.prepare('SELECT id, name, email FROM users WHERE id = ?').get(info.lastInsertRowid)
+    const token = signToken(user)
+    res.json({ user, token })
+  } catch (e) {
+    if (String(e).includes('UNIQUE')) return res.status(409).json({ error: 'Email already exists' })
+    res.status(500).json({ error: 'Failed to register' })
+  }
+})
+
+app.post('/api/login', (req, res) => {
+  const { email, password } = req.body || {}
+  const u = db.prepare('SELECT * FROM users WHERE email = ?').get((email || '').toLowerCase())
+  if (!u || u.password !== unsafeHash(password || '')) return res.status(401).json({ error: 'Invalid credentials' })
+  const token = signToken(u)
+  res.json({ user: { id: u.id, name: u.name, email: u.email }, token })
+})
+
+// Conversations
+app.post('/api/conversations', auth, (req, res) => {
+  const { title, memberIds } = req.body || {}
+  const is_group = (memberIds || []).length > 1 ? 1 : 0
+  const info = db.prepare('INSERT INTO conversations(title, is_group, created_by) VALUES (?, ?, ?)').run(title || null, is_group, req.user.id)
+  const cid = info.lastInsertRowid
+  const add = db.prepare('INSERT OR IGNORE INTO conversation_members(conversation_id, user_id) VALUES (?, ?)')
+  add.run(cid, req.user.id)
+  for (const uid of (memberIds || [])) add.run(cid, uid)
+  res.json({ id: cid })
+})
+
+app.get('/api/conversations', auth, (req, res) => {
+  const rows = db.prepare(`
+    SELECT c.id, c.title, c.is_group, GROUP_CONCAT(u.name, ', ') AS members
+    FROM conversations c
+    JOIN conversation_members m ON m.conversation_id = c.id
+    JOIN users u ON u.id = m.user_id
+    WHERE c.id IN (SELECT conversation_id FROM conversation_members WHERE user_id = ?)
+    GROUP BY c.id
+    ORDER BY c.id DESC
+  `).all(req.user.id)
+  res.json(rows)
+})
+
+// Messages
+app.get('/api/messages/:conversationId', auth, (req, res) => {
+  const { conversationId } = req.params
+  const msgs = db.prepare(`
+    SELECT m.id, m.body, m.attachment_url, m.created_at,
+           u.id AS sender_id, u.name AS sender_name, m.conversation_id
+    FROM messages m JOIN users u ON u.id = m.sender_id
+    WHERE m.conversation_id = ?
+    ORDER BY m.id ASC
+  `).all(conversationId)
+  res.json(msgs)
+})
+
+// Upload
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDirPath),
+  filename: (req, file, cb) => {
+    const ts = Date.now()
+    const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')
+    cb(null, ts + '_' + safe)
+  }
+})
+const upload = multer({ storage })
+app.post('/api/upload', auth, upload.single('file'), (req, res) => {
+  res.json({ url: `/uploads/${req.file.filename}` })
+})
+
+// Socket.IO
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token
+  if (!token) return next(new Error('No token'))
+  try { socket.user = jwt.verify(token, JWT_SECRET); next() }
+  catch { next(new Error('Invalid token')) }
+})
+io.on('connection', (socket) => {
+  const user = socket.user
+  socket.on('joinConversation', (conversationId) => socket.join(`c:${conversationId}`))
+  socket.on('typing', ({ conversationId, isTyping }) => socket.to(`c:${conversationId}`).emit('typing', { userId: user.id, isTyping }))
+  socket.on('sendMessage', ({ conversationId, body, attachmentUrl }) => {
+    const info = db.prepare('INSERT INTO messages(conversation_id, sender_id, body, attachment_url) VALUES (?, ?, ?, ?)').run(conversationId, user.id, body || null, attachmentUrl || null)
+    const msg = db.prepare(`
+      SELECT m.id, m.body, m.attachment_url, m.created_at,
+             u.id AS sender_id, u.name AS sender_name, m.conversation_id
+      FROM messages m JOIN users u ON u.id = m.sender_id
+      WHERE m.id = ?
+    `).get(info.lastInsertRowid)
+    io.to(`c:${conversationId}`).emit('message', msg)
+  })
+})
+
+// Serve React build (single port)
+const clientDist = path.join(__dirname, '..', 'client', 'dist')
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist))
+  app.get('*', (_, res) => res.sendFile(path.join(clientDist, 'index.html')))
+}
+
+server.listen(PORT, () => {
+  console.log('Team Chat server on http://localhost:' + PORT)
+})
+JS
+
+# ---------------------- CLIENT (Vite + React) ----------------------
+# Use Vite template for minimal scaffolding
+npm create vite@latest client -- --template react >/dev/null 2>&1 || npx create-vite@latest client --template react
+
+# Ensure deps
+cat > client/package.json <<'JSON'
+{
+  "name": "team-chat-client",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "socket.io-client": "^4.7.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.2",
+    "vite": "^5.4.8"
+  }
+}
+JSON
+
+# Replace UI
+mkdir -p client/src/ui
+
+cat > client/src/main.jsx <<'JSX'
+import React from 'react'
+import { createRoot } from 'react-dom/client'
+import App from './ui/App'
+createRoot(document.getElementById('root')).render(<App />)
+JSX
+
+cat > client/index.html <<'HTML'
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Team Chat</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+HTML
+
+cat > client/src/ui/App.jsx <<'JSX'
+import React, { useEffect, useState } from 'react'
+import { io } from 'socket.io-client'
+import Login from './Login'
+import Chat from './Chat'
+
+export default function App() {
+  const [token, setToken] = useState(localStorage.getItem('token') || null)
+  const [user, setUser] = useState(localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null)
+  const [socket, setSocket] = useState(null)
+
+  useEffect(() => {
+    if (token) {
+      const s = io('/', { auth: { token } }) // same-origin websocket
+      setSocket(s)
+      return () => s.disconnect()
+    }
+  }, [token])
+
+  if (!token) {
+    return <Login onAuth={(u, t) => { setUser(u); setToken(t); localStorage.setItem('user', JSON.stringify(u)); localStorage.setItem('token', t) }} />
+  }
+  return <Chat token={token} user={user} socket={socket} />
+}
+JSX
+
+cat > client/src/ui/Login.jsx <<'JSX'
+import React, { useState } from 'react'
+
+export default function Login({ onAuth }) {
+  const [mode, setMode] = useState('login')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+
+  async function submit(e) {
+    e.preventDefault()
+    try {
+      const res = await fetch(`/api/${mode === 'register' ? 'register' : 'login'}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mode === 'register' ? { name, email, password } : { email, password })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed')
+      onAuth(data.user, data.token)
+    } catch (e) {
+      alert(e.message)
+    }
+  }
+
+  return (
+    <div style={{ display: 'grid', placeItems: 'center', height: '100vh', fontFamily: 'system-ui' }}>
+      <form onSubmit={submit} style={{ width: 360, padding: 24, border: '1px solid #ddd', borderRadius: 12, background: '#fff' }}>
+        <h2 style={{ marginTop: 0 }}>Team Chat — {mode === 'login' ? 'Login' : 'Register'}</h2>
+        {mode === 'register' && (
+          <div style={{ marginBottom: 12 }}>
+            <label>Name</label>
+            <input value={name} onChange={e => setName(e.target.value)} required style={{ width: '100%' }} />
+          </div>
+        )}
+        <div style={{ marginBottom: 12 }}>
+          <label>Email</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} required style={{ width: '100%' }} />
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <label>Password</label>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={{ width: '100%' }} />
+        </div>
+        <button type="submit" style={{ width: '100%' }}>{mode === 'login' ? 'Login' : 'Create account'}</button>
+        <div style={{ marginTop: 12 }}>
+          {mode === 'login' ? (
+            <small>No account? <a href="#" onClick={() => setMode('register')}>Register</a></small>
+          ) : (
+            <small>Have an account? <a href="#" onClick={() => setMode('login')}>Login</a></small>
+          )}
+        </div>
+      </form>
+    </div>
+  )
+}
+JSX
+
+cat > client/src/ui/Chat.jsx <<'JSX'
+import React, { useEffect, useMemo, useState } from 'react'
+
+function useAuthHeader(token) {
+  return useMemo(() => ({ 'Authorization': `Bearer ${token}` }), [token])
+}
+
+export default function Chat({ token, user, socket }) {
+  const authHeader = useAuthHeader(token)
+  const [conversations, setConversations] = useState([])
+  const [active, setActive] = useState(null)
+  const [messages, setMessages] = useState([])
+  const [body, setBody] = useState('')
+  const [typing, setTyping] = useState(false)
+  const [typingUsers, setTypingUsers] = useState({})
+
+  async function api(path, opts={}) {
+    const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers||{}), ...authHeader } })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Request failed')
+    return data
+  }
+
+  async function loadConversations() {
+    const data = await api('/api/conversations')
+    setConversations(data)
+    if (!active && data[0]) setActive(data[0].id)
+  }
+  async function loadMessages(cid) {
+    const data = await api(`/api/messages/${cid}`)
+    setMessages(data)
+  }
+
+  useEffect(() => { loadConversations() }, [])
+  useEffect(() => { if (active) loadMessages(active); if (socket && active) socket.emit('joinConversation', active) }, [active])
+
+  useEffect(() => {
+    if (!socket) return
+    const onMsg = (msg) => {
+      if (msg && msg.conversation_id === active) setMessages(m => [...m, msg]); else loadConversations()
+    }
+    const onTyping = ({ userId, isTyping }) => {
+      setTypingUsers(t => ({ ...t, [userId]: isTyping }))
+      setTimeout(() => setTypingUsers(t => ({ ...t, [userId]: false })), 1500)
+    }
+    socket.on('message', onMsg)
+    socket.on('typing', onTyping)
+    return () => { socket.off('message', onMsg); socket.off('typing', onTyping) }
+  }, [socket, active])
+
+  async function send() {
+    if (!body.trim()) return
+    socket.emit('sendMessage', { conversationId: active, body })
+    setBody('')
+  }
+
+  async function uploadFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch('/api/upload', { method: 'POST', headers: authHeader, body: form })
+    const data = await res.json()
+    if (!res.ok) return alert(data.error || 'Upload failed')
+    socket.emit('sendMessage', { conversationId: active, attachmentUrl: data.url, body: '' })
+  }
+
+  async function createGroup() {
+    const title = prompt('Group title')
+    const memberIds = prompt('Member IDs (comma separated). For demo, add IDs you know; your own ID is auto-added.')
+    const ids = memberIds ? memberIds.split(',').map(x => parseInt(x.trim())).filter(Boolean) : []
+    const data = await api('/api/conversations', { method: 'POST', body: JSON.stringify({ title, memberIds: ids }) })
+    await loadConversations()
+    setActive(data.id)
+  }
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', height: '100vh', fontFamily: 'system-ui' }}>
+      <aside style={{ borderRight: '1px solid #eee', padding: 12 }}>
+        <h3>Conversations</h3>
+        <button onClick={createGroup} style={{ width: '100%', marginBottom: 12 }}>New Group</button>
+        <div style={{ overflowY: 'auto', height: 'calc(100vh - 160px)' }}>
+          {conversations.map(c => (
+            <div key={c.id}
+                 onClick={() => setActive(c.id)}
+                 style={{ padding: 8, marginBottom: 6, borderRadius: 8, background: active === c.id ? '#e8f0fe' : '#f8f9fa', cursor: 'pointer' }}>
+              <div style={{ fontWeight: 600 }}>{c.title || 'Direct / Small chat'}</div>
+              <div style={{ fontSize: 12, color: '#555' }}>{c.members}</div>
+            </div>
+          ))}
+        </div>
+      </aside>
+      <main style={{ display: 'flex', flexDirection: 'column' }}>
+        <header style={{ padding: 12, borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between' }}>
+          <div><strong>{conversations.find(c => c.id === active)?.title || 'Chat'}</strong></div>
+          <div style={{ fontSize: 12, color: '#777' }}>
+            {Object.values(typingUsers).some(Boolean) ? 'Someone is typing…' : ' '}
+          </div>
+        </header>
+        <section style={{ flex: 1, padding: 12, overflowY: 'auto' }}>
+          {messages.map(m => (
+            <div key={m.id} style={{ marginBottom: 10, maxWidth: '70%', alignSelf: m.sender_id === user.id ? 'flex-end' : 'flex-start' }}>
+              <div style={{ fontSize: 12, color: '#777' }}>{m.sender_name} • {new Date(m.created_at).toLocaleString()}</div>
+              {m.body && <div style={{ padding: 10, borderRadius: 8, border: '1px solid #eee' }}>{m.body}</div>}
+              {m.attachment_url && <div><a href={m.attachment_url} target="_blank">📎 Attachment</a></div>}
+            </div>
+          ))}
+        </section>
+        <footer style={{ padding: 12, borderTop: '1px solid #eee', display: 'flex', gap: 8 }}>
+          <input value={body} onChange={e => setBody(e.target.value)} onKeyDown={e => e.key === 'Enter' ? send() : null} placeholder="Type a message" style={{ flex: 1 }} />
+          <input type="file" onChange={uploadFile} />
+          <button onClick={send}>Send</button>
+        </footer>
+      </main>
+    </div>
+  )
+}
+JSX
+
+echo "✅ Files created. Press the green Run button (or run: npm start)."
