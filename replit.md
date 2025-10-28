@@ -51,8 +51,10 @@ Preferred communication style: Simple, everyday language.
 ### Data Storage
 
 **Database:**
-- **Type:** PostgreSQL (via Neon serverless)
+- **Type:** PostgreSQL (via Neon serverless HTTP driver)
+- **Driver:** @neondatabase/serverless with drizzle-orm/neon-http adapter
 - **ORM:** Drizzle ORM with automatic schema migrations
+- **Connection:** HTTP-based for Replit compatibility (no WebSocket pooling)
 
 **Schema Design:**
 - **users:** id, name, email, password (hashed), avatar, createdAt
@@ -76,10 +78,11 @@ Preferred communication style: Simple, everyday language.
 - Query parameter token for WebSocket upgrades
 
 **Security Measures:**
-- JWT_SECRET environment variable required at startup
+- JWT_SECRET environment variable required at startup (loaded via dotenv from .env file)
 - Password validation via bcrypt comparison
 - Auth middleware protects secured routes
 - WebSocket connections verified before establishing connection
+- Fail-fast configuration: Server will not start without required environment variables
 
 ### External Dependencies
 
@@ -95,12 +98,13 @@ Preferred communication style: Simple, everyday language.
 - Files served via `/uploads` static route
 
 **Key Libraries:**
-- **@neondatabase/serverless:** PostgreSQL connection pooling
-- **drizzle-orm:** Type-safe database ORM
+- **@neondatabase/serverless:** PostgreSQL HTTP driver for Neon database
+- **drizzle-orm:** Type-safe database ORM with neon-http adapter
 - **jsonwebtoken:** JWT creation and verification
 - **bcrypt:** Password hashing
 - **multer:** File upload handling
 - **ws:** WebSocket server implementation
+- **dotenv:** Environment variable management
 - **@tanstack/react-query:** Server state management
 - **date-fns:** Date formatting utilities
 
