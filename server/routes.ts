@@ -15,12 +15,12 @@ interface WebSocketClient extends WebSocket {
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const validation = insertUserSchema.safeParse(req.body);
+      const validation = insertUserSchema.omit({ role: true }).safeParse(req.body);
       if (!validation.success) {
         return res.status(400).json({ error: "Invalid input", details: validation.error });
       }
 
-      const { name, email, password, avatar, role } = validation.data;
+      const { name, email, password, avatar } = validation.data;
 
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
@@ -32,7 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         email,
         password: hashedPassword,
-        role: role || "user",
+        role: "user",
         avatar,
       });
 
