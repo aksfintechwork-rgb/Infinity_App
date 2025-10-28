@@ -1,0 +1,110 @@
+# SUPREMO TRADERS LLP Team Communication Platform
+
+## Overview
+
+This is an internal team communication platform for SUPREMO TRADERS LLP, built as a real-time chat application. The platform enables team members to engage in direct messaging and group conversations with support for file attachments and typing indicators. It draws design inspiration from enterprise chat platforms like Slack, Microsoft Teams, and Linear, prioritizing clarity, efficiency, and professional polish for daily team communication.
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Frontend Architecture
+
+**Technology Stack:**
+- **Framework:** React with TypeScript
+- **Build Tool:** Vite
+- **UI Components:** Radix UI primitives with shadcn/ui component library (New York style)
+- **Styling:** Tailwind CSS with custom design tokens
+- **State Management:** TanStack React Query for server state
+- **Real-time Communication:** WebSocket client for live updates
+
+**Key Design Decisions:**
+- Component-based architecture with reusable UI primitives
+- Custom design system based on Inter font family with predefined typography hierarchy
+- Three-column layout for desktop: Sidebar (280px) | Conversation List (320px) | Chat Area (flex-1)
+- Mobile-responsive with single column stack and slide-out panels
+- Path aliases configured for clean imports (@/, @shared/, @assets/)
+
+### Backend Architecture
+
+**Technology Stack:**
+- **Runtime:** Node.js with TypeScript
+- **Framework:** Express.js
+- **Real-time:** WebSocket Server (ws library) for bidirectional communication
+- **ORM:** Drizzle ORM for type-safe database queries
+- **Authentication:** JWT-based authentication with bcrypt password hashing
+
+**API Structure:**
+- RESTful endpoints for CRUD operations
+- WebSocket connection for real-time message delivery and typing indicators
+- Token-based WebSocket authentication via query parameter
+- Middleware-based auth protection for secured routes
+
+**Key Design Decisions:**
+- Single-port deployment: Express serves both API and built frontend (Replit-friendly)
+- Separation of concerns with dedicated modules (auth.ts, storage.ts, routes.ts, upload.ts)
+- Development mode integrates Vite middleware for HMR; production serves pre-built static files
+- Request logging middleware for API debugging
+
+### Data Storage
+
+**Database:**
+- **Type:** PostgreSQL (via Neon serverless)
+- **ORM:** Drizzle ORM with automatic schema migrations
+
+**Schema Design:**
+- **users:** id, name, email, password (hashed), avatar, createdAt
+- **conversations:** id, title, isGroup, createdAt
+- **conversationMembers:** id, conversationId, userId, joinedAt (junction table)
+- **messages:** id, conversationId, senderId, body, attachmentUrl, createdAt
+
+**Key Design Decisions:**
+- PostgreSQL chosen for relational integrity and scalability
+- Many-to-many relationship between users and conversations via junction table
+- Support for both direct messages (2 members) and group conversations (3+ members)
+- Soft conversation identification: direct messages derive title from member names
+
+### Authentication & Authorization
+
+**Authentication Flow:**
+- JWT tokens with 7-day expiration
+- Passwords hashed with bcrypt (10 salt rounds)
+- Token stored in localStorage on client
+- Bearer token authentication for HTTP requests
+- Query parameter token for WebSocket upgrades
+
+**Security Measures:**
+- JWT_SECRET environment variable required at startup
+- Password validation via bcrypt comparison
+- Auth middleware protects secured routes
+- WebSocket connections verified before establishing connection
+
+### External Dependencies
+
+**Third-party Services:**
+- **Neon Database:** Serverless PostgreSQL hosting (DATABASE_URL environment variable required)
+- **Google Fonts:** Inter font family loaded via CDN
+
+**File Storage:**
+- Local filesystem storage in `uploads/` directory (or PRIVATE_OBJECT_DIR environment variable)
+- Multer for multipart form handling
+- File size limit: 10MB
+- Allowed file types: Images (JPEG, PNG, GIF, WebP), Documents (PDF, DOC, DOCX, TXT)
+- Files served via `/uploads` static route
+
+**Key Libraries:**
+- **@neondatabase/serverless:** PostgreSQL connection pooling
+- **drizzle-orm:** Type-safe database ORM
+- **jsonwebtoken:** JWT creation and verification
+- **bcrypt:** Password hashing
+- **multer:** File upload handling
+- **ws:** WebSocket server implementation
+- **@tanstack/react-query:** Server state management
+- **date-fns:** Date formatting utilities
+
+**Development Tools:**
+- **tsx:** TypeScript execution for development
+- **esbuild:** Server bundling for production
+- **Replit plugins:** Runtime error modal, cartographer, dev banner (dev mode only)
