@@ -49,6 +49,7 @@ interface ChatLayoutProps {
   onCreateConversation: (title: string, memberIds: number[]) => void;
   onFileUpload: (file: File) => Promise<string>;
   onLogout: () => void;
+  onConversationSelect?: (conversationId: number) => void;
 }
 
 export default function ChatLayout({
@@ -60,6 +61,7 @@ export default function ChatLayout({
   onCreateConversation,
   onFileUpload,
   onLogout,
+  onConversationSelect,
 }: ChatLayoutProps) {
   const [activeConversationId, setActiveConversationId] = useState<number | null>(
     conversations[0]?.id || null
@@ -72,6 +74,12 @@ export default function ChatLayout({
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
   const activeMessages = messages.filter((m) => m.conversationId === activeConversationId);
+
+  useEffect(() => {
+    if (activeConversationId && onConversationSelect) {
+      onConversationSelect(activeConversationId);
+    }
+  }, [activeConversationId, onConversationSelect]);
 
   const filteredConversations = conversations.filter(
     (conv) =>
@@ -132,7 +140,10 @@ export default function ChatLayout({
                 key={conv.id}
                 {...conv}
                 isActive={conv.id === activeConversationId}
-                onClick={() => setActiveConversationId(conv.id)}
+                onClick={() => {
+                  setActiveConversationId(conv.id);
+                  onConversationSelect?.(conv.id);
+                }}
               />
             ))}
           </div>
