@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { hashPassword, comparePassword, generateToken, authMiddleware, getCurrentUser, type AuthRequest, verifyToken } from "./auth";
+import { hashPassword, comparePassword, generateToken, authMiddleware, getCurrentUser, requireAdmin, type AuthRequest, verifyToken } from "./auth";
 import { insertUserSchema, insertConversationSchema, insertMessageSchema } from "@shared/schema";
 import { z } from "zod";
 import { upload, getFileUrl } from "./upload";
@@ -20,7 +20,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid input", details: validation.error });
       }
 
-      const { name, email, password, avatar } = validation.data;
+      const { name, email, password, avatar, role } = validation.data;
 
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
@@ -32,6 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         email,
         password: hashedPassword,
+        role: role || "user",
         avatar,
       });
 
@@ -89,6 +90,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get users error:", error);
       res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/admin/users", authMiddleware, requireAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+      res.json(usersWithoutPasswords);
+    } catch (error) {
+      console.error("Admin get users error:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.post("/api/admin/users", authMiddleware, requireAdmin, async (req, res) => {
+    try {
+      const validation = insertUserSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid input", details: validation.error });
+      }
+
+      const { name, email, password, avatar, role } = validation.data;
+
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already registered" });
+      }
+
+      const hashedPassword = await hashPassword(password);
+      const user = await storage.createUser({
+        name,
+        email,
+        password: hashedPassword,
+        role: role || "user",
+        avatar,
+      });
+
+      const { password: _, ...userWithoutPassword } = user;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Admin create user error:", error);
+      res.status(500).json({ error: "Failed to create user" });
     }
   });
 

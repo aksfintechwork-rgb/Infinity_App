@@ -66,3 +66,20 @@ export async function getCurrentUser(req: AuthRequest, res: Response) {
   const { password, ...userWithoutPassword } = user;
   res.json(userWithoutPassword);
 }
+
+export async function requireAdmin(req: AuthRequest, res: Response, next: NextFunction) {
+  if (!req.userId) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const user = await storage.getUserById(req.userId);
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  if (user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  next();
+}

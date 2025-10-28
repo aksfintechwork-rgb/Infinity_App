@@ -87,6 +87,7 @@ export class PostgresStorage implements IStorage {
         name: users.name,
         email: users.email,
         password: users.password,
+        role: users.role,
         avatar: users.avatar,
         createdAt: users.createdAt,
       })
