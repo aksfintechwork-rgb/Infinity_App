@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is an internal team communication platform for SUPREMO TRADERS LLP, built as a real-time chat application. The platform enables team members to engage in direct messaging and group conversations with support for file attachments and typing indicators. It draws design inspiration from enterprise chat platforms like Slack, Microsoft Teams, and Linear, prioritizing clarity, efficiency, and professional polish for daily team communication.
+This is an internal team communication platform for SUPREMO TRADERS LLP, built as a real-time chat application with role-based access control. The platform enables team members to engage in direct messaging and group conversations with support for file attachments and typing indicators. Administrators have access to a user management panel to create and manage team member accounts. The platform draws design inspiration from enterprise chat platforms like Slack, Microsoft Teams, and Linear, prioritizing clarity, efficiency, and professional polish for daily team communication.
 
 ## User Preferences
 
@@ -57,7 +57,7 @@ Preferred communication style: Simple, everyday language.
 - **Connection:** HTTP-based for Replit compatibility (no WebSocket pooling)
 
 **Schema Design:**
-- **users:** id, name, email, password (hashed), avatar, createdAt
+- **users:** id, name, email, password (hashed), role (admin|user), avatar, createdAt
 - **conversations:** id, title, isGroup, createdAt
 - **conversationMembers:** id, conversationId, userId, joinedAt (junction table)
 - **messages:** id, conversationId, senderId, body, attachmentUrl, createdAt
@@ -77,10 +77,23 @@ Preferred communication style: Simple, everyday language.
 - Bearer token authentication for HTTP requests
 - Query parameter token for WebSocket upgrades
 
+**Role-Based Access Control:**
+- Two user roles: `admin` and `user` (default)
+- Admin users can:
+  - Access admin management panel
+  - Create new user accounts with role assignment
+  - View all team members
+  - Switch between chat and admin views
+- Regular users:
+  - Only access chat interface
+  - Cannot create or manage other users
+
 **Security Measures:**
 - JWT_SECRET environment variable required at startup (loaded via dotenv from .env file)
 - Password validation via bcrypt comparison
 - Auth middleware protects secured routes
+- requireAdmin middleware protects admin-only endpoints
+- Public registration always creates users with 'user' role (admin role cannot be self-assigned)
 - WebSocket connections verified before establishing connection
 - Fail-fast configuration: Server will not start without required environment variables
 
@@ -112,3 +125,15 @@ Preferred communication style: Simple, everyday language.
 - **tsx:** TypeScript execution for development
 - **esbuild:** Server bundling for production
 - **Replit plugins:** Runtime error modal, cartographer, dev banner (dev mode only)
+
+## Recent Changes
+
+**October 28, 2025:**
+- Implemented role-based access control (admin vs user)
+- Added admin user management panel with user creation functionality
+- Integrated SUPREMO TRADERS brand logo
+- Added requireAdmin middleware for protected admin routes
+- Created admin-only API endpoints: GET/POST /api/admin/users
+- Security fix: Public registration now forces role='user' to prevent privilege escalation
+- Admin users can switch between Chat and Admin views
+- User list displays role badges (Admin/User)
