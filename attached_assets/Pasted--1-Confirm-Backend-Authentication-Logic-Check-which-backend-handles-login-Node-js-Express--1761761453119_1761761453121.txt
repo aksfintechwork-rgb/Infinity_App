@@ -1,0 +1,142 @@
+🧩 1. Confirm Backend Authentication Logic
+
+Check which backend handles login:
+
+Node.js / Express → Look for /api/login or /auth/login.
+
+Python (FastAPI/Django) → Look for @app.post("/login") or similar.
+
+PHP / Laravel → Look for AuthController@login.
+
+Then verify:
+
+// Example (Node.js)
+const user = await User.findOne({ loginId });
+if (!user) return res.status(401).send("Invalid credentials");
+
+const valid = await bcrypt.compare(password, user.password);
+if (!valid) return res.status(401).send("Invalid credentials");
+
+
+✅ Make sure bcrypt.compare() is used
+✅ Make sure the stored password is hashed (not plaintext)
+✅ If you manually created the admin in DB, hash the password correctly (see Step 3)
+
+🧰 2. Verify Admin Record in Database
+
+Run this check in your database console (MongoDB, MySQL, PostgreSQL, etc.):
+
+SELECT * FROM users WHERE login_id='admin';
+
+
+Confirm:
+
+login_id = admin
+
+password field exists
+
+If password stored as hash (starts with $2b$ or $argon2$) → must match the hashing method your backend uses.
+
+If no record exists, insert manually:
+
+INSERT INTO users (login_id, password, role)
+VALUES ('admin', '<hashed_password>', 'admin');
+
+🔐 3. Regenerate Correct Hashed Password
+
+If your code uses bcrypt:
+
+const bcrypt = require("bcryptjs");
+const hash = await bcrypt.hash("admin123", 10);
+console.log(hash);
+
+
+Copy that hash into your DB.
+
+If using Django:
+
+python manage.py shell
+from django.contrib.auth.hashers import make_password
+print(make_password('admin123'))
+
+🌐 4. Check Environment & Device Sync
+
+If it works on one device but not another, ensure:
+
+The same backend URL is being called (https://api.supremotraders.in/login vs http://localhost:3000/login)
+
+No CORS or HTTPS redirect blocking the API.
+
+Same .env file values (DB_URL, JWT_SECRET, API_BASE_URL).
+
+Clear browser cache / cookies → old JWTs can cause invalid session states.
+
+🧮 5. Validate Front-End Request Format
+
+Open browser DevTools → Network tab when clicking “Sign In”.
+Check:
+
+The API URL → correct endpoint?
+
+Method → POST?
+
+Body → JSON with both loginId and password?
+
+Example correct payload:
+
+{
+  "loginId": "admin",
+  "password": "admin123"
+}
+
+
+If you see username instead of loginId, fix frontend:
+
+await fetch('/api/login', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({ loginId, password })
+});
+
+🧾 6. Check Case Sensitivity & Hidden Characters
+
+Sometimes the issue is trivial:
+
+Make sure no trailing space in “admin”.
+
+Password comparison is case-sensitive → Admin123 ≠ admin123.
+
+🧑‍💻 7. Add Debug Logs
+
+Temporarily add:
+
+console.log("Login attempt:", loginId, password);
+
+
+and on failure:
+
+console.log("User found?", !!user, "Password match?", valid);
+
+
+Then check backend logs — it will show if the user was found but password mismatched.
+
+🧰 8. Optional — Reset via Temporary Admin Script
+
+If still failing:
+
+const bcrypt = require("bcryptjs");
+const User = require("./models/User");
+(async () => {
+  const hash = await bcrypt.hash("admin123", 10);
+  await User.updateOne({ loginId: "admin" }, { password: hash }, { upsert: true });
+  console.log("✅ Admin password reset complete");
+})();
+
+🧠 9. Summary of Likely Root Causes
+Root Cause	Fix
+Password stored unhashed or mismatched hash	Regenerate proper hash
+Wrong API URL or backend mismatch	Align frontend → correct backend
+Payload field name mismatch	Ensure loginId + password keys
+DB missing admin record	Insert manually
+Browser cache / CORS / token issues	Clear cache, enable CORS for origin
+Typo or case mismatch	Re-enter carefully
