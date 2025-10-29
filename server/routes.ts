@@ -113,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid input", details: validation.error });
       }
 
-      const { name, loginId, email, password, avatar, role } = validation.data;
+      const { name, loginId, email, password, avatar, role } = validation.data as z.infer<typeof insertUserSchema>;
 
       const existingUser = await storage.getUserByLoginId(loginId);
       if (existingUser) {
@@ -183,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Member IDs required" });
       }
 
-      const allMemberIds = [...new Set([req.userId, ...memberIds])];
+      const allMemberIds = Array.from(new Set([req.userId, ...memberIds]));
       const isGroup = allMemberIds.length > 2;
 
       const conversation = await storage.createConversation({
