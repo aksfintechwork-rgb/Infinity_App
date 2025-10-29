@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Users, UserPlus, Shield, User } from 'lucide-react';
+import { Users, UserPlus, Shield, User, KeyRound, CheckCircle, XCircle } from 'lucide-react';
 
 interface AdminPanelProps {
   token: string;
@@ -24,6 +24,12 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
     password: '',
     role: 'user' as 'admin' | 'user',
   });
+
+  const [credentialTest, setCredentialTest] = useState({
+    loginId: '',
+    password: '',
+  });
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string; user?: any } | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-users'],
@@ -60,6 +66,43 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
       return;
     }
     createUserMutation.mutate(newUser);
+  };
+
+  const handleTestCredentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTestResult(null);
+
+    if (!credentialTest.loginId || !credentialTest.password) {
+      toast({
+        title: 'Error',
+        description: 'Please enter both login ID and password',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const response = await api.login(credentialTest.loginId, credentialTest.password);
+      setTestResult({
+        success: true,
+        message: `✅ Credentials are VALID! User: ${response.user.name}`,
+        user: response.user,
+      });
+      toast({
+        title: 'Credentials Valid',
+        description: `${response.user.name} can login successfully`,
+      });
+    } catch (error: any) {
+      setTestResult({
+        success: false,
+        message: `❌ Login Failed: ${error.message}`,
+      });
+      toast({
+        title: 'Credentials Invalid',
+        description: error.message || 'These credentials do not work',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -156,6 +199,105 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
               {createUserMutation.isPending ? 'Creating...' : 'Create User'}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card data-testid="card-credential-tester">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <KeyRound className="w-5 h-5" />
+            Credential Tester
+          </CardTitle>
+          <CardDescription>
+            Test user credentials to help troubleshoot login issues. This shows the current valid passwords.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="p-4 bg-muted/50 rounded-md border">
+            <h3 className="font-medium mb-2 flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              Current Standard Passwords
+            </h3>
+            <div className="text-sm space-y-1 text-muted-foreground">
+              <div><span className="font-mono">admin</span> → <span className="font-mono font-semibold">admin123</span></div>
+              <div><span className="font-mono">user</span> → <span className="font-mono font-semibold">user123</span></div>
+              <div><span className="font-mono">shubham</span> → <span className="font-mono font-semibold">shubham123</span></div>
+              <div><span className="font-mono">ravi</span> → <span className="font-mono font-semibold">ravi123</span></div>
+            </div>
+          </div>
+
+          <form onSubmit={handleTestCredentials} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="test-loginid">Login ID to Test</Label>
+                <Input
+                  id="test-loginid"
+                  data-testid="input-test-loginid"
+                  placeholder="shubham or ravi"
+                  value={credentialTest.loginId}
+                  onChange={(e) => setCredentialTest({ ...credentialTest, loginId: e.target.value })}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="test-password">Password to Test</Label>
+                <Input
+                  id="test-password"
+                  data-testid="input-test-password"
+                  type="text"
+                  placeholder="shubham123"
+                  value={credentialTest.password}
+                  onChange={(e) => setCredentialTest({ ...credentialTest, password: e.target.value })}
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+
+            {testResult && (
+              <div
+                className={`p-4 rounded-md border flex items-start gap-3 ${
+                  testResult.success
+                    ? 'bg-green-500/10 border-green-500/50 text-green-700 dark:text-green-400'
+                    : 'bg-red-500/10 border-red-500/50 text-red-700 dark:text-red-400'
+                }`}
+                data-testid={testResult.success ? 'alert-test-success' : 'alert-test-failure'}
+              >
+                {testResult.success ? (
+                  <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <XCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                )}
+                <div className="flex-1">
+                  <div className="font-medium">{testResult.message}</div>
+                  {testResult.user && (
+                    <div className="text-sm mt-1 opacity-80">
+                      Role: {testResult.user.role} | Email: {testResult.user.email || 'Not provided'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              data-testid="button-test-credentials"
+              variant="outline"
+              className="w-full md:w-auto"
+            >
+              Test These Credentials
+            </Button>
+          </form>
+
+          <div className="pt-4 border-t">
+            <h4 className="text-sm font-medium mb-2">How to help users with login issues:</h4>
+            <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+              <li>Ask them to clear their browser password autofill</li>
+              <li>Have them manually type the password (no copy-paste from old messages)</li>
+              <li>Verify no extra spaces before or after the password</li>
+              <li>Try in incognito/private mode to rule out browser cache</li>
+              <li>Use this tester to confirm the correct credentials work</li>
+            </ol>
+          </div>
         </CardContent>
       </Card>
 

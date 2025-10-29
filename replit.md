@@ -44,9 +44,19 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 **October 29, 2025:**
+- **NEW FEATURE**: Added Credential Verification Tool to Admin Panel
+  - **Purpose**: Help troubleshoot user login issues and verify credentials quickly
+  - **Features**: 
+    - Display current standard passwords (admin123, user123, shubham123, ravi123)
+    - Test any login credentials in real-time without affecting the system
+    - Visual feedback (green for valid, red for invalid) with detailed messages
+    - Troubleshooting guide for helping users with browser autocomplete issues
+  - **Location**: Admin Panel → Credential Tester section
+  - **Implementation**: Uses existing login API to verify credentials, shows user info on success
 - **CRITICAL FIX**: Implemented comprehensive cross-device login compatibility
   - **Added CORS middleware**: Server now accepts requests from all origins with credentials support
   - **Cache-control headers**: API endpoints prevent browser caching of authentication data  
+  - **Enhanced login logging**: Shows exact loginId, password length, and validation steps with emoji indicators
   - **Cross-device testing**: Verified successful login from mobile (iPhone), tablet (iPad), and desktop browsers
   - **Token persistence**: JWT tokens work seamlessly across any device type or network
   - **Implementation**: Installed `cors` package and configured Express middleware for full cross-origin support
