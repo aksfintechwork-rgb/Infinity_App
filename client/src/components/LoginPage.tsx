@@ -25,6 +25,14 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     const cleanLoginId = sanitize(loginId);
     const cleanPassword = nfkc(password);
     
+    // Diagnostic logging to verify submission
+    console.log('🔐 [LOGIN v2.0] Submitting login:', {
+      original: { loginId, passwordLength: password.length },
+      cleaned: { loginId: cleanLoginId, passwordLength: cleanPassword.length },
+      hiddenCharsRemoved: loginId !== cleanLoginId || password !== cleanPassword,
+      timestamp: new Date().toISOString()
+    });
+    
     onLogin(cleanLoginId, cleanPassword);
   };
 
