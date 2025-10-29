@@ -143,7 +143,12 @@ The application is designed to work seamlessly across all devices and browsers. 
   - Protocol: Automatically detects HTTP vs HTTPS and uses WS vs WSS accordingly
   - Host: Uses current window location, works on localhost, Replit, custom domains
   - Token Authentication: Query parameter authentication for WebSocket upgrade
-- **Connection Resilience**: Automatic connection handling with error recovery
+- **Automatic Reconnection**: Resilient connection handling with exponential backoff
+  - Up to 10 automatic reconnection attempts after connection loss
+  - Exponential backoff starting at 1 second, max 30 seconds between attempts
+  - Random jitter added to prevent thundering herd on server restart
+  - Seamless reconnection without requiring page reload
+  - Connection state resets on successful reconnection
 - **Message Delivery**: Real-time updates work identically across all connected devices
 
 ### File Uploads & Downloads
@@ -204,6 +209,12 @@ The application is designed to work seamlessly across all devices and browsers. 
   - Modified `getUserByLoginId()` to use SQL `LOWER()` comparison
   - Users can now login with any case variation of their login ID
   - Resolves issues where different devices autocapitalize login inputs differently
+- **MAJOR UPDATE**: Implemented automatic WebSocket reconnection with exponential backoff
+  - Resilient connection handling for mobile/network switching scenarios
+  - Up to 10 automatic reconnection attempts with intelligent backoff (1s to 30s)
+  - Random jitter prevents server overload on restart
+  - Seamless recovery without page reload
+  - Documented comprehensive cross-device compatibility measures
 - **MAJOR UPDATE**: Replaced email-based authentication with login ID system
 - Added `loginId` field to users table (unique, required, 3-32 alphanumeric chars with dashes/underscores)
 - Made email field optional (for future features)

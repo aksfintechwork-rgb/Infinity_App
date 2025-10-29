@@ -6,12 +6,19 @@ interface WebSocketMessage {
   error?: string;
 }
 
+const MAX_RECONNECT_ATTEMPTS = 10;
+const INITIAL_RECONNECT_DELAY = 1000; // 1 second
+const MAX_RECONNECT_DELAY = 30000; // 30 seconds
+
 export function useWebSocket(token: string | null) {
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const listenersRef = useRef<Map<string, Set<(data: any) => void>>>(new Map());
+  const reconnectAttemptsRef = useRef(0);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const shouldReconnectRef = useRef(true);
 
-  useEffect(() => {
+  const connect = useCallback(() => {
     if (!token) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -26,6 +33,7 @@ export function useWebSocket(token: string | null) {
     ws.onopen = () => {
       console.log('WebSocket connected');
       setIsConnected(true);
+      reconnectAttemptsRef.current = 0; // Reset reconnect attempts on successful connection
     };
 
     ws.onmessage = (event) => {
@@ -43,16 +51,51 @@ export function useWebSocket(token: string | null) {
     ws.onclose = () => {
       console.log('WebSocket disconnected');
       setIsConnected(false);
+      wsRef.current = null;
+
+      // Attempt to reconnect if we should and haven't exceeded max attempts
+      if (shouldReconnectRef.current && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+        reconnectAttemptsRef.current++;
+        
+        // Exponential backoff with jitter
+        const baseDelay = Math.min(
+          INITIAL_RECONNECT_DELAY * Math.pow(2, reconnectAttemptsRef.current - 1),
+          MAX_RECONNECT_DELAY
+        );
+        const jitter = Math.random() * 1000; // Add up to 1 second of jitter
+        const delay = baseDelay + jitter;
+
+        console.log(
+          `Reconnecting in ${Math.round(delay / 1000)}s (attempt ${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})`
+        );
+
+        reconnectTimeoutRef.current = setTimeout(() => {
+          connect();
+        }, delay);
+      } else if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
+        console.error('Max reconnection attempts reached. Please refresh the page.');
+      }
     };
 
     ws.onerror = (error) => {
       console.error('WebSocket error:', error);
     };
+  }, [token]);
+
+  useEffect(() => {
+    shouldReconnectRef.current = true;
+    connect();
 
     return () => {
-      ws.close();
+      shouldReconnectRef.current = false;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
     };
-  }, [token]);
+  }, [connect]);
 
   const send = useCallback((message: WebSocketMessage) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
