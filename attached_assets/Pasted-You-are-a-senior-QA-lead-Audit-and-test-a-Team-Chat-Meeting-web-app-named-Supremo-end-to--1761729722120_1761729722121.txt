@@ -1,0 +1,55 @@
+You are a senior QA lead. Audit and test a **Team Chat & Meeting** web app named **Supremo** end-to-end.
+Assume common stack: React/Next.js frontend, Node/Express (or Nest) backend, WebSocket/Socket.IO for realtime, WebRTC for meetings, Postgres (or Supabase/Firestore) for data, Redis for pub/sub, and cloud storage for media.
+
+SCOPE
+Core: Auth, Profiles, 1:1 chat, Group chat, Channels, File sharing, Emojis/Reactions, Message edit/delete, Read receipts, Typing/presence, Search, Notifications (web & email), Mentions, Pin/Star, Threads/Replies.
+Meetings: Schedule, Join, Screen-share, Mute/Unmute, Camera, Device switch, Recording, Chat in call, Raise hand, Participant controls, Lobby, Host/Co-host roles, Breakout rooms (if present), Transcripts & post-meet summary.
+Admin/Org: Workspaces, Roles/Permissions, Member invites, Audit logs, Retention & eDiscovery, Org settings.
+Non-functional: Performance, Resilience, Security, Privacy, Accessibility (WCAG 2.2 AA), Mobile responsiveness, Offline/low-network, Observability.
+
+WHAT TO DELIVER
+1) Test Strategy & Matrix (features × platforms × envs)
+2) Critical User Journeys with acceptance criteria
+3) Risk-based Test Plan (P0/P1)
+4) Detailed Test Cases (happy/negative/edge)
+5) E2E Automation Plan using Playwright
+6) API Smoke Tests (sample requests + assertions)
+7) Load & Soak Tests (1k concurrents; p95 send→deliver <1.2s; <2% errors)
+8) Security Checklist (OWASP ASVS L2), privacy & recording consent
+9) Accessibility Checks (axe-core), captions, keyboard traps
+10) Bug Template + severity/priority rubric
+
+ACCEPTANCE CRITERIA (P0 highlights)
+- Auth: MFA optional, brute-force lockout, rate limits, SSO hardened
+- Chat: p95 send→appear <1.2s same-region; correct ordering; offline retry
+- Search: correct, permission-aware, highlights
+- Files: type & size validation, AV scan, previews, expiring URLs
+- Meetings: p95 join <5s; A/V stable; adaptive bitrate; readable screen-share; recording OK
+- Notifications: dedup, quiet hours, deep-link
+- Permissions: private rooms invisible; DLP if enabled
+- Observability: correlation IDs; dashboards for latency/join/drop/ICE failures
+- A11y: focus visible; tab order; contrast ≥4.5:1; captions/transcripts
+
+TEST DATA
+Users: Owner/Admin/Moderator/Member/Guest
+Rooms: #general, #random, #trading-desk, private-ops
+Attachments: png, pdf, mp4; large & unicode; malicious names
+Networks: 3G, 150ms RTT, 1% loss; offline
+Browsers: Chrome/Safari/Edge latest; Android/iOS
+
+EXECUTION
+- Start with CUJs, then negative/edge
+- Log defects with repro steps, expected vs actual, env, HAR/video/logs
+- Daily QA status: pass %, defects by severity, top risks
+
+ARTIFACTS
+- /docs/test-strategy.md
+- /docs/test-cases.md
+- /automation/playwright/tests/chat.spec.ts
+- /automation/playwright/tests/meetings.spec.ts
+- /automation/k6-load.js
+- /api/api_smoke.http
+- /security/security_checklist.md
+- /checklists/qa_checklist.csv
+
+Use precise steps, measurable pass/fail, and keep examples runnable with the provided files.
