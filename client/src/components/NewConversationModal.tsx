@@ -17,7 +17,7 @@ import { Search } from 'lucide-react';
 interface User {
   id: number;
   name: string;
-  email: string;
+  email?: string;
   avatar?: string;
 }
 
@@ -41,7 +41,7 @@ export default function NewConversationModal({
   const filteredUsers = users.filter(
     (user) =>
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleToggleUser = (userId: number) => {

@@ -16,7 +16,7 @@ import logoImage from '@assets/image_1761659890673.png';
 interface User {
   id: number;
   name: string;
-  email: string;
+  email?: string;
   role: string;
   avatar?: string;
 }

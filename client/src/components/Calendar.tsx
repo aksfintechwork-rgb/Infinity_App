@@ -28,7 +28,7 @@ interface CalendarProps {
   currentUser: {
     id: number;
     name: string;
-    email: string;
+    email?: string;
     role: string;
   };
 }

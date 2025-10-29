@@ -11,7 +11,7 @@ import { Settings, LogOut, User as UserIcon } from 'lucide-react';
 
 interface User {
   name: string;
-  email: string;
+  email?: string;
   avatar?: string;
 }
 
@@ -45,7 +45,7 @@ export default function UserMenu({ user, onLogout }: UserMenuProps) {
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm text-foreground">{user.name}</p>
-              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              {user.email && <p className="text-xs text-muted-foreground truncate">{user.email}</p>}
             </div>
           </div>
         </DropdownMenuLabel>
