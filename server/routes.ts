@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { hashPassword, comparePassword, generateToken, authMiddleware, getCurrentUser, requireAdmin, type AuthRequest, verifyToken } from "./auth";
-import { insertUserSchema, insertConversationSchema, insertMessageSchema, insertMeetingSchema } from "@shared/schema";
+import { insertUserSchema, insertConversationSchema, insertMessageSchema, insertMeetingSchema, insertTaskSchema, insertSupportRequestSchema } from "@shared/schema";
 import { z } from "zod";
 import { upload, getFileUrl } from "./upload";
 import { WebSocketServer, WebSocket } from "ws";
@@ -502,6 +502,189 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete meeting error:", error);
       res.status(500).json({ error: "Failed to delete meeting" });
+    }
+  });
+
+  // Task Management Routes
+  app.post("/api/tasks", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const validation = insertTaskSchema.safeParse({
+        ...req.body,
+        createdBy: req.userId,
+      });
+
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid input", details: validation.error });
+      }
+
+      const task = await storage.createTask(validation.data);
+      const taskDetails = await storage.getTaskById(task.id);
+      
+      res.status(201).json(taskDetails);
+    } catch (error) {
+      console.error("Create task error:", error);
+      res.status(500).json({ error: "Failed to create task" });
+    }
+  });
+
+  app.get("/api/tasks", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const filter = req.query.filter as string | undefined;
+
+      let tasks;
+      if (filter === 'created') {
+        tasks = await storage.getTasksByCreator(req.userId);
+      } else if (filter === 'assigned') {
+        tasks = await storage.getTasksByAssignee(req.userId);
+      } else {
+        tasks = await storage.getAllTasksForUser(req.userId);
+      }
+
+      res.json(tasks);
+    } catch (error) {
+      console.error("Get tasks error:", error);
+      res.status(500).json({ error: "Failed to fetch tasks" });
+    }
+  });
+
+  app.get("/api/tasks/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const taskId = parseInt(req.params.id);
+      const task = await storage.getTaskById(taskId);
+
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+
+      // Check if user has access to this task
+      if (task.createdBy !== req.userId && task.assignedTo !== req.userId) {
+        return res.status(403).json({ error: "You don't have access to this task" });
+      }
+
+      res.json(task);
+    } catch (error) {
+      console.error("Get task error:", error);
+      res.status(500).json({ error: "Failed to fetch task" });
+    }
+  });
+
+  app.patch("/api/tasks/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const taskId = parseInt(req.params.id);
+      const task = await storage.getTaskById(taskId);
+
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+
+      // Only creator or assignee can update the task
+      if (task.createdBy !== req.userId && task.assignedTo !== req.userId) {
+        return res.status(403).json({ error: "You don't have permission to update this task" });
+      }
+
+      const updatedTask = await storage.updateTask(taskId, req.body);
+      const taskDetails = await storage.getTaskById(taskId);
+      
+      res.json(taskDetails);
+    } catch (error) {
+      console.error("Update task error:", error);
+      res.status(500).json({ error: "Failed to update task" });
+    }
+  });
+
+  app.delete("/api/tasks/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const taskId = parseInt(req.params.id);
+      const task = await storage.getTaskById(taskId);
+
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+
+      // Only the creator can delete the task
+      if (task.createdBy !== req.userId) {
+        return res.status(403).json({ error: "Only the task creator can delete this task" });
+      }
+
+      await storage.deleteTask(taskId);
+      res.json({ message: "Task deleted successfully" });
+    } catch (error) {
+      console.error("Delete task error:", error);
+      res.status(500).json({ error: "Failed to delete task" });
+    }
+  });
+
+  app.post("/api/tasks/:id/support", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const taskId = parseInt(req.params.id);
+      const { supporterId, message } = req.body;
+
+      if (!supporterId) {
+        return res.status(400).json({ error: "Supporter ID is required" });
+      }
+
+      const task = await storage.getTaskById(taskId);
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+
+      const validation = insertSupportRequestSchema.safeParse({
+        taskId,
+        requesterId: req.userId,
+        supporterId,
+        message,
+        status: 'pending',
+      });
+
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid input", details: validation.error });
+      }
+
+      const supportRequest = await storage.createSupportRequest(validation.data);
+      res.status(201).json(supportRequest);
+    } catch (error) {
+      console.error("Create support request error:", error);
+      res.status(500).json({ error: "Failed to create support request" });
+    }
+  });
+
+  app.get("/api/tasks/:id/support", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const taskId = parseInt(req.params.id);
+      const supportRequests = await storage.getSupportRequestsByTask(taskId);
+      
+      res.json(supportRequests);
+    } catch (error) {
+      console.error("Get support requests error:", error);
+      res.status(500).json({ error: "Failed to fetch support requests" });
     }
   });
 
