@@ -128,6 +128,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 29, 2025:**
+- **MAJOR UPDATE**: Replaced email-based authentication with login ID system
+- Added `loginId` field to users table (unique, required, 3-32 alphanumeric chars with dashes/underscores)
+- Made email field optional (for future features)
+- Admins can now create simple login IDs (e.g., "admin", "user123", "employee001") instead of requiring email addresses
+- Updated all authentication flows: login, registration, and admin user creation
+- Backfilled all existing users with loginId values derived from their emails
+- Updated frontend forms and API to use loginId instead of email
+- Login credentials:
+  - Admin: loginId="admin" / password="admin123"
+  - User: loginId="user" / password="user123"
+
 **October 28, 2025:**
 - Implemented role-based access control (admin vs user)
 - Added admin user management panel with user creation functionality
