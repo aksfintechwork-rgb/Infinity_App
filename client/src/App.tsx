@@ -113,8 +113,28 @@ function App() {
       }
     });
 
+    // Listen for user creation events
+    const unsubscribeUserCreated = ws.on('user_created', (user: User) => {
+      setAllUsers((prev) => {
+        // Deduplication: only add if user doesn't already exist
+        if (prev.some((u) => u.id === user.id)) {
+          return prev;
+        }
+        return [...prev, user];
+      });
+      console.log('New user created:', user.name);
+    });
+
+    // Listen for user deletion events
+    const unsubscribeUserDeleted = ws.on('user_deleted', (data: { id: number }) => {
+      setAllUsers((prev) => prev.filter((u) => u.id !== data.id));
+      console.log('User deleted:', data.id);
+    });
+
     return () => {
       unsubscribeMessage();
+      unsubscribeUserCreated();
+      unsubscribeUserDeleted();
     };
   }, [ws.isConnected, ws.on, currentUser, activeConversationId, conversations]);
 

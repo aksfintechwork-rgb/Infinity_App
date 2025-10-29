@@ -13,6 +13,19 @@ interface WebSocketClient extends WebSocket {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // WebSocket server will be assigned after HTTP server is created
+  let wss: WebSocketServer | null = null;
+
+  // Helper function to broadcast user list updates
+  const broadcastUserListUpdate = (type: 'user_created' | 'user_deleted', userData: any) => {
+    if (!wss) return;
+    wss.clients.forEach((client: WebSocketClient) => {
+      if (client.readyState === WebSocket.OPEN && client.userId) {
+        client.send(JSON.stringify({ type, data: userData }));
+      }
+    });
+  };
+
   // One-time setup endpoint - creates initial admin user only if database is empty
   app.post("/api/setup/initialize", async (req, res) => {
     try {
@@ -163,6 +176,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const { password: _, ...userWithoutPassword } = user;
+      
+      // Broadcast user creation to all connected clients
+      broadcastUserListUpdate('user_created', userWithoutPassword);
+      
       res.status(201).json(userWithoutPassword);
     } catch (error) {
       console.error("Admin create user error:", error);
@@ -189,6 +206,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await storage.deleteUser(userId);
+      
+      // Broadcast user deletion to all connected clients
+      broadcastUserListUpdate('user_deleted', { id: userId });
+      
       res.json({ message: "User deleted successfully" });
     } catch (error) {
       console.error("Admin delete user error:", error);
@@ -500,7 +521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
 
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 
   wss.on('connection', (ws: WebSocketClient, req) => {
     const url = new URL(req.url || '', `http://${req.headers.host}`);
