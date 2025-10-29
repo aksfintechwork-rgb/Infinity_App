@@ -28,7 +28,9 @@ export async function register(name: string, loginId: string, email: string, pas
 }
 
 export async function login(loginId: string, password: string): Promise<AuthResponse> {
-  const response = await fetch(`${API_BASE}/auth/login`, {
+  // Add timestamp to force fresh request and bypass Safari cache
+  const cacheBuster = `?_=${Date.now()}`;
+  const response = await fetch(`${API_BASE}/auth/login${cacheBuster}`, {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
