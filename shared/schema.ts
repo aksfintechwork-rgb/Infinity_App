@@ -103,6 +103,8 @@ export const meetings = pgTable("meetings", {
 });
 
 const _baseMeetingSchema = createInsertSchema(meetings, {
+  startTime: z.string().transform((val) => new Date(val)),
+  endTime: z.string().transform((val) => new Date(val)),
   meetingLink: z.string().optional().refine(
     (link) => !link || link.startsWith('https://meet.jit.si/'),
     { message: 'Meeting link must be a Jitsi Meet URL (https://meet.jit.si/...)' }
