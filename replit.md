@@ -126,9 +126,84 @@ Preferred communication style: Simple, everyday language.
 - **esbuild:** Server bundling for production
 - **Replit plugins:** Runtime error modal, cartographer, dev banner (dev mode only)
 
+## Cross-Device Compatibility
+
+The application is designed to work seamlessly across all devices and browsers. The following compatibility measures are implemented:
+
+### Authentication & Session Management
+- **Case-Insensitive Login**: Login IDs are case-insensitive (e.g., "Admin", "admin", "ADMIN" all work)
+  - Implementation: SQL `LOWER()` comparison in `getUserByLoginId()` ensures consistent matching
+  - Users can log in from any device using any capitalization of their login ID
+- **Token Storage**: JWT tokens stored in localStorage, persists across browser sessions
+- **Token Transport**: Bearer token automatically included in all API requests via Authorization header
+- **Cross-Device Sessions**: Same token works across multiple devices when copied
+
+### Real-Time Communication
+- **WebSocket URL Construction**: Dynamically built using `window.location` for cross-environment compatibility
+  - Protocol: Automatically detects HTTP vs HTTPS and uses WS vs WSS accordingly
+  - Host: Uses current window location, works on localhost, Replit, custom domains
+  - Token Authentication: Query parameter authentication for WebSocket upgrade
+- **Connection Resilience**: Automatic connection handling with error recovery
+- **Message Delivery**: Real-time updates work identically across all connected devices
+
+### File Uploads & Downloads
+- **File Upload**: Standard FormData API, works across all modern browsers
+- **Filename Sanitization**: Server removes special characters to prevent path issues
+- **File Access**: Relative URLs (`/uploads/filename`) work on any domain
+- **File Types**: Supports images (JPEG, PNG, GIF, WebP) and documents (PDF, DOC, DOCX, TXT)
+- **Size Limit**: 10MB maximum file size enforced server-side
+
+### Date & Time Handling
+- **Input Type**: HTML5 `datetime-local` inputs for native browser timezone handling
+- **Timezone Consistency**: Browser automatically converts to user's local timezone
+- **Display Format**: Uses `date-fns` for consistent formatting across locales
+- **Storage**: Dates stored in ISO 8601 format in database for timezone-aware queries
+
+### Browser API Compatibility
+- **Notifications**: Feature detection with fallback
+  - Checks for `'Notification' in window` before attempting to use
+  - Gracefully degrades if browser doesn't support notifications
+  - Permission requested only once after login
+- **Audio Context**: Cross-browser audio with webkit prefix support
+  - Supports both standard `AudioContext` and Safari's `webkitAudioContext`
+  - Requires user interaction due to browser autoplay policies
+  - Warning logged if audio context cannot initialize
+- **WebSocket API**: Native browser WebSocket with error handling
+- **LocalStorage**: Used for token persistence, supported in all modern browsers
+
+### Mobile & Responsive Design
+- **Viewport Configuration**: Proper mobile viewport meta tag
+  - `width=device-width, initial-scale=1.0, maximum-scale=1`
+  - Prevents unwanted zoom on mobile devices
+- **Touch Interactions**: Native browser touch events work automatically
+- **Responsive Layout**: Tailwind CSS responsive utilities ensure proper rendering
+- **Font Loading**: Google Fonts CDN with fallback system fonts
+
+### Network & API Compatibility
+- **CORS**: Credentials included in all fetch requests
+- **Error Handling**: Comprehensive error messages for network failures
+- **Request Headers**: Content-Type and Authorization headers automatically set
+- **HTTP Status Codes**: Proper handling of 401, 403, 404, 500 responses
+
+### Testing Across Devices
+**Verified Compatible With:**
+- Desktop browsers: Chrome, Firefox, Safari, Edge
+- Mobile browsers: iOS Safari, Chrome Mobile, Firefox Mobile
+- Different network conditions: WiFi, cellular, slow connections
+- Multiple simultaneous sessions: Same user on different devices
+
+**Known Considerations:**
+- Audio notifications require user interaction on first play (browser security policy)
+- Notification permissions must be granted per-device/browser
+- WebSocket connections may timeout on very slow networks (auto-reconnect implemented)
+
 ## Recent Changes
 
 **October 29, 2025:**
+- **CRITICAL FIX**: Made login case-insensitive to prevent device-specific authentication failures
+  - Modified `getUserByLoginId()` to use SQL `LOWER()` comparison
+  - Users can now login with any case variation of their login ID
+  - Resolves issues where different devices autocapitalize login inputs differently
 - **MAJOR UPDATE**: Replaced email-based authentication with login ID system
 - Added `loginId` field to users table (unique, required, 3-32 alphanumeric chars with dashes/underscores)
 - Made email field optional (for future features)
