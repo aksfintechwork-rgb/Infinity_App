@@ -44,6 +44,10 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 **October 29, 2025:**
+- **UI UPDATE**: Added official SUPREMO TRADERS logo to login page
+  - Logo displayed prominently at the top of the login screen
+  - Maintains professional branding across the platform
+  - Centered layout with "Team Communication Platform" subtitle
 - **NEW FEATURE**: Added Credential Verification Tool to Admin Panel
   - **Purpose**: Help troubleshoot user login issues and verify credentials quickly
   - **Features**: 

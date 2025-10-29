@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import logoImage from '@assets/generated_images/SUPREMO_TRADERS_LLP_logo_12753d7f.png';
+import logoImage from '@assets/image_1761743625103.png';
 
 interface LoginPageProps {
   onLogin: (loginId: string, password: string) => void;
@@ -21,12 +21,9 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <img src={logoImage} alt="SUPREMO TRADERS LLP" className="w-12 h-12" />
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">SUPREMO TRADERS LLP</h1>
-            <p className="text-sm text-muted-foreground">Team Communication</p>
-          </div>
+        <div className="flex flex-col items-center justify-center mb-8">
+          <img src={logoImage} alt="SUPREMO TRADERS" className="w-48 h-auto mb-4" />
+          <h1 className="text-xl font-semibold text-center text-foreground">Team Communication Platform</h1>
         </div>
 
         <Card>
