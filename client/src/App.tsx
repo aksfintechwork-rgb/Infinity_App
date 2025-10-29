@@ -8,6 +8,7 @@ import LoginPage from './components/LoginPage';
 import ChatLayout from './components/ChatLayout';
 import * as api from './lib/api';
 import { useWebSocket } from './lib/websocket';
+import { requestNotificationPermission, notifyNewMessage } from './lib/notifications';
 
 interface User {
   id: number;
@@ -46,6 +47,7 @@ function App() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
   const { toast } = useToast();
 
   const ws = useWebSocket(token);
@@ -59,7 +61,7 @@ function App() {
   }, [token]);
 
   useEffect(() => {
-    if (!ws.isConnected) return;
+    if (!ws.isConnected || !currentUser) return;
 
     const unsubscribeMessage = ws.on('new_message', (message: Message) => {
       setMessages((prev) => [...prev, message]);
@@ -75,12 +77,29 @@ function App() {
             : conv
         )
       );
+
+      // Show notification if message is not from current user
+      // and either user is on different conversation or window is not focused
+      if (message.senderId !== currentUser.id) {
+        const shouldNotify = 
+          message.conversationId !== activeConversationId || 
+          !document.hasFocus();
+
+        if (shouldNotify) {
+          const conversation = conversations.find(c => c.id === message.conversationId);
+          notifyNewMessage(
+            message.senderName,
+            message.body || 'Sent an attachment',
+            conversation?.title
+          );
+        }
+      }
     });
 
     return () => {
       unsubscribeMessage();
     };
-  }, [ws.isConnected, ws.on]);
+  }, [ws.isConnected, ws.on, currentUser, activeConversationId, conversations]);
 
   const loadUserData = async () => {
     try {
@@ -93,6 +112,9 @@ function App() {
       setCurrentUser(user);
       setAllUsers(users);
       setConversations(convs);
+
+      // Request notification permission after successful login
+      requestNotificationPermission();
     } catch (error) {
       console.error('Failed to load user data:', error);
       toast({
@@ -108,6 +130,7 @@ function App() {
 
   const loadConversationMessages = async (conversationId: number) => {
     try {
+      setActiveConversationId(conversationId);
       const msgs = await api.getMessages(token!, conversationId);
       setMessages((prev) => {
         const filtered = prev.filter((m) => m.conversationId !== conversationId);
