@@ -30,23 +30,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { loginId, password } = req.body;
 
       if (!loginId || !password) {
+        console.log(`[LOGIN] ❌ Missing credentials - loginId: "${loginId || 'EMPTY'}", password length: ${password?.length || 0}`);
         return res.status(400).json({ error: "Login ID and password required" });
       }
 
-      console.log(`[LOGIN] Attempting login for loginId: "${loginId}"`);
+      console.log(`[LOGIN] 🔍 Attempting login for loginId: "${loginId}" (length: ${loginId.length}, password length: ${password.length})`);
       const user = await storage.getUserByLoginId(loginId);
       if (!user) {
-        console.log(`[LOGIN] User not found for loginId: "${loginId}"`);
+        console.log(`[LOGIN] ❌ User not found for loginId: "${loginId}"`);
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      console.log(`[LOGIN] User found: "${user.name}" (loginId: "${user.loginId}")`);
+      console.log(`[LOGIN] ✓ User found: "${user.name}" (loginId: "${user.loginId}")`);
+      console.log(`[LOGIN] 🔐 Comparing passwords... (submitted password length: ${password.length})`);
       const isPasswordValid = await comparePassword(password, user.password);
       if (!isPasswordValid) {
-        console.log(`[LOGIN] Invalid password for user: "${user.name}"`);
+        console.log(`[LOGIN] ❌ Invalid password for user: "${user.name}" (expected length should be 10 for standard passwords)`);
         return res.status(401).json({ error: "Invalid credentials" });
       }
-      console.log(`[LOGIN] Successful login for user: "${user.name}"`);
+      console.log(`[LOGIN] ✅ Successful login for user: "${user.name}"`);
 
 
       const token = generateToken(user.id);
