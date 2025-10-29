@@ -6,6 +6,9 @@ import { z } from "zod";
 export const userRoleEnum = z.enum(["admin", "user"]);
 export type UserRole = z.infer<typeof userRoleEnum>;
 
+export const taskStatusEnum = z.enum(["pending", "in_progress", "completed", "cancelled"]);
+export type TaskStatus = z.infer<typeof taskStatusEnum>;
+
 export const users = pgTable("users", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: text("name").notNull(),
@@ -128,3 +131,62 @@ export const insertMeetingSchema = _baseMeetingSchema.omit({
 
 export type InsertMeeting = z.infer<typeof insertMeetingSchema>;
 export type Meeting = typeof meetings.$inferSelect;
+
+export const tasks = pgTable("tasks", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  title: text("title").notNull(),
+  description: text("description"),
+  startDate: timestamp("start_date").notNull(),
+  targetDate: timestamp("target_date").notNull(),
+  status: text("status").notNull().default("pending"),
+  remark: text("remark"),
+  createdBy: integer("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  assignedTo: integer("assigned_to").references(() => users.id, { onDelete: "set null" }),
+  conversationId: integer("conversation_id").references(() => conversations.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+const _baseTaskSchema = createInsertSchema(tasks, {
+  startDate: z.string().transform((val) => new Date(val)),
+  targetDate: z.string().transform((val) => new Date(val)),
+  status: taskStatusEnum.default("pending"),
+});
+
+export const insertTaskSchema = _baseTaskSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  createdAt: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  updatedAt: true,
+});
+
+export type InsertTask = z.infer<typeof insertTaskSchema>;
+export type Task = typeof tasks.$inferSelect;
+export type TaskWithDetails = Task & {
+  creatorName: string;
+  assigneeName?: string;
+};
+
+export const taskSupportRequests = pgTable("task_support_requests", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  taskId: integer("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  requesterId: integer("requester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  supporterId: integer("supporter_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  message: text("message"),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+const _baseSupportRequestSchema = createInsertSchema(taskSupportRequests, {});
+
+export const insertSupportRequestSchema = _baseSupportRequestSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  createdAt: true,
+});
+
+export type InsertSupportRequest = z.infer<typeof insertSupportRequestSchema>;
+export type SupportRequest = typeof taskSupportRequests.$inferSelect;
