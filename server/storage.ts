@@ -24,6 +24,7 @@ export interface IStorage {
   getUserByLoginId(loginId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
+  updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
   
   createConversation(conversation: InsertConversation): Promise<Conversation>;
   getConversationById(id: number): Promise<Conversation | undefined>;
@@ -77,6 +78,10 @@ export class PostgresStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return db.select().from(users);
+  }
+
+  async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
+    await db.update(users).set({ password: hashedPassword }).where(eq(users.id, userId));
   }
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {

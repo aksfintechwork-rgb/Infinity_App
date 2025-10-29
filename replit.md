@@ -117,6 +117,20 @@ Preferred communication style: Simple, everyday language.
 - **Previous fixes**: Case-insensitive login, WebSocket auto-reconnection, desktop notifications, meeting calendar with video conferencing
 
 **October 29, 2025 (Evening):**
+- **🔧 CRITICAL FIX: Auto-Healing Admin Password System** (SOLVES PERSISTENT LOGIN FAILURES)
+  - **Root Cause**: Production database had stale admin password hash that didn't match "admin123". Republishing didn't fix it because seed script only ran when database was empty.
+  - **Solution**: Enhanced `server/seed.ts` with auto-healing logic that runs on EVERY server startup:
+    1. ✅ Creates admin user if database is empty
+    2. ✅ Creates admin user if it's missing from an existing database
+    3. ✅ **Verifies admin password matches "admin123"**
+    4. ✅ **Auto-heals password if mismatch detected** (production fix)
+  - **Implementation**:
+    - Added `updateUserPassword()` method to storage interface (`server/storage.ts`)
+    - Added `comparePassword()` import to seed script
+    - Seed now verifies password health and logs: `[SEED] 🔧 Admin password mismatch detected. Healing...`
+  - **Result**: Production app will auto-heal on next republish/restart
+  - **Security**: System logs warning to change password after healing
+  
 - **PRODUCTION DATABASE SEEDING**: Implemented automatic database initialization
   - **Problem Solved**: Published app had empty production database (no admin user)
   - **Solution**: Created `server/seed.ts` that automatically creates admin user on server startup if database is empty
