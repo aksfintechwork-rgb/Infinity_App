@@ -18,6 +18,7 @@ import { eq, and, desc, inArray } from "drizzle-orm";
 export interface IStorage {
   getUserById(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByLoginId(loginId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   
@@ -41,7 +42,13 @@ export class PostgresStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
+    if (!email) return undefined;
     const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    return result[0];
+  }
+
+  async getUserByLoginId(loginId: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.loginId, loginId)).limit(1);
     return result[0];
   }
 
@@ -85,6 +92,7 @@ export class PostgresStorage implements IStorage {
       .select({
         id: users.id,
         name: users.name,
+        loginId: users.loginId,
         email: users.email,
         password: users.password,
         role: users.role,

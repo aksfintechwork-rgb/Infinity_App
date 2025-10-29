@@ -20,16 +20,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid input", details: validation.error });
       }
 
-      const { name, email, password, avatar } = validation.data;
+      const { name, loginId, email, password, avatar } = validation.data;
 
-      const existingUser = await storage.getUserByEmail(email);
+      const existingUser = await storage.getUserByLoginId(loginId);
       if (existingUser) {
-        return res.status(400).json({ error: "Email already registered" });
+        return res.status(400).json({ error: "Login ID already taken" });
       }
 
       const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
         name,
+        loginId,
         email,
         password: hashedPassword,
         role: "user",
@@ -51,13 +52,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { loginId, password } = req.body;
 
-      if (!email || !password) {
-        return res.status(400).json({ error: "Email and password required" });
+      if (!loginId || !password) {
+        return res.status(400).json({ error: "Login ID and password required" });
       }
 
-      const user = await storage.getUserByEmail(email);
+      const user = await storage.getUserByLoginId(loginId);
       if (!user) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
@@ -111,16 +112,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid input", details: validation.error });
       }
 
-      const { name, email, password, avatar, role } = validation.data;
+      const { name, loginId, email, password, avatar, role } = validation.data;
 
-      const existingUser = await storage.getUserByEmail(email);
+      const existingUser = await storage.getUserByLoginId(loginId);
       if (existingUser) {
-        return res.status(400).json({ error: "Email already registered" });
+        return res.status(400).json({ error: "Login ID already taken" });
       }
 
       const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
         name,
+        loginId,
         email,
         password: hashedPassword,
         role: role || "user",
