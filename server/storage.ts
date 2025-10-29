@@ -9,11 +9,18 @@ import {
   type InsertConversationMember,
   type Meeting,
   type InsertMeeting,
+  type Task,
+  type InsertTask,
+  type TaskWithDetails,
+  type SupportRequest,
+  type InsertSupportRequest,
   users,
   conversations,
   messages,
   conversationMembers,
   meetings,
+  tasks,
+  taskSupportRequests,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, inArray, sql } from "drizzle-orm";
@@ -45,6 +52,18 @@ export interface IStorage {
   getAllMeetings(): Promise<Meeting[]>;
   getMeetingById(id: number): Promise<Meeting | undefined>;
   deleteMeeting(id: number): Promise<void>;
+  
+  createTask(task: InsertTask): Promise<Task>;
+  getTaskById(id: number): Promise<TaskWithDetails | undefined>;
+  getTasksByCreator(creatorId: number): Promise<TaskWithDetails[]>;
+  getTasksByAssignee(assigneeId: number): Promise<TaskWithDetails[]>;
+  getAllTasksForUser(userId: number): Promise<TaskWithDetails[]>;
+  updateTask(id: number, updates: Partial<InsertTask>): Promise<Task | undefined>;
+  deleteTask(id: number): Promise<void>;
+  
+  createSupportRequest(request: InsertSupportRequest): Promise<SupportRequest>;
+  getSupportRequestsByTask(taskId: number): Promise<SupportRequest[]>;
+  updateSupportRequestStatus(id: number, status: string): Promise<void>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -218,6 +237,154 @@ export class PostgresStorage implements IStorage {
 
   async deleteMeeting(id: number): Promise<void> {
     await db.delete(meetings).where(eq(meetings.id, id));
+  }
+
+  async createTask(task: InsertTask): Promise<Task> {
+    const result = await db.insert(tasks).values(task).returning();
+    return result[0];
+  }
+
+  async getTaskById(id: number): Promise<TaskWithDetails | undefined> {
+    const result = await db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        description: tasks.description,
+        startDate: tasks.startDate,
+        targetDate: tasks.targetDate,
+        status: tasks.status,
+        remark: tasks.remark,
+        createdBy: tasks.createdBy,
+        assignedTo: tasks.assignedTo,
+        conversationId: tasks.conversationId,
+        createdAt: tasks.createdAt,
+        updatedAt: tasks.updatedAt,
+        creatorName: users.name,
+        assigneeName: sql<string>`assignee.name`,
+      })
+      .from(tasks)
+      .innerJoin(users, eq(tasks.createdBy, users.id))
+      .leftJoin(sql`users as assignee`, sql`tasks.assigned_to = assignee.id`)
+      .where(eq(tasks.id, id))
+      .limit(1);
+
+    return result[0] as TaskWithDetails | undefined;
+  }
+
+  async getTasksByCreator(creatorId: number): Promise<TaskWithDetails[]> {
+    const result = await db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        description: tasks.description,
+        startDate: tasks.startDate,
+        targetDate: tasks.targetDate,
+        status: tasks.status,
+        remark: tasks.remark,
+        createdBy: tasks.createdBy,
+        assignedTo: tasks.assignedTo,
+        conversationId: tasks.conversationId,
+        createdAt: tasks.createdAt,
+        updatedAt: tasks.updatedAt,
+        creatorName: users.name,
+        assigneeName: sql<string>`assignee.name`,
+      })
+      .from(tasks)
+      .innerJoin(users, eq(tasks.createdBy, users.id))
+      .leftJoin(sql`users as assignee`, sql`tasks.assigned_to = assignee.id`)
+      .where(eq(tasks.createdBy, creatorId))
+      .orderBy(desc(tasks.createdAt));
+
+    return result as TaskWithDetails[];
+  }
+
+  async getTasksByAssignee(assigneeId: number): Promise<TaskWithDetails[]> {
+    const result = await db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        description: tasks.description,
+        startDate: tasks.startDate,
+        targetDate: tasks.targetDate,
+        status: tasks.status,
+        remark: tasks.remark,
+        createdBy: tasks.createdBy,
+        assignedTo: tasks.assignedTo,
+        conversationId: tasks.conversationId,
+        createdAt: tasks.createdAt,
+        updatedAt: tasks.updatedAt,
+        creatorName: users.name,
+        assigneeName: sql<string>`assignee.name`,
+      })
+      .from(tasks)
+      .innerJoin(users, eq(tasks.createdBy, users.id))
+      .leftJoin(sql`users as assignee`, sql`tasks.assigned_to = assignee.id`)
+      .where(eq(tasks.assignedTo, assigneeId))
+      .orderBy(desc(tasks.createdAt));
+
+    return result as TaskWithDetails[];
+  }
+
+  async getAllTasksForUser(userId: number): Promise<TaskWithDetails[]> {
+    const result = await db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        description: tasks.description,
+        startDate: tasks.startDate,
+        targetDate: tasks.targetDate,
+        status: tasks.status,
+        remark: tasks.remark,
+        createdBy: tasks.createdBy,
+        assignedTo: tasks.assignedTo,
+        conversationId: tasks.conversationId,
+        createdAt: tasks.createdAt,
+        updatedAt: tasks.updatedAt,
+        creatorName: users.name,
+        assigneeName: sql<string>`assignee.name`,
+      })
+      .from(tasks)
+      .innerJoin(users, eq(tasks.createdBy, users.id))
+      .leftJoin(sql`users as assignee`, sql`tasks.assigned_to = assignee.id`)
+      .where(
+        sql`${tasks.createdBy} = ${userId} OR ${tasks.assignedTo} = ${userId}`
+      )
+      .orderBy(desc(tasks.createdAt));
+
+    return result as TaskWithDetails[];
+  }
+
+  async updateTask(id: number, updates: Partial<InsertTask>): Promise<Task | undefined> {
+    const result = await db
+      .update(tasks)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(tasks.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteTask(id: number): Promise<void> {
+    await db.delete(tasks).where(eq(tasks.id, id));
+  }
+
+  async createSupportRequest(request: InsertSupportRequest): Promise<SupportRequest> {
+    const result = await db.insert(taskSupportRequests).values(request).returning();
+    return result[0];
+  }
+
+  async getSupportRequestsByTask(taskId: number): Promise<SupportRequest[]> {
+    return db
+      .select()
+      .from(taskSupportRequests)
+      .where(eq(taskSupportRequests.taskId, taskId))
+      .orderBy(desc(taskSupportRequests.createdAt));
+  }
+
+  async updateSupportRequestStatus(id: number, status: string): Promise<void> {
+    await db
+      .update(taskSupportRequests)
+      .set({ status })
+      .where(eq(taskSupportRequests.id, id));
   }
 }
 
