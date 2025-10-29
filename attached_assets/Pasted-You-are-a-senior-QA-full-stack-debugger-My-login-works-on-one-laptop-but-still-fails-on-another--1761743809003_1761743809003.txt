@@ -1,0 +1,335 @@
+You are a senior QA + full-stack debugger.
+My login works on one laptop but still fails on another. I need you to run a full cross-device, cross-network diagnostic and produce a root cause + fix with evidence.
+
+Targets
+
+Prove where it breaks (client, network, server, or identity provider).
+
+Explain why it only fails on one device.
+
+Provide specific code/config changes to fix.
+
+Deliverables
+
+A short Root Cause statement.
+
+A Fix Plan (exact steps, files to edit, config to change).
+
+A Verification Checklist (how I confirm it’s fixed on both devices).
+
+Attach logs, screenshots of devtools/network, and raw curl outputs.
+
+1) Reproduction Matrix (fill this first)
+
+Device A (works): OS/Version, Browser/Version, Timezone, System clock accuracy (± seconds), Antivirus/Firewall, VPN/Proxy.
+
+Device B (fails): same fields.
+
+Networks tested: Home Wi-Fi / Office Wi-Fi / Mobile Hotspot (include public IP from https://ifconfig.me).
+
+App build info: commit hash, build time, .env values, feature flags.
+
+Pass/Fail Table
+
+Device	Network	Browser	Result	Error text	HTTP code
+A	…	…	Pass	–	200
+B	…	…	Fail	e.g., “Network error”, “Unauthorized”	401/403/0
+2) Client-Side Deep Checks (on failing laptop)
+
+Hard refresh & storage reset
+
+Clear cache, cookies, localStorage, sessionStorage, IndexedDB, and unregister service workers.
+
+Retry in Incognito with no extensions.
+
+DevTools > Network
+
+Capture a HAR while reproducing login.
+
+Confirm:
+
+Request URL & method, status code
+
+Host, Origin, Referer
+
+Access-Control-* headers (CORS)
+
+Set-Cookie in response and whether browser stores it
+
+Request cookies actually sent on next call
+
+Console
+
+Copy any error stack traces (CORS, Mixed Content, Cookie blocked, SameSite, clock skew/JWT “iat/exp” issues).
+
+Time/Clock skew
+
+Compare system time to time.is — note drift in seconds. (JWT & TLS can fail with >60s skew).
+
+OS trust/SSL
+
+Visit API domain directly: ensure no certificate warnings.
+
+Check if antivirus/SSL inspection is replacing certs.
+
+Alternate browser
+
+Test Chrome, Edge, Firefox; note differences.
+
+3) Network & DNS Checks
+
+Ping & DNS
+
+nslookup <API_HOST> / dig <API_HOST> on both devices (compare results).
+
+Connectivity & TLS
+
+curl -v https://<API_HOST>/health
+
+curl -vk https://<API_HOST>/login (show TLS details, SNI, ALPN).
+
+CORS with curl (simulate browser)
+
+curl -i https://<API_HOST>/auth/login \
+  -H "Origin: https://<APP_HOST>" \
+  -H "Content-Type: application/json" \
+  --data '{"email":"<test>","password":"<test>"}'
+
+
+Expect Access-Control-Allow-Origin: https://<APP_HOST> and Vary: Origin.
+
+IP/Geo/Firewall
+
+Compare public IPs. If WAF/Firewall rules are IP-bound or geo-fenced, list the rule.
+
+4) Auth Flow Trace (end-to-end)
+
+What should happen (happy path):
+
+/auth/login → 200 with Set-Cookie (httpOnly, secure, SameSite) or JSON with access/refresh tokens.
+
+Client stores cookie/token.
+
+Next call /me or /profile returns 200 and user data.
+
+What actually happens on failing laptop:
+
+Show exact request/response diffs vs working laptop.
+
+If Cookies are used:
+
+Confirm Set-Cookie appears and is not blocked by:
+
+SameSite=Lax/Strict when cross-site,
+
+Missing Secure on HTTPS,
+
+Domain mismatch (e.g., cookie set for .api.example.com but app on app.example.com without proper domain),
+
+Third-party context (embedded iframes) blocked.
+
+If JWT in storage:
+
+Decode token (header+payload) at jwt.io and read iss, aud, exp, nbf, iat—report mismatches or clock skew.
+
+5) Server-Side Verification
+
+Access logs around the test time (UTC + local time):
+
+Do we see login request from Device B IP? Status code?
+
+Auth service logs
+
+Errors on password verify, user status (locked/disabled), provider errors, expired/invalid refresh.
+
+CORS & cookie config (show actual code/config)
+
+Allowed origins array
+
+Credentials mode (Access-Control-Allow-Credentials: true)
+
+Set-Cookie attributes (domain, path, secure, samesite)
+
+Reverse proxy / CDN
+
+Nginx/Cloudflare rules: HSTS, redirect loops, SameSite=None; Secure enforcement, cache on auth endpoints (should be no-cache).
+
+Environment parity
+
+Compare .env on server vs build env vs both laptops (feature flags, API base URL, auth domain).
+
+6) Common Root Causes to Test (tick each)
+
+ CORS: Origin not in allowlist, missing Allow-Credentials, preflight 204/4xx.
+
+ Cookies blocked: Missing SameSite=None; Secure for cross-site, wrong domain/path.
+
+ HTTPS/TLS: Cert chain issue on one device (corporate AV, outdated root cert).
+
+ Clock skew: JWT exp/nbf/iat invalid only on one device.
+
+ Service Worker: Stale SW intercepting auth; unregister and clear.
+
+ Browser extension: Privacy/ad-blocker strips cookies/headers.
+
+ Mixed content: HTTP asset in HTTPS page blocks auth flow.
+
+ Proxy/VPN: Geo/IP rules or rate-limit triggered.
+
+ Domain mismatch: api.example.com vs cookie for .example.com.
+
+ HTTP-only staging: Trying to set Secure cookie over HTTP → dropped.
+
+ Strict CSP: Blocks redirect or token postMessage/Storage events.
+
+ HSTS preload: Redirect/upgrade issues on one hostname only.
+
+ Samesite + Redirect login: Cross-site redirects lose cookies.
+
+7) Exact Fix Recipes (choose the one that matches)
+A) Cookie-based sessions (cross-site)
+
+Server must set:
+
+Set-Cookie: session=<token>; Path=/; HttpOnly; Secure; SameSite=None; Domain=.example.com; Max-Age=...
+Cache-Control: no-store
+
+
+CORS:
+
+Access-Control-Allow-Origin: https://app.example.com
+Access-Control-Allow-Credentials: true
+Vary: Origin
+
+
+Client (fetch/axios):
+
+fetch(API_URL + "/auth/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email, password }),
+  credentials: "include" // IMPORTANT
+});
+
+B) JWT in SPA (Authorization header)
+
+No cookies needed; ensure clock sync and correct aud/iss.
+
+After login:
+
+localStorage.setItem("access_token", token);
+// For axios:
+api.interceptors.request.use(cfg => {
+  const t = localStorage.getItem("access_token");
+  if (t) cfg.headers.Authorization = `Bearer ${t}`;
+  return cfg;
+});
+
+
+Avoid service-worker caching /auth/*. Add:
+
+Cache-Control: no-store
+
+C) Subdomain cookie sharing
+
+Use Domain=.example.com for cookies used by both app.example.com and api.example.com.
+
+Ensure all endpoints are HTTPS and cookies use SameSite=None; Secure.
+
+D) Nginx (sample)
+location /auth/ {
+  add_header Access-Control-Allow-Origin https://app.example.com always;
+  add_header Access-Control-Allow-Credentials true always;
+  if ($request_method = OPTIONS) {
+    add_header Access-Control-Allow-Headers "Content-Type, Authorization" always;
+    add_header Access-Control-Allow-Methods "GET,POST,PUT,PATCH,DELETE,OPTIONS" always;
+    return 204;
+  }
+  proxy_pass http://auth_upstream;
+}
+
+8) Stack-Specific Add-Ons (pick & run)
+React + Supabase
+
+Supabase client:
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage
+  },
+  global: { fetch: (url, opts={}) => fetch(url, { ...opts, credentials: "include" }) }
+});
+
+
+Check: Allowed Redirect URLs, Site URL, Auth Domain in Supabase dashboard.
+
+If cookie auth: enable SameSite=None and Secure in auth settings.
+
+Node + Express + JWT (cookies)
+app.use(cors({
+  origin: "https://app.example.com",
+  credentials: true
+}));
+res.cookie("session", token, {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  domain: ".example.com",
+  path: "/",
+  maxAge: 60*60*1000
+});
+
+NextAuth.js
+
+In .env set NEXTAUTH_URL and NEXTAUTH_URL_INTERNAL correctly.
+
+If using cookies across subdomains:
+
+cookies: {
+  sessionToken: {
+    name: "__Host-next-auth.session-token",
+    options: { httpOnly:true, sameSite:"none", secure:true, path:"/" }
+  }
+}
+
+
+Ensure proxy headers x-forwarded-host/proto are set at CDN.
+
+Firebase Auth (Web)
+
+Add both origins (prod + dev) in Authorized Domains.
+
+Avoid SW caching of __/auth/*.
+
+Check system time on failing device (Firebase rejects skew).
+
+9) Evidence Pack to Attach
+
+HAR file from failing device
+
+Console logs (redacted)
+
+curl -v output and response headers
+
+Server log excerpt (around test time)
+
+Screenshot of cookie jar before/after login
+
+Token payload (sans signature) with exp/iat/nbf timestamps
+
+10) Verification Checklist (post-fix)
+
+ Login succeeds on Device B (fresh profile, no extensions).
+
+ /me returns 200 with correct user on both devices.
+
+ Cookie/token persists after refresh and new tab.
+
+ Logout clears storage/cookies; re-login works.
+
+ Works on second network and second browser.
+
+ No mixed-content, CORS, or SameSite warnings in console.
