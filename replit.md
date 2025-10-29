@@ -37,6 +37,7 @@ Preferred communication style: Simple, everyday language.
 - **Admin Features**: User deletion and real-time user list updates across clients.
 - **Meeting Calendar**: Integrated with video conferencing (Jitsi Meet).
 - **Task Management System**: Complete task management with start/target dates, remarks, status tracking (todo/in_progress/completed), priority levels (low/medium/high), task assignment, real-time WebSocket updates with authorization filtering (only creator and assignee receive updates), and colorful zen-themed UI.
+- **Password Management**: Self-service password change feature accessible from user menu, with validation, security checks, and password visibility toggles. Both admins and regular users can change their own passwords.
 - **Admin Tools**: Credential Verification Tool to aid in troubleshooting login issues.
 
 ## External Dependencies
