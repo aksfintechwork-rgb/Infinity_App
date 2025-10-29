@@ -6,8 +6,19 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { Users, UserPlus, Shield, User, KeyRound, CheckCircle, XCircle } from 'lucide-react';
+import { Users, UserPlus, Shield, User, KeyRound, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 
 interface AdminPanelProps {
   token: string;
@@ -40,6 +51,7 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
     mutationFn: (data: typeof newUser) => api.createUserAsAdmin(token, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setNewUser({ name: '', loginId: '', email: '', password: '', role: 'user' });
       toast({
         title: 'Success',
@@ -50,6 +62,25 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to create user',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId: number) => api.deleteUser(token, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: 'Success',
+        description: 'User deleted successfully',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete user',
         variant: 'destructive',
       });
     },
@@ -358,6 +389,39 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
                     >
                       {user.role === 'admin' ? 'Admin' : 'User'}
                     </span>
+                    {user.id !== currentUserId && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            data-testid={`button-delete-user-${user.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete <strong>{user.name}</strong> ({user.loginId})? 
+                              This action cannot be undone and will remove all their conversations and messages.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel data-testid={`button-cancel-delete-${user.id}`}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteUserMutation.mutate(user.id)}
+                              className="bg-destructive hover:bg-destructive/90"
+                              data-testid={`button-confirm-delete-${user.id}`}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </div>
               ))}

@@ -25,6 +25,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
+  deleteUser(userId: number): Promise<void>;
   
   createConversation(conversation: InsertConversation): Promise<Conversation>;
   getConversationById(id: number): Promise<Conversation | undefined>;
@@ -82,6 +83,13 @@ export class PostgresStorage implements IStorage {
 
   async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
     await db.update(users).set({ password: hashedPassword }).where(eq(users.id, userId));
+  }
+
+  async deleteUser(userId: number): Promise<void> {
+    // First, delete user's conversation memberships
+    await db.delete(conversationMembers).where(eq(conversationMembers.userId, userId));
+    // Then delete the user
+    await db.delete(users).where(eq(users.id, userId));
   }
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {

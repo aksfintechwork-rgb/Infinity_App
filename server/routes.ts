@@ -170,6 +170,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/admin/users/:userId", authMiddleware, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+
+      // Prevent admin from deleting themselves
+      if (userId === req.userId) {
+        return res.status(400).json({ error: "Cannot delete your own account" });
+      }
+
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      await storage.deleteUser(userId);
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Admin delete user error:", error);
+      res.status(500).json({ error: "Failed to delete user" });
+    }
+  });
+
   app.get("/api/conversations", authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (!req.userId) {

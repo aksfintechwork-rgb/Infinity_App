@@ -166,3 +166,17 @@ export async function getAdminUsers(token: string) {
 
   return response.json();
 }
+
+export async function deleteUser(token: string, userId: number) {
+  const response = await fetch(`${API_BASE}/admin/users/${userId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete user');
+  }
+
+  return response.json();
+}

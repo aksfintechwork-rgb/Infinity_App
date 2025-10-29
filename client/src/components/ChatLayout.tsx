@@ -135,7 +135,7 @@ export default function ChatLayout({
 
   return (
     <div className="flex h-screen bg-background">
-      <div className="w-80 border-r border-border flex flex-col">
+      <div className="hidden md:flex w-80 border-r border-border flex-col">
         <div className="h-16 border-b border-border flex items-center justify-between px-4 flex-shrink-0">
           <div className="flex items-center gap-2">
             <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-10 h-10 object-contain" data-testid="img-brand-logo" />
