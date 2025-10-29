@@ -9,7 +9,7 @@ export type UserRole = z.infer<typeof userRoleEnum>;
 export const users = pgTable("users", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: text("name").notNull(),
-  loginId: text("login_id").unique(),
+  loginId: text("login_id").notNull().unique(),
   email: text("email"),
   password: text("password").notNull(),
   role: text("role").notNull().default("user"),
