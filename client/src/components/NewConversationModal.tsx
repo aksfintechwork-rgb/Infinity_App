@@ -55,7 +55,12 @@ export default function NewConversationModal({
   const handleCreate = () => {
     if (selectedUserIds.length === 0) return;
     
-    const conversationTitle = selectedUserIds.length > 1 ? title : '';
+    // For group conversations (more than 1 member), require a title
+    if (selectedUserIds.length > 1 && !title.trim()) {
+      return;
+    }
+    
+    const conversationTitle = selectedUserIds.length > 1 ? title.trim() : '';
     onCreateConversation(conversationTitle, selectedUserIds);
     
     setTitle('');
@@ -84,14 +89,20 @@ export default function NewConversationModal({
         <div className="space-y-4">
           {selectedUserIds.length > 1 && (
             <div className="space-y-2">
-              <Label htmlFor="conversation-title">Group Name (optional)</Label>
+              <Label htmlFor="conversation-title">
+                Group Name <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="conversation-title"
-                placeholder="e.g., Sales Team"
+                placeholder="e.g., Sales Team, Project Alpha, Marketing"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 data-testid="input-conversation-title"
+                required
               />
+              <p className="text-xs text-muted-foreground">
+                Give your group a meaningful name so everyone knows what it's for
+              </p>
             </div>
           )}
 
@@ -153,7 +164,10 @@ export default function NewConversationModal({
           </Button>
           <Button
             onClick={handleCreate}
-            disabled={selectedUserIds.length === 0}
+            disabled={
+              selectedUserIds.length === 0 ||
+              (selectedUserIds.length > 1 && !title.trim())
+            }
             data-testid="button-create-conversation"
           >
             Create

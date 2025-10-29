@@ -115,3 +115,21 @@ Preferred communication style: Simple, everyday language.
   - All existing features preserved - real-time messaging, WebSocket, notifications all work perfectly
   
 - **Previous fixes**: Case-insensitive login, WebSocket auto-reconnection, desktop notifications, meeting calendar with video conferencing
+
+**October 29, 2025 (Evening):**
+- **PRODUCTION DATABASE SEEDING**: Implemented automatic database initialization
+  - **Problem Solved**: Published app had empty production database (no admin user)
+  - **Solution**: Created `server/seed.ts` that automatically creates admin user on server startup if database is empty
+  - **Credentials**: Admin user created with loginId: `admin`, password: `admin123`
+  - **Implementation**: Server checks on startup, logs creation status, non-blocking if seeding fails
+  - **Published URL**: https://supremo-traders-chat-kadamatulp.replit.app
+  
+- **ENHANCED GROUP NAMING FEATURE**: Improved group conversation creation
+  - **Requirement**: Group names are now **required** (not optional) for all group conversations
+  - **UI Changes**: 
+    - Added red asterisk (*) to indicate required field
+    - Updated placeholder with better examples: "Sales Team, Project Alpha, Marketing"
+    - Added helpful hint text: "Give your group a meaningful name so everyone knows what it's for"
+  - **Validation**: Create button disabled until group name is entered for groups (2+ members)
+  - **Display**: Group names shown prominently in conversation list and chat header with group icon
+  - **Direct Messages**: 1-on-1 chats don't require a title (shows member names automatically)
