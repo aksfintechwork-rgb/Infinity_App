@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2 } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
@@ -13,6 +13,7 @@ import AddMembersModal from './AddMembersModal';
 import UserMenu from './UserMenu';
 import AdminPanel from './AdminPanel';
 import Calendar from './Calendar';
+import Tasks from './Tasks';
 import logoImage from '@assets/image_1761659890673.png';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 
@@ -77,7 +78,7 @@ export default function ChatLayout({
   const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar'>('chat');
+  const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar' | 'tasks'>('chat');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -149,7 +150,7 @@ export default function ChatLayout({
         </div>
 
         <div className="p-2 border-b border-border flex-shrink-0">
-          <div className={`grid ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'} gap-1 p-1 bg-muted rounded-md`}>
+          <div className={`grid ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} gap-1 p-1 bg-muted rounded-md`}>
             <Button
               size="sm"
               variant={currentView === 'chat' ? 'default' : 'ghost'}
@@ -159,6 +160,16 @@ export default function ChatLayout({
             >
               <MessageSquare className="w-4 h-4 mr-1" />
               Chat
+            </Button>
+            <Button
+              size="sm"
+              variant={currentView === 'tasks' ? 'default' : 'ghost'}
+              onClick={() => setCurrentView('tasks')}
+              className="h-8"
+              data-testid="button-view-tasks"
+            >
+              <CheckCircle2 className="w-4 h-4 mr-1" />
+              Tasks
             </Button>
             <Button
               size="sm"
@@ -256,6 +267,8 @@ export default function ChatLayout({
           <AdminPanel token={token} currentUserId={currentUser.id} />
         ) : currentView === 'calendar' ? (
           <Calendar currentUser={currentUser} />
+        ) : currentView === 'tasks' ? (
+          <Tasks currentUser={currentUser} allUsers={allUsers} />
         ) : activeConversation ? (
           <>
             <div className="h-16 border-b border-border flex items-center justify-between px-4 md:px-6 flex-shrink-0">
@@ -374,7 +387,7 @@ export default function ChatLayout({
             </div>
 
             <div className="p-2 border-b border-border">
-              <div className={`grid ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'} gap-1 p-1 bg-muted rounded-md`}>
+              <div className={`grid ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} gap-1 p-1 bg-muted rounded-md`}>
                 <Button
                   size="sm"
                   variant={currentView === 'chat' ? 'default' : 'ghost'}
@@ -384,6 +397,16 @@ export default function ChatLayout({
                 >
                   <MessageSquare className="w-4 h-4 mr-1" />
                   Chat
+                </Button>
+                <Button
+                  size="sm"
+                  variant={currentView === 'tasks' ? 'default' : 'ghost'}
+                  onClick={() => { setCurrentView('tasks'); setIsMobileMenuOpen(false); }}
+                  className="h-8"
+                  data-testid="button-view-tasks-mobile"
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-1" />
+                  Tasks
                 </Button>
                 <Button
                   size="sm"
