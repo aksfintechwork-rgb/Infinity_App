@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
@@ -10,6 +10,7 @@ import TypingIndicator from './TypingIndicator';
 import NewConversationModal from './NewConversationModal';
 import UserMenu from './UserMenu';
 import AdminPanel from './AdminPanel';
+import Calendar from './Calendar';
 import logoImage from '@assets/image_1761659890673.png';
 
 interface User {
@@ -72,7 +73,7 @@ export default function ChatLayout({
   const [isNewConversationOpen, setIsNewConversationOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const [currentView, setCurrentView] = useState<'chat' | 'admin'>('chat');
+  const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar'>('chat');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = currentUser.role === 'admin';
@@ -118,19 +119,29 @@ export default function ChatLayout({
           </div>
         </div>
 
-        {isAdmin && (
-          <div className="p-2 border-b border-border flex-shrink-0">
-            <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-md">
-              <Button
-                size="sm"
-                variant={currentView === 'chat' ? 'default' : 'ghost'}
-                onClick={() => setCurrentView('chat')}
-                className="h-8"
-                data-testid="button-view-chat"
-              >
-                <MessageSquare className="w-4 h-4 mr-1" />
-                Chat
-              </Button>
+        <div className="p-2 border-b border-border flex-shrink-0">
+          <div className={`grid ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'} gap-1 p-1 bg-muted rounded-md`}>
+            <Button
+              size="sm"
+              variant={currentView === 'chat' ? 'default' : 'ghost'}
+              onClick={() => setCurrentView('chat')}
+              className="h-8"
+              data-testid="button-view-chat"
+            >
+              <MessageSquare className="w-4 h-4 mr-1" />
+              Chat
+            </Button>
+            <Button
+              size="sm"
+              variant={currentView === 'calendar' ? 'default' : 'ghost'}
+              onClick={() => setCurrentView('calendar')}
+              className="h-8"
+              data-testid="button-view-calendar"
+            >
+              <CalendarIcon className="w-4 h-4 mr-1" />
+              Calendar
+            </Button>
+            {isAdmin && (
               <Button
                 size="sm"
                 variant={currentView === 'admin' ? 'default' : 'ghost'}
@@ -141,9 +152,9 @@ export default function ChatLayout({
                 <Shield className="w-4 h-4 mr-1" />
                 Admin
               </Button>
-            </div>
+            )}
           </div>
-        )}
+        </div>
 
         {currentView === 'chat' ? (
           <>
@@ -184,6 +195,12 @@ export default function ChatLayout({
               </div>
             </ScrollArea>
           </>
+        ) : currentView === 'calendar' ? (
+          <div className="flex-1 flex items-center justify-center p-4">
+            <p className="text-sm text-muted-foreground text-center">
+              Switch to Calendar view to manage meetings
+            </p>
+          </div>
         ) : (
           <div className="flex-1 flex items-center justify-center p-4">
             <p className="text-sm text-muted-foreground text-center">
@@ -208,6 +225,8 @@ export default function ChatLayout({
       <div className="flex-1 flex flex-col">
         {currentView === 'admin' ? (
           <AdminPanel token={token} currentUserId={currentUser.id} />
+        ) : currentView === 'calendar' ? (
+          <Calendar currentUser={currentUser} />
         ) : activeConversation ? (
           <>
             <div className="h-16 border-b border-border flex items-center justify-between px-6 flex-shrink-0">

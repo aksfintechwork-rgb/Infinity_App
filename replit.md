@@ -141,6 +141,22 @@ Preferred communication style: Simple, everyday language.
   - Sound effect plays when notifications are shown
   - Notifications only show when user is viewing a different conversation or window is not focused
   - Permission requested automatically after login
+- **NEW**: Meeting Calendar & Video Conferencing System
+  - Added meetings table with title, description, start/end time, creator, and meeting link
+  - Implemented meeting API endpoints: GET/POST/DELETE with authorization controls
+  - Created Calendar view accessible to all users via view switcher (Chat/Calendar/Admin tabs)
+  - Meeting management features:
+    - Create scheduled meetings with date/time selection
+    - Auto-generate video meeting links using Jitsi Meet (free, open-source video conferencing)
+    - List upcoming and past meetings with creator information
+    - Delete meetings (creator or admin only)
+    - Instant meeting functionality - start ad-hoc video calls without scheduling
+  - Integrated Jitsi Meet for audio/video conferencing:
+    - Full-screen iframe embedding for seamless experience
+    - No external account or API key required
+    - Supports camera, microphone, screen sharing, and fullscreen
+    - Leave meeting button returns to calendar view
+  - View switcher now shows: Chat | Calendar | Admin (admin role only)
 - **DATA CLEANUP**: Removed all demo/test data - database now contains only admin and user accounts
 - Login credentials:
   - Admin: loginId="admin" / password="admin123"

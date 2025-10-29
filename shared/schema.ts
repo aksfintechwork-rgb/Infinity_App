@@ -102,7 +102,12 @@ export const meetings = pgTable("meetings", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-const _baseMeetingSchema = createInsertSchema(meetings, {});
+const _baseMeetingSchema = createInsertSchema(meetings, {
+  meetingLink: z.string().optional().refine(
+    (link) => !link || link.startsWith('https://meet.jit.si/'),
+    { message: 'Meeting link must be a Jitsi Meet URL (https://meet.jit.si/...)' }
+  ),
+});
 
 export const insertMeetingSchema = _baseMeetingSchema.omit({
   // @ts-ignore - drizzle-zod type inference issue
