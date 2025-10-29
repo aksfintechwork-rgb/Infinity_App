@@ -26,15 +26,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Login ID and password required" });
       }
 
+      console.log(`[LOGIN] Attempting login for loginId: "${loginId}"`);
       const user = await storage.getUserByLoginId(loginId);
       if (!user) {
+        console.log(`[LOGIN] User not found for loginId: "${loginId}"`);
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
+      console.log(`[LOGIN] User found: "${user.name}" (loginId: "${user.loginId}")`);
       const isPasswordValid = await comparePassword(password, user.password);
       if (!isPasswordValid) {
+        console.log(`[LOGIN] Invalid password for user: "${user.name}"`);
         return res.status(401).json({ error: "Invalid credentials" });
       }
+      console.log(`[LOGIN] Successful login for user: "${user.name}"`);
+
 
       const token = generateToken(user.id);
       const { password: _, ...userWithoutPassword } = user;
