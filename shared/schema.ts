@@ -50,6 +50,13 @@ export const insertConversationSchema = _baseConversationSchema.omit({
 
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type Conversation = typeof conversations.$inferSelect;
+export type ConversationWithDetails = Conversation & {
+  members: string;
+  memberIds: number[];
+  memberCount: number;
+  lastMessage?: string;
+  lastMessageTime?: Date;
+};
 
 export const conversationMembers = pgTable("conversation_members", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

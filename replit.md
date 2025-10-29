@@ -133,3 +133,25 @@ Preferred communication style: Simple, everyday language.
   - **Validation**: Create button disabled until group name is entered for groups (2+ members)
   - **Display**: Group names shown prominently in conversation list and chat header with group icon
   - **Direct Messages**: 1-on-1 chats don't require a title (shows member names automatically)
+
+- **NEW FEATURE: Add Members to Existing Groups** 
+  - **Purpose**: Allows users to add new members to existing group conversations with optional access to message history
+  - **Key Features**:
+    - "Add Members" button visible in chat header (groups only, not direct messages)
+    - Select multiple users to add at once from available users list
+    - Optional "Give access to message history" checkbox:
+      - **Unchecked** (default): New members only see messages sent after they join
+      - **Checked**: New members can see full conversation history from before they joined
+    - Smart filtering: Already-added members don't appear in the selection modal
+    - Reliable UI updates: Page reload after successful addition ensures consistency
+  - **Implementation**:
+    - Database: Added `canViewHistory` boolean field to `conversation_members` table
+    - Backend API: POST `/api/conversations/:id/members` endpoint with history access control
+    - Frontend: `AddMembersModal` component with member selection and history access toggle
+    - Message Filtering: Server-side enforcement based on `joinedAt` timestamp and `canViewHistory` flag
+    - Member IDs: Backend returns `memberIds` array for accurate filtering of available users
+  - **Testing**: End-to-end playwright tests passed - verified both scenarios (with/without history access)
+  - **Use Cases**:
+    - Add employees to project groups mid-project
+    - Grant consultants access to team discussions
+    - Control whether new members see sensitive historical conversations

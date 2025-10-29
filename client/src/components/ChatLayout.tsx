@@ -2,16 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
 import TypingIndicator from './TypingIndicator';
 import NewConversationModal from './NewConversationModal';
+import AddMembersModal from './AddMembersModal';
 import UserMenu from './UserMenu';
 import AdminPanel from './AdminPanel';
 import Calendar from './Calendar';
 import logoImage from '@assets/image_1761659890673.png';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 
 interface User {
   id: number;
@@ -71,6 +73,7 @@ export default function ChatLayout({
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [isNewConversationOpen, setIsNewConversationOpen] = useState(false);
+  const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar'>('chat');
@@ -93,6 +96,30 @@ export default function ChatLayout({
       conv.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       conv.members.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const getAvailableUsersForGroup = () => {
+    if (!activeConversation?.isGroup) return [];
+    
+    const conv = activeConversation as any;
+    const currentMemberIds: number[] = conv.memberIds || [];
+    
+    return allUsers.filter(user => !currentMemberIds.includes(user.id));
+  };
+
+  const handleAddMembers = async (memberIds: number[], canViewHistory: boolean) => {
+    if (!activeConversationId) return;
+    
+    try {
+      await apiRequest('POST', `/api/conversations/${activeConversationId}/members`, {
+        memberIds,
+        canViewHistory,
+      });
+      
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to add members:', error);
+    }
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -247,6 +274,17 @@ export default function ChatLayout({
                   )}
                 </div>
               </div>
+              {activeConversation.isGroup && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAddMembersOpen(true)}
+                  data-testid="button-add-members-to-group"
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Add Members
+                </Button>
+              )}
             </div>
 
             <ScrollArea className="flex-1 px-6 py-4">
@@ -289,6 +327,14 @@ export default function ChatLayout({
         onClose={() => setIsNewConversationOpen(false)}
         users={allUsers.filter((u) => u.id !== currentUser.id)}
         onCreateConversation={onCreateConversation}
+      />
+
+      <AddMembersModal
+        isOpen={isAddMembersOpen}
+        onClose={() => setIsAddMembersOpen(false)}
+        onAddMembers={handleAddMembers}
+        availableUsers={getAvailableUsersForGroup()}
+        conversationTitle={activeConversation?.title || activeConversation?.members || 'Group'}
       />
     </div>
   );

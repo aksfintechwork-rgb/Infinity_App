@@ -189,6 +189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return {
             ...conv,
             members: memberNames,
+            memberIds: members.map(m => m.id),
             memberCount: members.length,
             lastMessage: lastMessage?.body || undefined,
             lastMessageTime: lastMessage?.createdAt || undefined,
