@@ -9,7 +9,8 @@ export type UserRole = z.infer<typeof userRoleEnum>;
 export const users = pgTable("users", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: text("name").notNull(),
-  email: text("email").notNull().unique(),
+  loginId: text("login_id").unique(),
+  email: text("email"),
   password: text("password").notNull(),
   role: text("role").notNull().default("user"),
   avatar: text("avatar"),
@@ -23,6 +24,7 @@ export const insertUserSchema = createInsertSchema(users)
   })
   .extend({
     role: userRoleEnum.default("user"),
+    loginId: z.string().min(3).max(32).regex(/^[a-zA-Z0-9_-]+$/, "Login ID can only contain letters, numbers, dashes, and underscores"),
   });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
