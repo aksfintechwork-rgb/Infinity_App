@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Eye, EyeOff } from 'lucide-react';
 import logoImage from '@assets/image_1761743625103.png';
 
 interface LoginPageProps {
@@ -12,10 +13,19 @@ interface LoginPageProps {
 export default function LoginPage({ onLogin }: LoginPageProps) {
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin(loginId, password);
+    
+    // Mobile-safe normalization: Remove hidden chars and normalize Unicode
+    const nfkc = (s: string) => (s || '').normalize('NFKC');
+    const sanitize = (s: string) => nfkc(s).replace(/[\u0000-\u001F\u007F\u200B\u00A0]/g, '').trim();
+    
+    const cleanLoginId = sanitize(loginId);
+    const cleanPassword = nfkc(password);
+    
+    onLogin(cleanLoginId, cleanPassword);
   };
 
   return (
@@ -44,6 +54,9 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                   required
                   data-testid="input-login-id"
                   autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
                 <p className="text-xs text-muted-foreground">
                   Use the login ID provided by your administrator
@@ -51,16 +64,35 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="login-password">Password</Label>
-                <Input
-                  id="login-password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  data-testid="input-login-password"
-                  autoComplete="current-password"
-                />
+                <div className="relative">
+                  <Input
+                    id="login-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    data-testid="input-login-password"
+                    autoComplete="current-password"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                    data-testid="button-toggle-password"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
               </div>
               <Button type="submit" className="w-full" data-testid="button-login">
                 Sign In

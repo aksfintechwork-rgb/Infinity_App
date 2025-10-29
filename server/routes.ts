@@ -27,11 +27,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     try {
-      const { loginId, password } = req.body;
+      // Mobile-safe input normalization: NFKC normalization + hidden char removal
+      const nfkc = (s: string) => (s || "").normalize("NFKC");
+      const sanitize = (s: string) => nfkc(s).replace(/[\u0000-\u001F\u007F\u200B\u00A0]/g, "").trim();
 
-      if (!loginId || !password) {
-        console.log(`[LOGIN] ❌ Missing credentials - loginId: "${loginId || 'EMPTY'}", password length: ${password?.length || 0}`);
+      const rawLoginId = req.body.loginId;
+      const rawPassword = req.body.password;
+
+      if (!rawLoginId || !rawPassword) {
+        console.log(`[LOGIN] ❌ Missing credentials - loginId: "${rawLoginId || 'EMPTY'}", password length: ${rawPassword?.length || 0}`);
         return res.status(400).json({ error: "Login ID and password required" });
+      }
+
+      // Normalize and sanitize loginId (remove hidden chars, trim)
+      // Normalize password (NFKC only, preserve actual spaces)
+      const loginId = sanitize(rawLoginId);
+      const password = nfkc(rawPassword);
+
+      // Log any normalization differences for debugging
+      if (rawLoginId !== loginId) {
+        console.log(`[LOGIN] 🧹 LoginID normalized: "${rawLoginId}" → "${loginId}" (removed ${rawLoginId.length - loginId.length} hidden chars)`);
+      }
+      if (rawPassword !== password) {
+        console.log(`[LOGIN] 🧹 Password normalized (length: ${rawPassword.length} → ${password.length})`);
       }
 
       console.log(`[LOGIN] 🔍 Attempting login for loginId: "${loginId}" (length: ${loginId.length}, password length: ${password.length})`);
