@@ -168,6 +168,13 @@ function App() {
       // Initialize audio from this user gesture
       initializeAudio();
       
+      // CRITICAL: Clear old token FIRST to prevent race conditions
+      localStorage.removeItem('auth_token');
+      setToken(null);
+      
+      // Small delay to ensure WebSocket closes with old token
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const response = await api.login(loginId, password);
       localStorage.setItem('auth_token', response.token);
       setToken(response.token);
