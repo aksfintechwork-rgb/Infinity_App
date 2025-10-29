@@ -16,7 +16,7 @@ import {
   meetings,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { eq, and, desc, inArray, sql } from "drizzle-orm";
 
 export interface IStorage {
   getUserById(id: number): Promise<User | undefined>;
@@ -56,7 +56,10 @@ export class PostgresStorage implements IStorage {
   }
 
   async getUserByLoginId(loginId: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.loginId, loginId)).limit(1);
+    // Case-insensitive login ID lookup
+    const result = await db.select().from(users).where(
+      sql`LOWER(${users.loginId}) = LOWER(${loginId})`
+    ).limit(1);
     return result[0];
   }
 
