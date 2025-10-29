@@ -19,6 +19,7 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
   const queryClient = useQueryClient();
   const [newUser, setNewUser] = useState({
     name: '',
+    loginId: '',
     email: '',
     password: '',
     role: 'user' as 'admin' | 'user',
@@ -33,7 +34,7 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
     mutationFn: (data: typeof newUser) => api.createUserAsAdmin(token, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      setNewUser({ name: '', email: '', password: '', role: 'user' });
+      setNewUser({ name: '', loginId: '', email: '', password: '', role: 'user' });
       toast({
         title: 'Success',
         description: 'User created successfully',
@@ -50,10 +51,10 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUser.name || !newUser.email || !newUser.password) {
+    if (!newUser.name || !newUser.loginId || !newUser.password) {
       toast({
         title: 'Error',
-        description: 'Please fill in all fields',
+        description: 'Please fill in all required fields',
         variant: 'destructive',
       });
       return;
@@ -83,7 +84,7 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name">Full Name *</Label>
                 <Input
                   id="name"
                   data-testid="input-admin-name"
@@ -93,7 +94,22 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="loginId">Login ID *</Label>
+                <Input
+                  id="loginId"
+                  data-testid="input-admin-loginid"
+                  placeholder="john123 or employee001"
+                  value={newUser.loginId}
+                  onChange={(e) => setNewUser({ ...newUser, loginId: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Simple username for login (letters, numbers, dashes, underscores only)
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address (Optional)</Label>
                 <Input
                   id="email"
                   data-testid="input-admin-email"
@@ -103,10 +119,8 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                 />
               </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Password *</Label>
                 <Input
                   id="password"
                   data-testid="input-admin-password"
@@ -116,6 +130,8 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
                   onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                 />
               </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
                 <Select
@@ -179,9 +195,14 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
                           <span className="text-xs text-muted-foreground">(You)</span>
                         )}
                       </div>
-                      <div className="text-sm text-muted-foreground" data-testid={`text-user-email-${user.id}`}>
-                        {user.email}
+                      <div className="text-sm text-muted-foreground" data-testid={`text-user-loginid-${user.id}`}>
+                        Login ID: {user.loginId}
                       </div>
+                      {user.email && (
+                        <div className="text-xs text-muted-foreground" data-testid={`text-user-email-${user.id}`}>
+                          {user.email}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
