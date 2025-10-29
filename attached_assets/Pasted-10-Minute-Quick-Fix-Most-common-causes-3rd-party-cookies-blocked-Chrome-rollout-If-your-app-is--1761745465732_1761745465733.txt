@@ -1,0 +1,217 @@
+10-Minute Quick Fix (Most common causes)
+
+3rd-party cookies blocked (Chrome rollout)
+If your app is on app.example.com and auth cookie comes from api.example.com inside an iframe/redirect or different site, many devices will block it.
+Fix (prefer): keep auth on the same site (reverse-proxy /auth behind your main domain).
+If you must use cross-site cookies: set SameSite=None; Secure and ensure login happens in a top-level navigation (no iframes/popups). Avoid embedded auth.
+
+Cookie attributes wrong
+Use exactly:
+
+Set-Cookie: session=<token>; Path=/; HttpOnly; Secure; SameSite=None; Domain=.example.com; Max-Age=...
+Cache-Control: no-store
+
+
+Client must send cookies with:
+
+fetch(API_URL+"/auth/login", { method: "POST", credentials: "include", headers: {"Content-Type":"application/json"}, body: JSON.stringify({email, password}) })
+
+
+CORS not allowing credentials
+Server must return:
+
+Access-Control-Allow-Origin: https://app.example.com
+Access-Control-Allow-Credentials: true
+Vary: Origin
+
+
+and handle OPTIONS correctly.
+
+Clock skew on failing devices
+
+60s drift → JWT invalid only on some devices.
+Fix: sync time, then retry.
+
+Service worker / extension interference
+Incognito with all extensions off, unregister SW, clear storage (cookies, localStorage, IndexedDB), then retry.
+
+🔎 Rapid Repro Pack (paste into your issue/QA ticket)
+A) One-shot browser checks (run on failing device)
+
+Open Console and paste:
+
+(async () => {
+  const API = "https://api.example.com";  // change
+  const APP = "https://app.example.com";  // change
+  console.log("Origin:", location.origin);
+
+  // 1) Cookie write test (first-party)
+  document.cookie = "x_test_fp=1; Path=/; SameSite=Lax";
+  console.log("Cookies after write:", document.cookie);
+
+  // 2) Third-party cookie sanity (blocked on many devices/browsers)
+  // If your auth relies on third-party cookies, this will likely be false
+  const thirdPartyBlocked = !navigator.cookieEnabled || (await Promise.resolve(true) && false); 
+  console.log("Likely third-party cookie blocked:", thirdPartyBlocked);
+
+  // 3) Time skew
+  const tLocal = Date.now()/1000;
+  const tServer = await fetch(API+"/time", {cache:"no-store"}).then(r=>r.json()).catch(()=>({epoch:null}));
+  console.log("Local epoch:", tLocal, "Server epoch:", tServer.epoch);
+
+  // 4) CORS preflight test
+  const pre = await fetch(API+"/auth/login", {
+    method:"OPTIONS",
+    headers:{"Origin": APP, "Access-Control-Request-Method":"POST", "Access-Control-Request-Headers":"content-type"}
+  }).then(r=>({status:r.status, hdr:Object.fromEntries(r.headers)})).catch(e=>({err:String(e)}));
+  console.log("Preflight:", pre);
+
+  // 5) Login attempt (dry run)
+  const res = await fetch(API+"/auth/login", {
+    method:"POST",
+    credentials:"include",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({email:"test@example.com", password:"test"})
+  }).then(async r=>({status:r.status, hdr:Object.fromEntries(r.headers), body:await r.text()}))
+    .catch(e=>({err:String(e)}));
+  console.log("Login response:", res);
+
+  // 6) Check if cookie stored
+  console.log("Cookie jar now:", document.cookie);
+})();
+
+
+What to look for
+
+Preflight: status 204/200 and headers include Allow-Origin (exact app origin) and Allow-Credentials: true.
+
+After login: response has Set-Cookie and the cookie is present in browser (if not → attributes wrong or blocked).
+
+Time skew ≤ 60s.
+
+B) Curl scripts (run on both working and failing devices; compare)
+
+Connectivity & TLS
+
+curl -v https://api.example.com/health
+
+
+CORS (simulate browser)
+
+curl -i https://api.example.com/auth/login \
+  -H "Origin: https://app.example.com" \
+  -H "Content-Type: application/json" \
+  --data '{"email":"test@example.com","password":"test"}'
+# Expect: Access-Control-Allow-Origin: https://app.example.com
+#         Access-Control-Allow-Credentials: true
+#         Set-Cookie: session=...
+
+
+Who am I (cookie must be sent back)
+
+# Copy the "Set-Cookie: session=..." value from previous response
+curl -i https://api.example.com/me \
+  -H "Cookie: session=<paste value>"
+
+
+DNS compare
+
+nslookup api.example.com
+
+🧱 Fix Recipes (choose your setup)
+1) Same-Site (Best practice)
+
+Put auth behind the same origin as your web app:
+
+Route /auth/* via your main domain (reverse-proxy to auth service).
+
+Cookies can then be SameSite=Lax or Strict and will work across devices.
+
+Nginx sample
+
+server {
+  server_name app.example.com;
+  location /auth/ {
+    proxy_pass http://auth_upstream;
+    proxy_set_header Host $host;
+    add_header Cache-Control "no-store" always;
+  }
+}
+
+2) Cross-subdomain cookie (works if top-level, not 3rd-party)
+
+Server:
+
+Set-Cookie: session=...; Path=/; HttpOnly; Secure; SameSite=None; Domain=.example.com
+Access-Control-Allow-Origin: https://app.example.com
+Access-Control-Allow-Credentials: true
+Vary: Origin
+
+
+Client:
+
+fetch("https://api.example.com/auth/login", { method:"POST", credentials:"include", ... })
+
+3) Token-header (avoid cookies entirely)
+
+After login, return JSON {access_token, refresh_token} and use Authorization header for all calls.
+
+Client:
+
+localStorage.setItem("access_token", token);
+api.interceptors.request.use(cfg => {
+  const t = localStorage.getItem("access_token");
+  if (t) cfg.headers.Authorization = `Bearer ${t}`;
+  return cfg;
+});
+
+
+Server: mark /auth/* as Cache-Control: no-store; ensure clocks are synced.
+
+🧰 Server config snippets
+
+Express
+
+app.use(cors({
+  origin: "https://app.example.com",
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"],
+  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"]
+}));
+
+res.cookie("session", token, {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  domain: ".example.com",
+  path: "/",
+  maxAge: 60*60*1000
+});
+
+
+Nginx CORS preflight
+
+location /auth/ {
+  if ($request_method = OPTIONS) {
+    add_header Access-Control-Allow-Origin "https://app.example.com" always;
+    add_header Access-Control-Allow-Credentials "true" always;
+    add_header Access-Control-Allow-Headers "Content-Type, Authorization" always;
+    add_header Access-Control-Allow-Methods "GET,POST,PUT,PATCH,DELETE,OPTIONS" always;
+    return 204;
+  }
+  add_header Access-Control-Allow-Origin "https://app.example.com" always;
+  add_header Access-Control-Allow-Credentials "true" always;
+  proxy_pass http://auth_upstream;
+}
+
+✅ Final Verification Checklist (run after changes)
+
+Login works on two different devices and two networks.
+
+Cookie or token persists after refresh; /me returns 200.
+
+No Console warnings for CORS, SameSite, Mixed Content.
+
+No caching on /auth/* endpoints (Cache-Control: no-store).
+
+Time skew < 60s on failing devices.
