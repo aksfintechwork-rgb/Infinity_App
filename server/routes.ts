@@ -13,6 +13,38 @@ interface WebSocketClient extends WebSocket {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // One-time setup endpoint - creates initial admin user only if database is empty
+  app.post("/api/setup/initialize", async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      if (users.length > 0) {
+        return res.status(403).json({ error: "Setup already completed. Database has users." });
+      }
+
+      // Create initial admin user with default credentials
+      const hashedPassword = await hashPassword("admin123");
+      const adminUser = await storage.createUser({
+        name: "Admin User",
+        loginId: "admin",
+        email: "admin@supremotraders.com",
+        password: hashedPassword,
+        role: "admin"
+      });
+
+      console.log(`[SETUP] ✅ Initial admin user created: ${adminUser.name} (loginId: ${adminUser.loginId})`);
+      
+      return res.json({ 
+        success: true, 
+        message: "Initial admin user created successfully",
+        loginId: "admin",
+        note: "Use loginId 'admin' with password 'admin123' to login"
+      });
+    } catch (error: any) {
+      console.error("[SETUP] ❌ Setup failed:", error);
+      return res.status(500).json({ error: "Setup failed", details: error.message });
+    }
+  });
+
   // Public registration disabled - only admins can create users via /api/admin/users
   app.post("/api/auth/register", async (req, res) => {
     return res.status(403).json({ error: "Public registration is disabled. Please contact your administrator for an account." });
