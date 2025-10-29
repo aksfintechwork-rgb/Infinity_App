@@ -53,7 +53,12 @@ export class PostgresStorage implements IStorage {
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(user).returning();
+    // Convert empty email string to null
+    const userData: typeof user & { email?: string | null } = {
+      ...user,
+      email: user.email && user.email.trim() !== '' ? user.email : null,
+    };
+    const result = await db.insert(users).values(userData as any).returning();
     return result[0];
   }
 
