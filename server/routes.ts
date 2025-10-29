@@ -26,6 +26,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   };
 
+  // Helper function to broadcast task updates (only to authorized users)
+  const broadcastTaskUpdate = (type: 'task_created' | 'task_updated' | 'task_deleted', taskData: any, authorizedUserIds: number[]) => {
+    if (!wss) return;
+    
+    // Require non-empty authorized user IDs to prevent inadvertent broadcasts
+    if (!authorizedUserIds || authorizedUserIds.length === 0) {
+      console.error(`[SECURITY] Attempted to broadcast ${type} without authorized user IDs`);
+      return;
+    }
+    
+    wss.clients.forEach((client: WebSocketClient) => {
+      if (client.readyState === WebSocket.OPEN && client.userId) {
+        // Only send to users in the authorized list (creator and/or assignee)
+        if (authorizedUserIds.includes(client.userId)) {
+          client.send(JSON.stringify({ type, data: taskData }));
+        }
+      }
+    });
+  };
+
   // One-time setup endpoint - creates initial admin user only if database is empty
   app.post("/api/setup/initialize", async (req, res) => {
     try {
@@ -524,6 +544,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const task = await storage.createTask(validation.data);
       const taskDetails = await storage.getTaskById(task.id);
       
+      if (!taskDetails) {
+        return res.status(500).json({ error: "Failed to retrieve created task" });
+      }
+      
+      // Collect authorized user IDs
+      const authorizedUserIds = [taskDetails.createdBy];
+      if (taskDetails.assignedTo) {
+        authorizedUserIds.push(taskDetails.assignedTo);
+      }
+      
+      broadcastTaskUpdate('task_created', taskDetails, authorizedUserIds);
+      
       res.status(201).json(taskDetails);
     } catch (error) {
       console.error("Create task error:", error);
@@ -601,6 +633,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedTask = await storage.updateTask(taskId, req.body);
       const taskDetails = await storage.getTaskById(taskId);
       
+      if (!taskDetails) {
+        return res.status(500).json({ error: "Failed to retrieve updated task" });
+      }
+      
+      // Collect authorized user IDs
+      const authorizedUserIds = [taskDetails.createdBy];
+      if (taskDetails.assignedTo) {
+        authorizedUserIds.push(taskDetails.assignedTo);
+      }
+      
+      broadcastTaskUpdate('task_updated', taskDetails, authorizedUserIds);
+      
       res.json(taskDetails);
     } catch (error) {
       console.error("Update task error:", error);
@@ -626,7 +670,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Only the task creator can delete this task" });
       }
 
+      // Collect authorized user IDs before deletion
+      const authorizedUserIds = [task.createdBy];
+      if (task.assignedTo) {
+        authorizedUserIds.push(task.assignedTo);
+      }
+
       await storage.deleteTask(taskId);
+      
+      broadcastTaskUpdate('task_deleted', { id: taskId }, authorizedUserIds);
+      
       res.json({ message: "Task deleted successfully" });
     } catch (error) {
       console.error("Delete task error:", error);

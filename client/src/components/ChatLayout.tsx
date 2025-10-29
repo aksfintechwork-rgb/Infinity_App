@@ -57,6 +57,11 @@ interface ChatLayoutProps {
   onFileUpload: (file: File) => Promise<string>;
   onLogout: () => void;
   onConversationSelect?: (conversationId: number) => void;
+  ws?: {
+    isConnected: boolean;
+    send: (message: any) => void;
+    on: (type: string, callback: (data: any) => void) => () => void;
+  };
 }
 
 export default function ChatLayout({
@@ -69,6 +74,7 @@ export default function ChatLayout({
   onFileUpload,
   onLogout,
   onConversationSelect,
+  ws,
 }: ChatLayoutProps) {
   const [activeConversationId, setActiveConversationId] = useState<number | null>(
     conversations[0]?.id || null
@@ -268,7 +274,7 @@ export default function ChatLayout({
         ) : currentView === 'calendar' ? (
           <Calendar currentUser={currentUser} />
         ) : currentView === 'tasks' ? (
-          <Tasks currentUser={currentUser} allUsers={allUsers} />
+          <Tasks currentUser={currentUser} allUsers={allUsers} ws={ws} />
         ) : activeConversation ? (
           <>
             <div className="h-16 border-b border-border flex items-center justify-between px-4 md:px-6 flex-shrink-0">

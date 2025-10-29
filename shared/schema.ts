@@ -136,8 +136,8 @@ export const tasks = pgTable("tasks", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   title: text("title").notNull(),
   description: text("description"),
-  startDate: timestamp("start_date").notNull(),
-  targetDate: timestamp("target_date").notNull(),
+  startDate: timestamp("start_date"),
+  targetDate: timestamp("target_date"),
   status: text("status").notNull().default("pending"),
   remark: text("remark"),
   createdBy: integer("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -148,8 +148,12 @@ export const tasks = pgTable("tasks", {
 });
 
 const _baseTaskSchema = createInsertSchema(tasks, {
-  startDate: z.string().transform((val) => new Date(val)),
-  targetDate: z.string().transform((val) => new Date(val)),
+  startDate: z.string().optional().nullable().refine((val) => !val || !isNaN(Date.parse(val)), {
+    message: "Start date must be a valid date string",
+  }).transform((val) => val ? new Date(val) : null),
+  targetDate: z.string().optional().nullable().refine((val) => !val || !isNaN(Date.parse(val)), {
+    message: "Target date must be a valid date string",
+  }).transform((val) => val ? new Date(val) : null),
   status: taskStatusEnum.default("pending"),
 });
 

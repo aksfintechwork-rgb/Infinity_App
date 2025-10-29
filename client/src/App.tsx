@@ -292,6 +292,7 @@ function App() {
             onFileUpload={handleFileUpload}
             onLogout={handleLogout}
             onConversationSelect={loadConversationMessages}
+            ws={ws}
           />
         )}
         <Toaster />

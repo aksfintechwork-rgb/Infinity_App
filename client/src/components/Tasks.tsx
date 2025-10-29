@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +44,11 @@ interface TaskWithDetails {
 interface TasksProps {
   currentUser: User;
   allUsers: User[];
+  ws?: {
+    isConnected: boolean;
+    send: (message: any) => void;
+    on: (type: string, callback: (data: any) => void) => () => void;
+  };
 }
 
 const taskFormSchema = z.object({
@@ -64,11 +69,45 @@ const statusConfig = {
   cancelled: { label: 'Cancelled', icon: XCircle, color: 'bg-gray-500/20 text-gray-700 dark:text-gray-400' },
 };
 
-export default function Tasks({ currentUser, allUsers }: TasksProps) {
+export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [filterView, setFilterView] = useState<'all' | 'created' | 'assigned'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
+
+  // Listen for WebSocket task updates
+  useEffect(() => {
+    if (!ws || !ws.isConnected) return;
+
+    const unsubscribeCreated = ws.on('task_created', (taskData) => {
+      // Invalidate all task queries to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+    });
+
+    const unsubscribeUpdated = ws.on('task_updated', (taskData) => {
+      // Invalidate all task queries to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+      // Update selected task if it's the one being updated
+      if (selectedTask && taskData.id === selectedTask.id) {
+        setSelectedTask(taskData);
+      }
+    });
+
+    const unsubscribeDeleted = ws.on('task_deleted', (data) => {
+      // Invalidate all task queries to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+      // Clear selected task if it was deleted
+      if (selectedTask && data.id === selectedTask.id) {
+        setSelectedTask(null);
+      }
+    });
+
+    return () => {
+      unsubscribeCreated();
+      unsubscribeUpdated();
+      unsubscribeDeleted();
+    };
+  }, [ws, selectedTask]);
 
   const { data: tasks = [], isLoading } = useQuery<TaskWithDetails[]>({
     queryKey: ['/api/tasks', filterView],
