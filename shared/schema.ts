@@ -17,15 +17,17 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users)
-  .omit({
-    id: true,
-    createdAt: true,
-  })
-  .extend({
-    role: userRoleEnum.default("user"),
-    loginId: z.string().min(3).max(32).regex(/^[a-zA-Z0-9_-]+$/, "Login ID can only contain letters, numbers, dashes, and underscores"),
-  });
+const _baseUserSchema = createInsertSchema(users, {
+  loginId: z.string().min(3).max(32).regex(/^[a-zA-Z0-9_-]+$/, "Login ID can only contain letters, numbers, dashes, and underscores"),
+  role: userRoleEnum.default("user"),
+});
+
+export const insertUserSchema = _baseUserSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  createdAt: true,
+});
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -37,8 +39,12 @@ export const conversations = pgTable("conversations", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertConversationSchema = createInsertSchema(conversations).omit({
+const _baseConversationSchema = createInsertSchema(conversations, {});
+
+export const insertConversationSchema = _baseConversationSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
   id: true,
+  // @ts-ignore - drizzle-zod type inference issue
   createdAt: true,
 });
 
@@ -52,8 +58,12 @@ export const conversationMembers = pgTable("conversation_members", {
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
 });
 
-export const insertConversationMemberSchema = createInsertSchema(conversationMembers).omit({
+const _baseConversationMemberSchema = createInsertSchema(conversationMembers, {});
+
+export const insertConversationMemberSchema = _baseConversationMemberSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
   id: true,
+  // @ts-ignore - drizzle-zod type inference issue
   joinedAt: true,
 });
 
@@ -69,8 +79,12 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertMessageSchema = createInsertSchema(messages).omit({
+const _baseMessageSchema = createInsertSchema(messages, {});
+
+export const insertMessageSchema = _baseMessageSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
   id: true,
+  // @ts-ignore - drizzle-zod type inference issue
   createdAt: true,
 });
 
