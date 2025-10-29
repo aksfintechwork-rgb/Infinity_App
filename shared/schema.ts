@@ -56,6 +56,7 @@ export const conversationMembers = pgTable("conversation_members", {
   conversationId: integer("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
+  canViewHistory: boolean("can_view_history").notNull().default(true),
 });
 
 const _baseConversationMemberSchema = createInsertSchema(conversationMembers, {});
