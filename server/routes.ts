@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { hashPassword, comparePassword, generateToken, authMiddleware, getCurrentUser, requireAdmin, type AuthRequest, verifyToken } from "./auth";
-import { insertUserSchema, insertConversationSchema, insertMessageSchema } from "@shared/schema";
+import { insertUserSchema, insertConversationSchema, insertMessageSchema, insertMeetingSchema } from "@shared/schema";
 import { z } from "zod";
 import { upload, getFileUrl } from "./upload";
 import { WebSocketServer, WebSocket } from "ws";
@@ -250,6 +250,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Create message error:", error);
       res.status(500).json({ error: "Failed to create message" });
+    }
+  });
+
+  app.get("/api/meetings", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const meetings = await storage.getAllMeetings();
+      
+      const meetingsWithCreatorInfo = await Promise.all(
+        meetings.map(async (meeting) => {
+          const creator = await storage.getUserById(meeting.createdBy);
+          return {
+            ...meeting,
+            creatorName: creator?.name || 'Unknown',
+          };
+        })
+      );
+
+      res.json(meetingsWithCreatorInfo);
+    } catch (error) {
+      console.error("Get meetings error:", error);
+      res.status(500).json({ error: "Failed to fetch meetings" });
+    }
+  });
+
+  app.post("/api/meetings", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const validation = insertMeetingSchema.safeParse({
+        ...req.body,
+        createdBy: req.userId,
+      });
+
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid input", details: validation.error });
+      }
+
+      const meeting = await storage.createMeeting(validation.data);
+      const creator = await storage.getUserById(meeting.createdBy);
+
+      res.status(201).json({
+        ...meeting,
+        creatorName: creator?.name || 'Unknown',
+      });
+    } catch (error) {
+      console.error("Create meeting error:", error);
+      res.status(500).json({ error: "Failed to create meeting" });
+    }
+  });
+
+  app.delete("/api/meetings/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const meetingId = parseInt(req.params.id);
+      const meeting = await storage.getMeetingById(meetingId);
+
+      if (!meeting) {
+        return res.status(404).json({ error: "Meeting not found" });
+      }
+
+      const user = await storage.getUserById(req.userId);
+      if (meeting.createdBy !== req.userId && user?.role !== 'admin') {
+        return res.status(403).json({ error: "Only the creator or an admin can delete this meeting" });
+      }
+
+      await storage.deleteMeeting(meetingId);
+      res.json({ message: "Meeting deleted successfully" });
+    } catch (error) {
+      console.error("Delete meeting error:", error);
+      res.status(500).json({ error: "Failed to delete meeting" });
     }
   });
 

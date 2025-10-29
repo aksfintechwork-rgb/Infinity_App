@@ -7,10 +7,13 @@ import {
   type InsertMessage,
   type ConversationMember,
   type InsertConversationMember,
+  type Meeting,
+  type InsertMeeting,
   users,
   conversations,
   messages,
   conversationMembers,
+  meetings,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, inArray } from "drizzle-orm";
@@ -33,6 +36,11 @@ export interface IStorage {
   createMessage(message: InsertMessage): Promise<Message>;
   getMessagesByConversationId(conversationId: number): Promise<Message[]>;
   getLastMessageByConversationId(conversationId: number): Promise<Message | undefined>;
+  
+  createMeeting(meeting: InsertMeeting): Promise<Meeting>;
+  getAllMeetings(): Promise<Meeting[]>;
+  getMeetingById(id: number): Promise<Meeting | undefined>;
+  deleteMeeting(id: number): Promise<void>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -142,6 +150,24 @@ export class PostgresStorage implements IStorage {
       .limit(1);
     
     return result[0];
+  }
+
+  async createMeeting(meeting: InsertMeeting): Promise<Meeting> {
+    const result = await db.insert(meetings).values(meeting).returning();
+    return result[0];
+  }
+
+  async getAllMeetings(): Promise<Meeting[]> {
+    return db.select().from(meetings).orderBy(meetings.startTime);
+  }
+
+  async getMeetingById(id: number): Promise<Meeting | undefined> {
+    const result = await db.select().from(meetings).where(eq(meetings.id, id)).limit(1);
+    return result[0];
+  }
+
+  async deleteMeeting(id: number): Promise<void> {
+    await db.delete(meetings).where(eq(meetings.id, id));
   }
 }
 
