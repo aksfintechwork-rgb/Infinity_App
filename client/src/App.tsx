@@ -181,24 +181,6 @@ function App() {
     }
   };
 
-  const handleRegister = async (name: string, loginId: string, email: string, password: string) => {
-    try {
-      // Initialize audio from this user gesture
-      initializeAudio();
-      
-      const response = await api.register(name, loginId, email, password);
-      localStorage.setItem('auth_token', response.token);
-      setToken(response.token);
-      setCurrentUser(response.user);
-    } catch (error: any) {
-      toast({
-        title: 'Registration Failed',
-        description: error.message || 'Failed to create account',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const handleSendMessage = useCallback(
     (conversationId: number, body: string, attachmentUrl?: string) => {
       if (!body && !attachmentUrl) return;
@@ -271,7 +253,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         {!currentUser ? (
-          <LoginPage onLogin={handleLogin} onRegister={handleRegister} />
+          <LoginPage onLogin={handleLogin} />
         ) : (
           <ChatLayout
             currentUser={currentUser}

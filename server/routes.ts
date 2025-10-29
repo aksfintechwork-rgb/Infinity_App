@@ -13,41 +13,9 @@ interface WebSocketClient extends WebSocket {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Public registration disabled - only admins can create users via /api/admin/users
   app.post("/api/auth/register", async (req, res) => {
-    try {
-      const validation = insertUserSchema.omit({ role: true }).safeParse(req.body);
-      if (!validation.success) {
-        return res.status(400).json({ error: "Invalid input", details: validation.error });
-      }
-
-      const { name, loginId, email, password, avatar } = validation.data;
-
-      const existingUser = await storage.getUserByLoginId(loginId);
-      if (existingUser) {
-        return res.status(400).json({ error: "Login ID already taken" });
-      }
-
-      const hashedPassword = await hashPassword(password);
-      const user = await storage.createUser({
-        name,
-        loginId,
-        email,
-        password: hashedPassword,
-        role: "user",
-        avatar,
-      });
-
-      const token = generateToken(user.id);
-      const { password: _, ...userWithoutPassword } = user;
-
-      res.status(201).json({
-        user: userWithoutPassword,
-        token,
-      });
-    } catch (error) {
-      console.error("Register error:", error);
-      res.status(500).json({ error: "Registration failed" });
-    }
+    return res.status(403).json({ error: "Public registration is disabled. Please contact your administrator for an account." });
   });
 
   app.post("/api/auth/login", async (req, res) => {

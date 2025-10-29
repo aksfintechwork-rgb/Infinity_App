@@ -3,30 +3,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import logoImage from '@assets/generated_images/SUPREMO_TRADERS_LLP_logo_12753d7f.png';
 
 interface LoginPageProps {
   onLogin: (loginId: string, password: string) => void;
-  onRegister: (name: string, loginId: string, email: string, password: string) => void;
 }
 
-export default function LoginPage({ onLogin, onRegister }: LoginPageProps) {
+export default function LoginPage({ onLogin }: LoginPageProps) {
   const [loginId, setLoginId] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [registerName, setRegisterName] = useState('');
-  const [registerLoginId, setRegisterLoginId] = useState('');
-  const [registerEmail, setRegisterEmail] = useState('');
-  const [registerPassword, setRegisterPassword] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin(loginId, loginPassword);
-  };
-
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    onRegister(registerName, registerLoginId, registerEmail, registerPassword);
+    onLogin(loginId, password);
   };
 
   return (
@@ -42,111 +31,50 @@ export default function LoginPage({ onLogin, onRegister }: LoginPageProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Welcome</CardTitle>
-            <CardDescription>Sign in to your account or create a new one</CardDescription>
+            <CardTitle>Welcome Back</CardTitle>
+            <CardDescription>Sign in with your credentials provided by your administrator</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login" data-testid="tab-login">Login</TabsTrigger>
-                <TabsTrigger value="register" data-testid="tab-register">Register</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-id">Login ID</Label>
-                    <Input
-                      id="login-id"
-                      type="text"
-                      placeholder="admin or user123"
-                      value={loginId}
-                      onChange={(e) => setLoginId(e.target.value)}
-                      required
-                      data-testid="input-login-id"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Use the login ID provided by your administrator
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Password</Label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      placeholder="Enter your password"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      required
-                      data-testid="input-login-password"
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" data-testid="button-login">
-                    Sign In
-                  </Button>
-                </form>
-              </TabsContent>
-              
-              <TabsContent value="register">
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="register-name">Full Name</Label>
-                    <Input
-                      id="register-name"
-                      type="text"
-                      placeholder="John Doe"
-                      value={registerName}
-                      onChange={(e) => setRegisterName(e.target.value)}
-                      required
-                      data-testid="input-register-name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-loginid">Login ID</Label>
-                    <Input
-                      id="register-loginid"
-                      type="text"
-                      placeholder="john123"
-                      value={registerLoginId}
-                      onChange={(e) => setRegisterLoginId(e.target.value)}
-                      required
-                      data-testid="input-register-loginid"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Letters, numbers, dashes, and underscores only
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email">Email (Optional)</Label>
-                    <Input
-                      id="register-email"
-                      type="email"
-                      placeholder="your.email@example.com"
-                      value={registerEmail}
-                      onChange={(e) => setRegisterEmail(e.target.value)}
-                      data-testid="input-register-email"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password">Password</Label>
-                    <Input
-                      id="register-password"
-                      type="password"
-                      placeholder="Create a password"
-                      value={registerPassword}
-                      onChange={(e) => setRegisterPassword(e.target.value)}
-                      required
-                      data-testid="input-register-password"
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" data-testid="button-register">
-                    Create Account
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="login-id">Login ID</Label>
+                <Input
+                  id="login-id"
+                  type="text"
+                  placeholder="admin or user123"
+                  value={loginId}
+                  onChange={(e) => setLoginId(e.target.value)}
+                  required
+                  data-testid="input-login-id"
+                  autoComplete="username"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Use the login ID provided by your administrator
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="login-password">Password</Label>
+                <Input
+                  id="login-password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  data-testid="input-login-password"
+                  autoComplete="current-password"
+                />
+              </div>
+              <Button type="submit" className="w-full" data-testid="button-login">
+                Sign In
+              </Button>
+            </form>
           </CardContent>
         </Card>
+        
+        <p className="text-center text-sm text-muted-foreground mt-4">
+          Need an account? Contact your administrator.
+        </p>
       </div>
     </div>
   );
