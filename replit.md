@@ -136,6 +136,12 @@ Preferred communication style: Simple, everyday language.
 - Updated all authentication flows: login, registration, and admin user creation
 - Backfilled all existing users with loginId values derived from their emails
 - Updated frontend forms and API to use loginId instead of email
+- **NEW**: Implemented desktop notifications with sound alerts for new messages
+  - Browser notification popup when messages arrive from other users
+  - Sound effect plays when notifications are shown
+  - Notifications only show when user is viewing a different conversation or window is not focused
+  - Permission requested automatically after login
+- **DATA CLEANUP**: Removed all demo/test data - database now contains only admin and user accounts
 - Login credentials:
   - Admin: loginId="admin" / password="admin123"
   - User: loginId="user" / password="user123"

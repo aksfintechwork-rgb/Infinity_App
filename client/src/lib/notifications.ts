@@ -1,50 +1,54 @@
-// Notification sound using Web Audio API
-let notificationSound: HTMLAudioElement | null = null;
+// Single reusable AudioContext for all notifications
+let audioContext: AudioContext | null = null;
+let isAudioInitialized = false;
 
-// Initialize notification sound
-function initSound() {
-  if (notificationSound) return;
+// Initialize audio context (must be called from a user gesture)
+export function initializeAudio() {
+  if (isAudioInitialized) return;
   
-  // Create a simple notification beep using data URL
-  // This is a short, pleasant notification sound
-  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-  
-  // Create a simple beep sound
-  const oscillator = audioContext.createOscillator();
-  const gainNode = audioContext.createGain();
-  
-  oscillator.connect(gainNode);
-  gainNode.connect(audioContext.destination);
-  
-  oscillator.frequency.value = 800; // Frequency in Hz
-  oscillator.type = 'sine';
-  
-  gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-  
-  // Store for reuse
-  notificationSound = new Audio();
+  try {
+    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    isAudioInitialized = true;
+  } catch (error) {
+    console.error('Failed to initialize audio context:', error);
+  }
 }
 
-// Play notification sound
-export function playNotificationSound() {
+// Play notification sound using the reusable audio context
+export async function playNotificationSound() {
+  if (!audioContext) {
+    console.warn('Audio context not initialized. Sound will not play.');
+    return;
+  }
+
   try {
-    // Create a simple beep using Web Audio API each time
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    // Resume context if suspended (required for autoplay policy)
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+      
+      // Check if resume was successful
+      if (audioContext.state === 'suspended') {
+        console.warn('Audio context could not be resumed. User interaction may be required to enable sound.');
+        return;
+      }
+    }
+
+    // Create a new oscillator for each beep (oscillators are single-use)
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
     
-    oscillator.frequency.value = 800;
+    oscillator.frequency.value = 800; // 800 Hz tone
     oscillator.type = 'sine';
     
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+    const now = audioContext.currentTime;
+    gainNode.gain.setValueAtTime(0.3, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
     
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.2);
+    oscillator.start(now);
+    oscillator.stop(now + 0.2);
   } catch (error) {
     console.error('Failed to play notification sound:', error);
   }
@@ -112,6 +116,3 @@ export function notifyNewMessage(
 
   playNotificationSound();
 }
-
-// Initialize on load
-initSound();

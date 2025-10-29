@@ -8,7 +8,7 @@ import LoginPage from './components/LoginPage';
 import ChatLayout from './components/ChatLayout';
 import * as api from './lib/api';
 import { useWebSocket } from './lib/websocket';
-import { requestNotificationPermission, notifyNewMessage } from './lib/notifications';
+import { requestNotificationPermission, notifyNewMessage, initializeAudio } from './lib/notifications';
 
 interface User {
   id: number;
@@ -59,6 +59,23 @@ function App() {
       setIsLoading(false);
     }
   }, [token]);
+
+  // Initialize audio on first user interaction (for token-restored sessions)
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const handleFirstClick = () => {
+      initializeAudio();
+      // Remove listener after first click
+      document.removeEventListener('click', handleFirstClick);
+    };
+
+    document.addEventListener('click', handleFirstClick);
+
+    return () => {
+      document.removeEventListener('click', handleFirstClick);
+    };
+  }, [currentUser]);
 
   useEffect(() => {
     if (!ws.isConnected || !currentUser) return;
@@ -148,6 +165,9 @@ function App() {
 
   const handleLogin = async (loginId: string, password: string) => {
     try {
+      // Initialize audio from this user gesture
+      initializeAudio();
+      
       const response = await api.login(loginId, password);
       localStorage.setItem('auth_token', response.token);
       setToken(response.token);
@@ -163,6 +183,9 @@ function App() {
 
   const handleRegister = async (name: string, loginId: string, email: string, password: string) => {
     try {
+      // Initialize audio from this user gesture
+      initializeAudio();
+      
       const response = await api.register(name, loginId, email, password);
       localStorage.setItem('auth_token', response.token);
       setToken(response.token);
