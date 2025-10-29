@@ -4,18 +4,19 @@ interface AuthResponse {
   user: {
     id: number;
     name: string;
-    email: string;
+    loginId: string;
+    email?: string;
     role: string;
     avatar?: string;
   };
   token: string;
 }
 
-export async function register(name: string, email: string, password: string): Promise<AuthResponse> {
+export async function register(name: string, loginId: string, email: string, password: string): Promise<AuthResponse> {
   const response = await fetch(`${API_BASE}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ name, loginId, email, password }),
   });
 
   if (!response.ok) {
@@ -26,11 +27,11 @@ export async function register(name: string, email: string, password: string): P
   return response.json();
 }
 
-export async function login(email: string, password: string): Promise<AuthResponse> {
+export async function login(loginId: string, password: string): Promise<AuthResponse> {
   const response = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ loginId, password }),
   });
 
   if (!response.ok) {
@@ -125,7 +126,8 @@ export async function uploadFile(token: string, file: File): Promise<{ url: stri
 
 export async function createUserAsAdmin(token: string, data: {
   name: string;
-  email: string;
+  loginId: string;
+  email?: string;
   password: string;
   role?: 'admin' | 'user';
 }) {

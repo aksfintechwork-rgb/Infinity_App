@@ -123,24 +123,24 @@ function App() {
     }
   };
 
-  const handleLogin = async (email: string, password: string) => {
+  const handleLogin = async (loginId: string, password: string) => {
     try {
-      const response = await api.login(email, password);
+      const response = await api.login(loginId, password);
       localStorage.setItem('auth_token', response.token);
       setToken(response.token);
       setCurrentUser(response.user);
     } catch (error: any) {
       toast({
         title: 'Login Failed',
-        description: error.message || 'Invalid email or password',
+        description: error.message || 'Invalid login credentials',
         variant: 'destructive',
       });
     }
   };
 
-  const handleRegister = async (name: string, email: string, password: string) => {
+  const handleRegister = async (name: string, loginId: string, email: string, password: string) => {
     try {
-      const response = await api.register(name, email, password);
+      const response = await api.register(name, loginId, email, password);
       localStorage.setItem('auth_token', response.token);
       setToken(response.token);
       setCurrentUser(response.user);

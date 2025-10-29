@@ -7,25 +7,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import logoImage from '@assets/generated_images/SUPREMO_TRADERS_LLP_logo_12753d7f.png';
 
 interface LoginPageProps {
-  onLogin: (email: string, password: string) => void;
-  onRegister: (name: string, email: string, password: string) => void;
+  onLogin: (loginId: string, password: string) => void;
+  onRegister: (name: string, loginId: string, email: string, password: string) => void;
 }
 
 export default function LoginPage({ onLogin, onRegister }: LoginPageProps) {
-  const [loginEmail, setLoginEmail] = useState('');
+  const [loginId, setLoginId] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [registerName, setRegisterName] = useState('');
+  const [registerLoginId, setRegisterLoginId] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin(loginEmail, loginPassword);
+    onLogin(loginId, loginPassword);
   };
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    onRegister(registerName, registerEmail, registerPassword);
+    onRegister(registerName, registerLoginId, registerEmail, registerPassword);
   };
 
   return (
@@ -54,16 +55,19 @@ export default function LoginPage({ onLogin, onRegister }: LoginPageProps) {
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
+                    <Label htmlFor="login-id">Login ID</Label>
                     <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="your.email@example.com"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
+                      id="login-id"
+                      type="text"
+                      placeholder="admin or user123"
+                      value={loginId}
+                      onChange={(e) => setLoginId(e.target.value)}
                       required
-                      data-testid="input-login-email"
+                      data-testid="input-login-id"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Use the login ID provided by your administrator
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="login-password">Password</Label>
@@ -98,14 +102,28 @@ export default function LoginPage({ onLogin, onRegister }: LoginPageProps) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="register-email">Email</Label>
+                    <Label htmlFor="register-loginid">Login ID</Label>
+                    <Input
+                      id="register-loginid"
+                      type="text"
+                      placeholder="john123"
+                      value={registerLoginId}
+                      onChange={(e) => setRegisterLoginId(e.target.value)}
+                      required
+                      data-testid="input-register-loginid"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Letters, numbers, dashes, and underscores only
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="register-email">Email (Optional)</Label>
                     <Input
                       id="register-email"
                       type="email"
                       placeholder="your.email@example.com"
                       value={registerEmail}
                       onChange={(e) => setRegisterEmail(e.target.value)}
-                      required
                       data-testid="input-register-email"
                     />
                   </div>
