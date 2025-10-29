@@ -30,7 +30,12 @@ export async function register(name: string, loginId: string, email: string, pas
 export async function login(loginId: string, password: string): Promise<AuthResponse> {
   const response = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache'
+    },
+    cache: 'no-store',
     body: JSON.stringify({ loginId, password }),
   });
 

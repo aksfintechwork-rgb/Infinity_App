@@ -19,6 +19,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/login", async (req, res) => {
+    // Set no-cache headers to prevent browser caching
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+
     try {
       const { loginId, password } = req.body;
 
