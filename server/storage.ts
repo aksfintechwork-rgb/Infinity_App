@@ -30,7 +30,9 @@ export interface IStorage {
   getConversationsByUserId(userId: number): Promise<Conversation[]>;
   
   addConversationMember(member: InsertConversationMember): Promise<ConversationMember>;
+  addConversationMemberWithHistory(member: { conversationId: number; userId: number; canViewHistory: boolean }): Promise<ConversationMember>;
   getConversationMembers(conversationId: number): Promise<User[]>;
+  getConversationMemberInfo(conversationId: number, userId: number): Promise<{ joinedAt: Date; canViewHistory: boolean } | undefined>;
   getUserConversationIds(userId: number): Promise<number[]>;
   
   createMessage(message: InsertMessage): Promise<Message>;
@@ -103,6 +105,15 @@ export class PostgresStorage implements IStorage {
     return result[0];
   }
 
+  async addConversationMemberWithHistory(member: { conversationId: number; userId: number; canViewHistory: boolean }): Promise<ConversationMember> {
+    const result = await db.insert(conversationMembers).values({
+      conversationId: member.conversationId,
+      userId: member.userId,
+      canViewHistory: member.canViewHistory,
+    }).returning();
+    return result[0];
+  }
+
   async getConversationMembers(conversationId: number): Promise<User[]> {
     const result = await db
       .select({
@@ -129,6 +140,29 @@ export class PostgresStorage implements IStorage {
       .where(eq(conversationMembers.userId, userId));
     
     return result.map(r => r.conversationId);
+  }
+
+  async getConversationMemberInfo(conversationId: number, userId: number): Promise<{ joinedAt: Date; canViewHistory: boolean } | undefined> {
+    const result = await db
+      .select({
+        joinedAt: conversationMembers.joinedAt,
+        canViewHistory: conversationMembers.canViewHistory,
+      })
+      .from(conversationMembers)
+      .where(
+        and(
+          eq(conversationMembers.conversationId, conversationId),
+          eq(conversationMembers.userId, userId)
+        )
+      )
+      .limit(1);
+    
+    if (!result[0]) return undefined;
+    
+    return {
+      joinedAt: result[0].joinedAt,
+      canViewHistory: result[0].canViewHistory,
+    };
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {

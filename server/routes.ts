@@ -245,6 +245,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/conversations/:id/members", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const conversationId = parseInt(req.params.id);
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ error: "Invalid conversation ID" });
+      }
+
+      const { memberIds, canViewHistory = false } = req.body;
+
+      if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
+        return res.status(400).json({ error: "Member IDs required" });
+      }
+
+      const userConvIds = await storage.getUserConversationIds(req.userId);
+      if (!userConvIds.includes(conversationId)) {
+        return res.status(403).json({ error: "Access denied - you are not a member of this conversation" });
+      }
+
+      const conversation = await storage.getConversationById(conversationId);
+      if (!conversation?.isGroup) {
+        return res.status(400).json({ error: "Cannot add members to direct messages" });
+      }
+
+      const existingMembers = await storage.getConversationMembers(conversationId);
+      const existingMemberIds = existingMembers.map(m => m.id);
+
+      const newMemberIds = memberIds.filter((id: number) => !existingMemberIds.includes(id));
+
+      for (const memberId of newMemberIds) {
+        await storage.addConversationMemberWithHistory({
+          conversationId,
+          userId: memberId,
+          canViewHistory: canViewHistory === true,
+        });
+      }
+
+      const updatedMembers = await storage.getConversationMembers(conversationId);
+      const memberNames = updatedMembers.map(m => m.name.split(' ')[0]).join(', ');
+
+      res.status(201).json({
+        success: true,
+        addedCount: newMemberIds.length,
+        members: memberNames,
+        memberCount: updatedMembers.length,
+      });
+    } catch (error) {
+      console.error("Add members error:", error);
+      res.status(500).json({ error: "Failed to add members" });
+    }
+  });
+
   app.get("/api/conversations/:id/messages", authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (!req.userId) {
@@ -261,8 +316,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Access denied" });
       }
 
-      const messages = await storage.getMessagesByConversationId(conversationId);
+      const memberInfo = await storage.getConversationMemberInfo(conversationId, req.userId);
+      if (!memberInfo) {
+        return res.status(403).json({ error: "You are not a member of this conversation" });
+      }
+
+      let messages = await storage.getMessagesByConversationId(conversationId);
       
+      if (!memberInfo.canViewHistory && memberInfo.joinedAt) {
+        messages = messages.filter(msg => new Date(msg.createdAt) >= new Date(memberInfo.joinedAt!));
+      }
+
       const messagesWithSenderInfo = await Promise.all(
         messages.map(async (msg) => {
           const sender = await storage.getUserById(msg.senderId);
