@@ -21,8 +21,8 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Storage
 - **Database**: PostgreSQL via Neon serverless HTTP driver, utilizing Drizzle ORM for schema migrations.
-- **Schema**: Includes `users`, `conversations`, `conversationMembers`, `messages`, and `meetings`.
-- **Design Decisions**: PostgreSQL for relational integrity, supporting many-to-many relationships for direct and group messages.
+- **Schema**: Includes `users`, `conversations`, `conversationMembers`, `messages`, `meetings`, `tasks`, and `task_support_requests`.
+- **Design Decisions**: PostgreSQL for relational integrity, supporting many-to-many relationships for direct and group messages. Task assignments use foreign key relationships to users table.
 
 ### Authentication & Authorization
 - **Authentication**: JWT tokens (7-day expiration), bcrypt hashing, localStorage for client tokens, Bearer token for HTTP, query parameter for WebSocket. Login IDs are case-insensitive and support Unicode normalization for cross-device compatibility.
@@ -36,6 +36,7 @@ Preferred communication style: Simple, everyday language.
 - **Group Conversation Management**: Required group names, ability to add members to existing groups with optional access to message history.
 - **Admin Features**: User deletion and real-time user list updates across clients.
 - **Meeting Calendar**: Integrated with video conferencing (Jitsi Meet).
+- **Task Management System**: Complete task management with start/target dates, remarks, status tracking (todo/in_progress/completed), priority levels (low/medium/high), task assignment, real-time WebSocket updates with authorization filtering (only creator and assignee receive updates), and colorful zen-themed UI.
 - **Admin Tools**: Credential Verification Tool to aid in troubleshooting login issues.
 
 ## External Dependencies
