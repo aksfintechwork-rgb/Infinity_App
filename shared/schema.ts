@@ -113,7 +113,7 @@ export const meetings = pgTable("meetings", {
   endTime: timestamp("end_time").notNull(),
   meetingLink: text("meeting_link"),
   recurrencePattern: text("recurrence_pattern").notNull().default("none"),
-  recurrenceInterval: integer("recurrence_interval").default(1),
+  recurrenceFrequency: integer("recurrence_frequency").default(1),
   recurrenceEndDate: timestamp("recurrence_end_date"),
   createdBy: integer("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
