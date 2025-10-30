@@ -295,7 +295,7 @@ export default function ChatLayout({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="md:hidden h-9 w-9"
+                  className="md:hidden"
                   onClick={() => setIsMobileMenuOpen(true)}
                   data-testid="button-mobile-menu"
                 >
@@ -334,7 +334,7 @@ export default function ChatLayout({
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsAddMembersOpen(true)}
-                  className="md:hidden h-9 w-9"
+                  className="md:hidden"
                   data-testid="button-add-members-mobile"
                 >
                   <UserPlus className="w-4 h-4" />
