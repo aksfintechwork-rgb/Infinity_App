@@ -21,8 +21,8 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Storage
 - **Database**: PostgreSQL via Neon serverless HTTP driver, utilizing Drizzle ORM for schema migrations.
-- **Schema**: Includes `users`, `conversations`, `conversationMembers`, `messages`, `meetings`, `tasks`, and `task_support_requests`.
-- **Design Decisions**: PostgreSQL for relational integrity, supporting many-to-many relationships for direct and group messages. Task assignments use foreign key relationships to users table.
+- **Schema**: Includes `users`, `conversations`, `conversationMembers`, `messages`, `meetings`, `meetingParticipants`, `tasks`, and `task_support_requests`.
+- **Design Decisions**: PostgreSQL for relational integrity, supporting many-to-many relationships for direct and group messages. Task assignments use foreign key relationships to users table. Meeting participants stored in separate table with cascade delete for data integrity.
 
 ### Authentication & Authorization
 - **Authentication**: JWT tokens (7-day expiration), bcrypt hashing, localStorage for client tokens, Bearer token for HTTP, query parameter for WebSocket. Login IDs are case-insensitive and support Unicode normalization for cross-device compatibility.
@@ -47,7 +47,7 @@ Preferred communication style: Simple, everyday language.
 ### Key Features
 - **Group Conversation Management**: Required group names, ability to add members to existing groups with optional access to message history.
 - **Admin Features**: User deletion and real-time user list updates across clients.
-- **Meeting Calendar**: Integrated with video conferencing (Jitsi Meet).
+- **Meeting Calendar**: Integrated with video conferencing (Jitsi Meet), team member participation tracking, and recurring meeting schedules (daily/weekly/monthly with customizable frequency and end date).
 - **Task Management System**: Complete task management with start/target dates, remarks, status tracking (todo/in_progress/completed), priority levels (low/medium/high), task assignment, real-time WebSocket updates with authorization filtering (only creator and assignee receive updates), and colorful zen-themed UI. Admins can view all tasks created by any team member using the "All Tasks" filter.
   - **Smart Dashboard Features**:
     - Statistics cards showing overview metrics (Total Tasks, To Do, In Progress, Completed, Overdue)
