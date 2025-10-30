@@ -311,6 +311,32 @@ export default function Calendar({ currentUser }: CalendarProps) {
     });
   };
 
+  // Helper function to add branding-hiding config to Jitsi URL
+  const addJitsiConfig = (url: string) => {
+    const config = [
+      'config.prejoinPageEnabled=false',
+      'config.startWithAudioMuted=false',
+      'config.startWithVideoMuted=false',
+      'interfaceConfig.SHOW_JITSI_WATERMARK=false',
+      'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
+      'interfaceConfig.SHOW_BRAND_WATERMARK=false',
+      'interfaceConfig.BRAND_WATERMARK_LINK=""',
+      'interfaceConfig.JITSI_WATERMARK_LINK=""',
+      'interfaceConfig.SHOW_POWERED_BY=false',
+      'interfaceConfig.DISPLAY_WELCOME_PAGE_CONTENT=false',
+      'interfaceConfig.DISPLAY_WELCOME_FOOTER=false',
+      'interfaceConfig.APP_NAME="SUPREMO TRADERS"',
+      'interfaceConfig.NATIVE_APP_NAME="SUPREMO TRADERS"'
+    ].join('&');
+    
+    // Check if URL already has a hash fragment
+    if (url.includes('#')) {
+      return `${url}&${config}`;
+    } else {
+      return `${url}#${config}`;
+    }
+  };
+
   const handleJoinMeeting = (link?: string) => {
     if (link) {
       // Validate it's a Jitsi link before joining
@@ -322,18 +348,19 @@ export default function Calendar({ currentUser }: CalendarProps) {
         });
         return;
       }
-      setActiveVideoMeeting(link);
+      setActiveVideoMeeting(addJitsiConfig(link));
     } else {
       // Generate a random Jitsi room
       const roomName = `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
       const jitsiLink = `https://meet.jit.si/${roomName}`;
-      setActiveVideoMeeting(jitsiLink);
+      setActiveVideoMeeting(addJitsiConfig(jitsiLink));
     }
   };
 
   const handleGenerateMeetingLink = () => {
     const roomName = `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    setMeetingLink(`https://meet.jit.si/${roomName}`);
+    const baseLink = `https://meet.jit.si/${roomName}`;
+    setMeetingLink(addJitsiConfig(baseLink));
   };
 
   // Sort meetings by start time
