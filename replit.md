@@ -31,6 +31,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Cross-Device Compatibility
 - Designed for seamless operation across all devices and browsers with automatic WebSocket reconnection, dynamic URL construction for real-time communication, robust file handling, and desktop notifications with enhanced loud sound alerts. Features mobile keyboard compatibility fixes for login.
+- **Mobile-Optimized Interface**: All touch targets meet minimum accessibility guidelines (44-48px), larger fonts and inputs for better readability, responsive spacing and layouts, improved mobile navigation with wider sheet menus (90vw), and zoom-friendly viewport configuration for accessibility.
 
 ### Real-Time Presence Tracking
 - **Online/Offline Status**: WebSocket-based user presence system that accurately tracks which users are currently connected
