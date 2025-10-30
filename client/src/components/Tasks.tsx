@@ -349,15 +349,15 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
         {isAdmin && (
           <div className="mb-3">
             <label className="text-sm font-medium mb-2 block">Filter by Team Member</label>
-            <Select value={filterUserId} onValueChange={(value) => {
-              setFilterUserId(value);
+            <Select value={filterUserId || "all"} onValueChange={(value) => {
+              setFilterUserId(value === "all" ? '' : value);
               setFilterView('all');
             }}>
               <SelectTrigger className="w-full sm:w-64" data-testid="select-filter-user">
                 <SelectValue placeholder="All team members" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All team members</SelectItem>
+                <SelectItem value="all">All team members</SelectItem>
                 {allUsers.map(user => (
                   <SelectItem key={user.id} value={user.id.toString()}>
                     {user.name}
