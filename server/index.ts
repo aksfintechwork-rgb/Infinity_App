@@ -101,13 +101,17 @@ app.use((req, res, next) => {
     port,
     host: "0.0.0.0",
     reusePort: true,
-  }, async () => {
+  }, () => {
     log(`serving on port ${port}`);
-    // Initialize database with admin user if empty
-    await initializeDatabase();
     
-    // Start task reminder service (checks every 60 minutes)
-    await taskReminderService.start(60);
-    log('Task reminder service started');
+    // Initialize database with admin user if empty (non-blocking)
+    initializeDatabase()
+      .then(() => log('Database initialized'))
+      .catch((err) => log(`Database initialization error: ${err.message}`));
+    
+    // Start task reminder service (checks every 60 minutes) (non-blocking)
+    taskReminderService.start(60)
+      .then(() => log('Task reminder service started'))
+      .catch((err) => log(`Task reminder service error: ${err.message}`));
   });
 })();
