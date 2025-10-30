@@ -63,7 +63,7 @@ export default function MessageInput({ onSendMessage, onTyping, onFileUpload }: 
   };
 
   return (
-    <div className="border-t border-border bg-background p-4">
+    <div className="border-t border-border bg-background p-3 md:p-4">
       <div className="flex gap-2 mb-2">
         <Button
           size="icon"
@@ -71,10 +71,16 @@ export default function MessageInput({ onSendMessage, onTyping, onFileUpload }: 
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
           data-testid="button-attach-file"
+          className="h-10 w-10 md:h-9 md:w-9"
         >
           <Paperclip className="w-5 h-5" />
         </Button>
-        <Button size="icon" variant="ghost" data-testid="button-emoji">
+        <Button 
+          size="icon" 
+          variant="ghost" 
+          data-testid="button-emoji"
+          className="h-10 w-10 md:h-9 md:w-9"
+        >
           <Smile className="w-5 h-5" />
         </Button>
       </div>
@@ -85,18 +91,19 @@ export default function MessageInput({ onSendMessage, onTyping, onFileUpload }: 
           onChange={handleMessageChange}
           onKeyDown={handleKeyDown}
           placeholder="Type a message..."
-          className="resize-none min-h-[44px] max-h-32"
+          className="resize-none min-h-[48px] md:min-h-[44px] max-h-32 text-base"
           rows={1}
           data-testid="textarea-message"
         />
         <Button
           onClick={handleSend}
           disabled={!message.trim() || isUploading}
-          className="flex-shrink-0"
+          className="flex-shrink-0 h-12 md:h-10 px-4 md:px-3 text-base md:text-sm font-semibold"
           data-testid="button-send"
         >
           <Send className="w-4 h-4 mr-2" />
-          Send
+          <span className="hidden sm:inline">Send</span>
+          <span className="sm:hidden">Send</span>
         </Button>
       </div>
       
