@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
@@ -423,27 +423,49 @@ export default function ChatLayout({
         ) : activeConversation ? (
           <>
             <div className="min-h-[64px] md:h-16 border-b border-border flex items-center justify-between px-3 md:px-6 flex-shrink-0">
-              <div className="flex items-center gap-2 md:gap-3">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {/* Mobile: Show both back button AND menu button */}
+                <div className="flex items-center gap-2 md:hidden">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setActiveConversationId(null)}
+                    data-testid="button-back-to-conversations"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsMobileMenuOpen(true)}
+                    data-testid="button-mobile-menu"
+                  >
+                    <Menu className="w-5 h-5" />
+                  </Button>
+                </div>
+                
+                {/* Desktop: Show menu button only */}
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="md:hidden h-11 w-11"
+                  className="hidden md:flex"
                   onClick={() => setIsMobileMenuOpen(true)}
-                  data-testid="button-mobile-menu"
+                  data-testid="button-desktop-menu"
                 >
-                  <Menu className="w-6 h-6" />
+                  <Menu className="w-5 h-5" />
                 </Button>
+
                 {activeConversation.isGroup ? (
-                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                    <Hash className="w-5 h-5 text-primary-foreground" />
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center shadow-sm">
+                    <Users className="w-5 h-5 text-white" />
                   </div>
                 ) : null}
-                <div>
-                  <h2 className="font-semibold text-foreground" data-testid="text-conversation-title">
+                <div className="flex-1 min-w-0">
+                  <h2 className="font-semibold text-foreground truncate" data-testid="text-conversation-title">
                     {activeConversation.title || activeConversation.members}
                   </h2>
                   {activeConversation.isGroup && (
-                    <p className="text-sm text-muted-foreground hidden md:block">
+                    <p className="text-xs text-muted-foreground truncate md:block hidden">
                       {activeConversation.members}
                     </p>
                   )}
@@ -521,10 +543,125 @@ export default function ChatLayout({
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold mb-2">No conversation selected</h3>
-              <p className="text-sm">Choose a conversation or start a new one</p>
+          <div className="flex-1 flex flex-col">
+            {/* Mobile: Show conversation list when no conversation selected */}
+            <div className="md:hidden flex flex-col h-full">
+              <div className="min-h-[64px] border-b border-border flex items-center justify-between px-4 flex-shrink-0 bg-gradient-to-r from-purple-600/5 to-blue-600/5">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-10 h-10 object-contain rounded-lg shadow-sm" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
+                  </div>
+                  <div>
+                    <h1 className="text-sm font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">SUPREMO TRADERS</h1>
+                    <p className="text-xs text-muted-foreground font-medium">Team Chat</p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  data-testid="button-mobile-menu-empty"
+                >
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </div>
+
+              <div className="p-3 border-b border-border bg-background">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search conversations..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 h-11 text-base"
+                    data-testid="input-search-mobile-empty"
+                  />
+                </div>
+              </div>
+
+              <ScrollArea className="flex-1">
+                <div className="p-3 space-y-2">
+                  {filteredConversations.length === 0 ? (
+                    <div className="text-center py-12">
+                      <MessageSquare className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                      <h3 className="text-sm font-semibold mb-1 text-foreground">No conversations yet</h3>
+                      <p className="text-xs text-muted-foreground mb-4">Start chatting with your team</p>
+                      <Button
+                        onClick={() => setIsNewConversationOpen(true)}
+                        size="sm"
+                        className="mx-auto"
+                        data-testid="button-start-first-conversation"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Start Conversation
+                      </Button>
+                    </div>
+                  ) : (
+                    filteredConversations.map((conv) => {
+                      const isDirectMessage = !conv.isGroup;
+                      const otherUserId = isDirectMessage ? conv.memberIds?.find(id => id !== currentUser.id) : null;
+                      const isOnline = otherUserId ? onlineUserIds.includes(otherUserId) : false;
+
+                      return (
+                        <ConversationItem
+                          key={conv.id}
+                          id={conv.id}
+                          title={conv.title}
+                          members={conv.members}
+                          isGroup={conv.isGroup}
+                          lastMessage={conv.lastMessage}
+                          lastMessageTime={conv.lastMessageTime}
+                          unreadCount={conv.unreadCount}
+                          isActive={activeConversationId === conv.id}
+                          avatarUrl={conv.avatarUrl}
+                          isOnline={isOnline}
+                          isPinned={pinnedConversationIds.includes(conv.id)}
+                          onPinToggle={(id) => {
+                            if (pinnedConversationIds.includes(id)) {
+                              unpinMutation.mutate(id);
+                            } else {
+                              pinMutation.mutate(id);
+                            }
+                          }}
+                          onClick={() => {
+                            setActiveConversationId(conv.id);
+                            onConversationSelect?.(conv.id);
+                          }}
+                        />
+                      );
+                    })
+                  )}
+                </div>
+              </ScrollArea>
+
+              {/* Floating Action Button for New Conversation - Mobile only */}
+              <div className="fixed bottom-6 right-6 z-50">
+                <button
+                  onClick={() => setIsNewConversationOpen(true)}
+                  className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center"
+                  data-testid="button-fab-new-conversation"
+                  aria-label="New Conversation"
+                >
+                  <Plus className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Desktop: Show empty state */}
+            <div className="hidden md:flex flex-1 items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <MessageSquare className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+                <h3 className="text-lg font-semibold mb-2">No conversation selected</h3>
+                <p className="text-sm mb-4">Choose a conversation or start a new one</p>
+                <Button
+                  onClick={() => setIsNewConversationOpen(true)}
+                  data-testid="button-start-conversation-desktop"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Start New Conversation
+                </Button>
+              </div>
             </div>
           </div>
         )}
