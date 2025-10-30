@@ -9,20 +9,21 @@ interface TaskForReminder {
   assignedTo: number | null;
   assigneeName: string | null;
   status: string;
+  lastReminderSent: Date | null;
 }
+
+const REMINDER_COOLDOWN_HOURS = 24;
 
 export class TaskReminderService {
   private systemUserId: number | null = null;
   private reminderInterval: NodeJS.Timeout | null = null;
 
   async initialize() {
-    // Create or get system user for sending automated messages
     this.systemUserId = await this.ensureSystemUser();
     console.log('[TaskReminder] Service initialized with system user ID:', this.systemUserId);
   }
 
   private async ensureSystemUser(): Promise<number> {
-    // Check if system user exists
     const existingUser = await db.query.users.findFirst({
       where: eq(users.loginId, 'system')
     });
@@ -31,7 +32,6 @@ export class TaskReminderService {
       return existingUser.id;
     }
 
-    // Create system user
     const [systemUser] = await db.insert(users).values({
       name: 'System',
       loginId: 'system',
@@ -46,10 +46,8 @@ export class TaskReminderService {
   async start(checkIntervalMinutes: number = 60) {
     await this.initialize();
     
-    // Run immediately
     await this.checkAndSendReminders();
 
-    // Then run periodically
     this.reminderInterval = setInterval(
       () => this.checkAndSendReminders(),
       checkIntervalMinutes * 60 * 1000
@@ -71,13 +69,8 @@ export class TaskReminderService {
       console.log('[TaskReminder] Checking for tasks needing reminders...');
       
       const now = new Date();
-      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const cooldownTime = new Date(now.getTime() - REMINDER_COOLDOWN_HOURS * 60 * 60 * 1000);
 
-      // Get all tasks that:
-      // 1. Have an assignee
-      // 2. Are not completed
-      // 3. Have a target date
-      // 4. Target date is within next 24 hours OR already passed
       const tasksNeedingReminder = await db
         .select({
           id: tasks.id,
@@ -86,6 +79,7 @@ export class TaskReminderService {
           assignedTo: tasks.assignedTo,
           assigneeName: users.name,
           status: tasks.status,
+          lastReminderSent: tasks.lastReminderSent,
         })
         .from(tasks)
         .leftJoin(users, eq(tasks.assignedTo, users.id))
@@ -94,14 +88,17 @@ export class TaskReminderService {
             isNotNull(tasks.assignedTo),
             isNotNull(tasks.targetDate),
             sql`${tasks.status} != 'completed'`,
+            sql`${tasks.status} != 'cancelled'`,
             or(
-              // Overdue tasks
               lte(tasks.targetDate, sql`NOW()`),
-              // Tasks due within 24 hours
               and(
                 gte(tasks.targetDate, sql`NOW()`),
                 lte(tasks.targetDate, sql`NOW() + INTERVAL '24 hours'`)
               )
+            ),
+            or(
+              sql`${tasks.lastReminderSent} IS NULL`,
+              lte(tasks.lastReminderSent, cooldownTime)
             )
           )
         );
@@ -123,7 +120,6 @@ export class TaskReminderService {
     if (!this.systemUserId || !task.assignedTo) return;
 
     try {
-      // Find or create direct conversation between system and user
       const conversationId = await this.findOrCreateSystemConversation(task.assignedTo);
 
       if (!conversationId) {
@@ -131,15 +127,17 @@ export class TaskReminderService {
         return;
       }
 
-      // Generate reminder message
       const reminderMessage = this.generateReminderMessage(task);
 
-      // Send the message
       await db.insert(messages).values({
         conversationId,
         senderId: this.systemUserId,
         body: reminderMessage,
       });
+
+      await db.update(tasks)
+        .set({ lastReminderSent: new Date() })
+        .where(eq(tasks.id, task.id));
 
       console.log(`[TaskReminder] Sent reminder for task "${task.title}" to user ${task.assigneeName}`);
 
@@ -151,37 +149,39 @@ export class TaskReminderService {
   private async findOrCreateSystemConversation(userId: number): Promise<number | null> {
     if (!this.systemUserId) return null;
 
-    // Check if a direct conversation already exists between system and user
-    const existingConversation = await db
+    const systemConvIds = await db
       .select({ conversationId: conversationMembers.conversationId })
       .from(conversationMembers)
-      .where(eq(conversationMembers.userId, this.systemUserId))
-      .innerJoin(
-        sql`(
-          SELECT conversation_id 
-          FROM conversation_members 
-          WHERE user_id = ${userId}
-        ) as user_convs`,
-        sql`conversation_members.conversation_id = user_convs.conversation_id`
-      )
-      .innerJoin(
-        conversations,
-        eq(conversationMembers.conversationId, conversations.id)
-      )
-      .where(eq(conversations.isGroup, false))
-      .limit(1);
+      .where(eq(conversationMembers.userId, this.systemUserId));
 
-    if (existingConversation.length > 0) {
-      return existingConversation[0].conversationId;
+    const userConvIds = await db
+      .select({ conversationId: conversationMembers.conversationId })
+      .from(conversationMembers)
+      .where(eq(conversationMembers.userId, userId));
+
+    const systemConvIdSet = new Set(systemConvIds.map(c => c.conversationId));
+    const userConvIdSet = new Set(userConvIds.map(c => c.conversationId));
+    
+    const sharedConvIds = Array.from(systemConvIdSet).filter(id => userConvIdSet.has(id));
+
+    if (sharedConvIds.length > 0) {
+      const directConv = await db.query.conversations.findFirst({
+        where: and(
+          sql`${conversations.id} = ANY(${sharedConvIds})`,
+          eq(conversations.isGroup, false)
+        )
+      });
+
+      if (directConv) {
+        return directConv.id;
+      }
     }
 
-    // Create new direct conversation
     const [newConversation] = await db.insert(conversations).values({
       title: null,
       isGroup: false,
     }).returning();
 
-    // Add both users as members
     await db.insert(conversationMembers).values([
       { conversationId: newConversation.id, userId: this.systemUserId },
       { conversationId: newConversation.id, userId },
@@ -192,7 +192,10 @@ export class TaskReminderService {
 
   private generateReminderMessage(task: TaskForReminder): string {
     if (!task.targetDate) {
-      return `📋 Task Reminder: You have a task "${task.title}" assigned to you. Please review and complete it.`;
+      return `[TASK REMINDER]\n\n` +
+        `Task: "${task.title}"\n` +
+        `Status: ${task.status}\n\n` +
+        `You have a task assigned to you. Please review and complete it.`;
     }
 
     const now = new Date();
@@ -201,14 +204,14 @@ export class TaskReminderService {
 
     if (isOverdue) {
       const daysOverdue = Math.ceil((now.getTime() - task.targetDate.getTime()) / (1000 * 60 * 60 * 24));
-      return `⚠️ OVERDUE TASK REMINDER\n\n` +
+      return `[URGENT - OVERDUE TASK]\n\n` +
         `Task: "${task.title}"\n` +
         `Status: ${task.status}\n` +
         `Target Date: ${task.targetDate.toLocaleDateString()} ${task.targetDate.toLocaleTimeString()}\n` +
         `Overdue by: ${daysOverdue} day${daysOverdue > 1 ? 's' : ''}\n\n` +
         `Please complete this task as soon as possible or request support if you need assistance.`;
     } else {
-      return `⏰ TASK DUE SOON REMINDER\n\n` +
+      return `[TASK DUE SOON]\n\n` +
         `Task: "${task.title}"\n` +
         `Status: ${task.status}\n` +
         `Target Date: ${task.targetDate.toLocaleDateString()} ${task.targetDate.toLocaleTimeString()}\n` +
@@ -218,5 +221,4 @@ export class TaskReminderService {
   }
 }
 
-// Export singleton instance
 export const taskReminderService = new TaskReminderService();
