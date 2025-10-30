@@ -2,7 +2,8 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Send, Paperclip, Smile } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Send, Paperclip, Smile, FileText, Image as ImageIcon, File } from 'lucide-react';
 
 interface MessageInputProps {
   onSendMessage: (body: string, attachmentUrl?: string) => void;
@@ -22,6 +23,7 @@ export default function MessageInput({ onSendMessage, onTyping, onFileUpload }: 
   const [message, setMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isEmojiOpen, setIsEmojiOpen] = useState(false);
+  const [pendingAttachment, setPendingAttachment] = useState<{ url: string; name: string; type: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -62,7 +64,12 @@ export default function MessageInput({ onSendMessage, onTyping, onFileUpload }: 
     setIsUploading(true);
     try {
       const url = await onFileUpload(file);
-      onSendMessage('', url);
+      // Store the attachment and show confirmation dialog
+      setPendingAttachment({
+        url,
+        name: file.name,
+        type: file.type
+      });
     } catch (error) {
       console.error('Upload failed:', error);
     } finally {
@@ -70,6 +77,27 @@ export default function MessageInput({ onSendMessage, onTyping, onFileUpload }: 
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    }
+  };
+
+  const handleConfirmAttachment = () => {
+    if (pendingAttachment) {
+      onSendMessage('', pendingAttachment.url);
+      setPendingAttachment(null);
+    }
+  };
+
+  const handleCancelAttachment = () => {
+    setPendingAttachment(null);
+  };
+
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) {
+      return <ImageIcon className="w-12 h-12 text-primary" />;
+    } else if (type.includes('pdf')) {
+      return <FileText className="w-12 h-12 text-red-500" />;
+    } else {
+      return <File className="w-12 h-12 text-blue-500" />;
     }
   };
 
@@ -170,6 +198,48 @@ export default function MessageInput({ onSendMessage, onTyping, onFileUpload }: 
         onChange={handleFileSelect}
         accept="image/*,.pdf,.doc,.docx,.txt"
       />
+
+      <Dialog open={!!pendingAttachment} onOpenChange={(open) => !open && handleCancelAttachment()}>
+        <DialogContent data-testid="dialog-confirm-attachment">
+          <DialogHeader>
+            <DialogTitle>Send Attachment?</DialogTitle>
+            <DialogDescription>
+              Do you want to post this file to the chat?
+            </DialogDescription>
+          </DialogHeader>
+          
+          {pendingAttachment && (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <div className="p-4 bg-accent/50 rounded-lg">
+                {getFileIcon(pendingAttachment.type)}
+              </div>
+              <div className="text-center">
+                <p className="font-semibold text-foreground">{pendingAttachment.name}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {pendingAttachment.type.split('/')[0] === 'image' ? 'Image' : 
+                   pendingAttachment.type.includes('pdf') ? 'PDF Document' : 'Document'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={handleCancelAttachment}
+              data-testid="button-cancel-attachment"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmAttachment}
+              data-testid="button-confirm-attachment"
+            >
+              Send to Chat
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
