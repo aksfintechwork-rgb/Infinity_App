@@ -699,17 +699,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { participantIds, ...meetingData } = req.body;
       
-      console.log("Meeting update request body:", req.body);
-      console.log("Meeting data to update:", meetingData);
+      // Build update data with only the fields that should be updated
+      const updateData: any = {};
       
-      const updateData = {
-        ...meetingData,
-        id: meetingId,
-        createdBy: meeting.createdBy,
-        createdAt: meeting.createdAt,
-      };
-
-      console.log("Final update data:", updateData);
+      if (meetingData.title !== undefined) updateData.title = meetingData.title;
+      if (meetingData.description !== undefined) updateData.description = meetingData.description;
+      
+      // Transform and validate date fields
+      if (meetingData.startTime !== undefined) {
+        const startDate = new Date(meetingData.startTime);
+        if (isNaN(startDate.getTime())) {
+          return res.status(400).json({ error: "Invalid start time" });
+        }
+        updateData.startTime = startDate;
+      }
+      
+      if (meetingData.endTime !== undefined) {
+        const endDate = new Date(meetingData.endTime);
+        if (isNaN(endDate.getTime())) {
+          return res.status(400).json({ error: "Invalid end time" });
+        }
+        updateData.endTime = endDate;
+      }
+      
+      if (meetingData.meetingLink !== undefined) {
+        if (meetingData.meetingLink && !meetingData.meetingLink.startsWith('https://meet.jit.si/')) {
+          return res.status(400).json({ error: "Meeting link must be a Jitsi Meet URL" });
+        }
+        updateData.meetingLink = meetingData.meetingLink;
+      }
+      
+      if (meetingData.recurrencePattern !== undefined) {
+        if (!['none', 'daily', 'weekly', 'monthly'].includes(meetingData.recurrencePattern)) {
+          return res.status(400).json({ error: "Invalid recurrence pattern" });
+        }
+        updateData.recurrencePattern = meetingData.recurrencePattern;
+      }
+      
+      if (meetingData.recurrenceFrequency !== undefined) updateData.recurrenceFrequency = meetingData.recurrenceFrequency;
+      
+      if (meetingData.recurrenceEndDate !== undefined) {
+        if (meetingData.recurrenceEndDate) {
+          const recEndDate = new Date(meetingData.recurrenceEndDate);
+          if (isNaN(recEndDate.getTime())) {
+            return res.status(400).json({ error: "Invalid recurrence end date" });
+          }
+          updateData.recurrenceEndDate = recEndDate;
+        } else {
+          updateData.recurrenceEndDate = null;
+        }
+      }
       
       await storage.updateMeeting(meetingId, updateData);
       
@@ -731,8 +770,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Update meeting error:", error);
-      console.error("Error details:", error instanceof Error ? error.message : String(error));
-      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
       res.status(500).json({ error: "Failed to update meeting" });
     }
   });
