@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is an internal team communication platform for SUPREMO TRADERS LLP. It is a real-time chat application with role-based access control, supporting direct messaging, group conversations, file attachments, typing indicators, and a user management panel for administrators. The platform also includes a meeting calendar and video conferencing system, aiming to provide an efficient and professional communication tool.
+This is an internal team communication platform for SUPREMO TRADERS LLP. It is a real-time chat application with role-based access control, supporting direct messaging, group conversations, file attachments, typing indicators, and a user management panel for administrators. The platform also includes a meeting calendar with AI-powered summarization, video conferencing system, and comprehensive task management, aiming to provide an efficient and professional communication tool.
 
 ## User Preferences
 
@@ -21,8 +21,8 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Storage
 - **Database**: PostgreSQL via Neon serverless HTTP driver, utilizing Drizzle ORM for schema migrations.
-- **Schema**: Includes `users`, `conversations`, `conversationMembers`, `messages`, `meetings`, `meetingParticipants`, `tasks`, and `task_support_requests`.
-- **Design Decisions**: PostgreSQL for relational integrity, supporting many-to-many relationships for direct and group messages. Task assignments use foreign key relationships to users table. Meeting participants stored in separate table with cascade delete for data integrity.
+- **Schema**: Includes `users`, `conversations`, `conversationMembers`, `messages`, `meetings` (with `summary` and `summaryLanguage` fields), `meetingParticipants`, `tasks`, and `task_support_requests`.
+- **Design Decisions**: PostgreSQL for relational integrity, supporting many-to-many relationships for direct and group messages. Task assignments use foreign key relationships to users table. Meeting participants stored in separate table with cascade delete for data integrity. Meeting summaries stored with language code for multi-language support.
 
 ### Authentication & Authorization
 - **Authentication**: JWT tokens (7-day expiration), bcrypt hashing, localStorage for client tokens, Bearer token for HTTP, query parameter for WebSocket. Login IDs are case-insensitive and support Unicode normalization for cross-device compatibility.
@@ -47,7 +47,8 @@ Preferred communication style: Simple, everyday language.
 ### Key Features
 - **Group Conversation Management**: Required group names, ability to add members to existing groups with optional access to message history.
 - **Admin Features**: User deletion and real-time user list updates across clients.
-- **Meeting Calendar**: Integrated with video conferencing (Jitsi Meet), team member participation tracking, and recurring meeting schedules (daily/weekly/monthly with customizable frequency and end date).
+- **Meeting Calendar**: Integrated with video conferencing (Jitsi Meet), team member participation tracking, recurring meeting schedules (daily/weekly/monthly with customizable frequency and end date), and AI-powered meeting summarization.
+- **AI Meeting Summaries**: Automatic generation of professional meeting summaries using OpenAI (via Replit AI Integrations), with support for 20+ languages including English (default), Spanish, French, German, Italian, Portuguese, Russian, Chinese, Japanese, Korean, Arabic, and Indian languages (Hindi, Bengali, Tamil, Telugu, Marathi, Gujarati, Kannada, Malayalam, Punjabi). Summaries can be copied and shared with team members in any language.
 - **Task Management System**: Complete task management with start/target dates, remarks, status tracking (todo/in_progress/completed), priority levels (low/medium/high), task assignment, real-time WebSocket updates with authorization filtering (only creator and assignee receive updates), and colorful zen-themed UI. Admins can view all tasks created by any team member using the "All Tasks" filter.
   - **Smart Dashboard Features**:
     - Statistics cards showing overview metrics (Total Tasks, To Do, In Progress, Completed, Overdue)
@@ -89,7 +90,8 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 -   **Neon Database**: Serverless PostgreSQL hosting.
+-   **OpenAI via Replit AI Integrations**: AI-powered meeting summarization using GPT-4o-mini model with multi-language translation support.
 -   **Google Fonts**: Inter font family.
 -   **Jitsi Meet**: Integrated for video conferencing.
 -   **File Storage**: Local filesystem (`uploads/` directory) with Multer for multipart form handling (10MB limit, specific file types).
--   **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`.
+-   **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`.
