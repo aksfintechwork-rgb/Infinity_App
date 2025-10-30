@@ -391,9 +391,9 @@ export default function ChatLayout({
         {currentView === 'admin' ? (
           <AdminPanel token={token} currentUserId={currentUser.id} />
         ) : currentView === 'calendar' ? (
-          <Calendar currentUser={currentUser} />
+          <Calendar currentUser={currentUser} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
         ) : currentView === 'tasks' ? (
-          <Tasks currentUser={currentUser} allUsers={allUsers} ws={ws} />
+          <Tasks currentUser={currentUser} allUsers={allUsers} ws={ws} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
         ) : activeVideoCall ? (
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b">

@@ -32,6 +32,14 @@ Preferred communication style: Simple, everyday language.
 ### Cross-Device Compatibility
 - Designed for seamless operation across all devices and browsers with automatic WebSocket reconnection, dynamic URL construction for real-time communication, robust file handling, and desktop notifications with enhanced loud sound alerts. Features mobile keyboard compatibility fixes for login.
 - **Mobile-Optimized Interface**: All touch targets meet minimum accessibility guidelines (44-48px), larger fonts and inputs for better readability, responsive spacing and layouts, improved mobile navigation with wider sheet menus (90vw), and zoom-friendly viewport configuration for accessibility.
+- **Mobile Navigation System**: Comprehensive mobile navigation ensuring users are never stuck:
+  - Chat view (conversation list): Menu button opens Sheet for view switching (Chat/Tasks/Calendar)
+  - Chat view (active conversation): Back button returns to conversation list, menu button opens Sheet for view switching
+  - Tasks view: Dedicated mobile menu button in header for accessing Sheet navigation
+  - Calendar view: Dedicated mobile menu button in header for accessing Sheet navigation
+  - All mobile menu buttons use consistent icon-only design (hamburger icon) and are hidden on desktop
+  - Floating Action Button (FAB) for quick access to new conversations on mobile
+  - All navigation controls optimized for touch with proper sizing and spacing
 
 ### Real-Time Presence Tracking
 - **Online/Offline Status**: WebSocket-based user presence system that accurately tracks which users are currently connected

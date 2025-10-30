@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repeat, Sparkles, Copy, Languages, Pencil, Zap } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repeat, Sparkles, Copy, Languages, Pencil, Zap, Menu } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
@@ -157,9 +157,10 @@ interface CalendarProps {
     email?: string;
     role: string;
   };
+  onOpenMobileMenu?: () => void;
 }
 
-export default function Calendar({ currentUser }: CalendarProps) {
+export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingMeetingId, setEditingMeetingId] = useState<number | null>(null);
@@ -509,6 +510,17 @@ export default function Calendar({ currentUser }: CalendarProps) {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-2">
+          {onOpenMobileMenu && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onOpenMobileMenu}
+              data-testid="button-mobile-menu-calendar"
+              className="md:hidden"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+          )}
           <CalendarIcon className="w-5 h-5" />
           <h2 className="font-semibold">Meeting Calendar</h2>
         </div>

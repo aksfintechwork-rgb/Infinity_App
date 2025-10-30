@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Calendar, User, CheckCircle2, Circle, Clock, XCircle, Search, Filter, TrendingUp, AlertCircle, Target, Zap, ArrowUpDown, Edit } from 'lucide-react';
+import { Plus, Calendar, User, CheckCircle2, Circle, Clock, XCircle, Search, Filter, TrendingUp, AlertCircle, Target, Zap, ArrowUpDown, Edit, Menu } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -49,6 +49,7 @@ interface TasksProps {
     send: (message: any) => void;
     on: (type: string, callback: (data: any) => void) => () => void;
   };
+  onOpenMobileMenu?: () => void;
 }
 
 const taskFormSchema = z.object({
@@ -76,7 +77,7 @@ const statusConfig = {
   cancelled: { label: 'Cancelled', icon: XCircle, color: 'bg-gray-500/20 text-gray-700 dark:text-gray-400' },
 };
 
-export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
+export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: TasksProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [filterView, setFilterView] = useState<'all' | 'created' | 'assigned'>('all');
@@ -294,10 +295,23 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
     <div className="flex flex-col h-full bg-gradient-to-br from-purple-50 via-blue-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="p-3 md:p-4 border-b bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
         <div className="flex items-center justify-between gap-2 mb-3">
-          <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-teal-600 bg-clip-text text-transparent" data-testid="text-tasks-title">
-            <span className="hidden sm:inline">Task Management</span>
-            <span className="sm:hidden">Tasks</span>
-          </h1>
+          <div className="flex items-center gap-2">
+            {onOpenMobileMenu && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onOpenMobileMenu}
+                data-testid="button-mobile-menu-tasks"
+                className="md:hidden"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+            )}
+            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-teal-600 bg-clip-text text-transparent" data-testid="text-tasks-title">
+              <span className="hidden sm:inline">Task Management</span>
+              <span className="sm:hidden">Tasks</span>
+            </h1>
+          </div>
           
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
