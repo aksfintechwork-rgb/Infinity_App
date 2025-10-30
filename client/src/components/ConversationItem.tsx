@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Users, CheckCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { MessageCircle, Users, CheckCheck, Pin, PinOff } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 
 interface ConversationItemProps {
@@ -14,6 +15,8 @@ interface ConversationItemProps {
   isActive?: boolean;
   avatarUrl?: string;
   isOnline?: boolean;
+  isPinned?: boolean;
+  onPinToggle?: (id: number) => void;
   onClick: () => void;
 }
 
@@ -43,6 +46,7 @@ const formatTimestamp = (timestamp: string) => {
 };
 
 export default function ConversationItem({
+  id,
   title,
   members,
   isGroup,
@@ -52,6 +56,8 @@ export default function ConversationItem({
   isActive = false,
   avatarUrl,
   isOnline = false,
+  isPinned = false,
+  onPinToggle,
   onClick,
 }: ConversationItemProps) {
   const displayName = title || members;
@@ -63,6 +69,13 @@ export default function ConversationItem({
     .slice(0, 2);
 
   const hasUnread = unreadCount > 0;
+
+  const handlePinClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onPinToggle) {
+      onPinToggle(id);
+    }
+  };
 
   return (
     <div
@@ -99,14 +112,34 @@ export default function ConversationItem({
 
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline justify-between gap-2 mb-1">
-          <h3 className={`font-semibold text-sm truncate ${hasUnread ? 'text-foreground' : 'text-foreground/80'}`}>
-            {displayName}
-          </h3>
-          {lastMessageTime && (
-            <span className={`text-xs flex-shrink-0 ${hasUnread ? 'text-purple-600 dark:text-purple-400 font-medium' : 'text-muted-foreground'}`}>
-              {formatTimestamp(lastMessageTime)}
-            </span>
-          )}
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            {isPinned && <Pin className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 flex-shrink-0" />}
+            <h3 className={`font-semibold text-sm truncate ${hasUnread ? 'text-foreground' : 'text-foreground/80'}`}>
+              {displayName}
+            </h3>
+          </div>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {onPinToggle && (
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handlePinClick}
+                className={`h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity ${isPinned ? 'opacity-100' : ''}`}
+                data-testid="button-pin-toggle"
+              >
+                {isPinned ? (
+                  <PinOff className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                ) : (
+                  <Pin className="w-3.5 h-3.5 text-muted-foreground hover:text-purple-600 dark:hover:text-purple-400" />
+                )}
+              </Button>
+            )}
+            {lastMessageTime && (
+              <span className={`text-xs ${hasUnread ? 'text-purple-600 dark:text-purple-400 font-medium' : 'text-muted-foreground'}`}>
+                {formatTimestamp(lastMessageTime)}
+              </span>
+            )}
+          </div>
         </div>
         
         <div className="flex items-center justify-between gap-2">

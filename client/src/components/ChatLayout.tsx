@@ -16,6 +16,8 @@ import Calendar from './Calendar';
 import Tasks from './Tasks';
 import logoImage from '@assets/image_1761659890673.png';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 
 interface User {
   id: number;
@@ -94,6 +96,59 @@ export default function ChatLayout({
 
   const isAdmin = currentUser.role === 'admin';
   const token = localStorage.getItem('auth_token') || '';
+  const { toast } = useToast();
+
+  const { data: pinnedConversationIds = [] } = useQuery<number[]>({
+    queryKey: ['/api/pinned-conversations'],
+  });
+
+  const pinMutation = useMutation({
+    mutationFn: async (conversationId: number) => {
+      return await apiRequest('POST', `/api/conversations/${conversationId}/pin`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/pinned-conversations'] });
+      toast({
+        title: 'Conversation pinned',
+        description: 'This conversation has been pinned to the top',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to pin conversation',
+        description: error.message || 'You can only pin up to 3 conversations',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const unpinMutation = useMutation({
+    mutationFn: async (conversationId: number) => {
+      return await apiRequest('DELETE', `/api/conversations/${conversationId}/unpin`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/pinned-conversations'] });
+      toast({
+        title: 'Conversation unpinned',
+        description: 'This conversation has been unpinned',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to unpin conversation',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handlePinToggle = (conversationId: number) => {
+    if (pinnedConversationIds.includes(conversationId)) {
+      unpinMutation.mutate(conversationId);
+    } else {
+      pinMutation.mutate(conversationId);
+    }
+  };
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
   const activeMessages = messages.filter((m) => m.conversationId === activeConversationId);
@@ -104,11 +159,19 @@ export default function ChatLayout({
     }
   }, [activeConversationId, onConversationSelect]);
 
-  const filteredConversations = conversations.filter(
-    (conv) =>
-      conv.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      conv.members.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredConversations = conversations
+    .filter(
+      (conv) =>
+        conv.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        conv.members.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      const aIsPinned = pinnedConversationIds.includes(a.id);
+      const bIsPinned = pinnedConversationIds.includes(b.id);
+      if (aIsPinned && !bIsPinned) return -1;
+      if (!aIsPinned && bIsPinned) return 1;
+      return 0;
+    });
 
   // Helper function to check if a conversation's other user is online
   const isConversationOnline = (conv: Conversation): boolean => {
@@ -285,6 +348,8 @@ export default function ChatLayout({
                       {...conv}
                       isActive={conv.id === activeConversationId}
                       isOnline={isConversationOnline(conv)}
+                      isPinned={pinnedConversationIds.includes(conv.id)}
+                      onPinToggle={handlePinToggle}
                       onClick={() => {
                         setActiveConversationId(conv.id);
                         onConversationSelect?.(conv.id);
@@ -586,6 +651,8 @@ export default function ChatLayout({
                         {...conv}
                         isActive={conv.id === activeConversationId}
                         isOnline={isConversationOnline(conv)}
+                        isPinned={pinnedConversationIds.includes(conv.id)}
+                        onPinToggle={handlePinToggle}
                         onClick={() => {
                           setActiveConversationId(conv.id);
                           onConversationSelect?.(conv.id);

@@ -422,6 +422,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/pinned-conversations", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const pinnedConversationIds = await storage.getPinnedConversations(req.userId);
+      res.json(pinnedConversationIds);
+    } catch (error) {
+      console.error("Get pinned conversations error:", error);
+      res.status(500).json({ error: "Failed to get pinned conversations" });
+    }
+  });
+
+  app.post("/api/conversations/:id/pin", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const conversationId = parseInt(req.params.id);
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ error: "Invalid conversation ID" });
+      }
+
+      const userConvIds = await storage.getUserConversationIds(req.userId);
+      if (!userConvIds.includes(conversationId)) {
+        return res.status(403).json({ error: "Access denied - you are not a member of this conversation" });
+      }
+
+      const isPinned = await storage.isPinned(req.userId, conversationId);
+      if (isPinned) {
+        return res.status(400).json({ error: "Conversation is already pinned" });
+      }
+
+      const pinnedCount = await storage.countPinnedConversations(req.userId);
+      if (pinnedCount >= 3) {
+        return res.status(400).json({ error: "You can only pin up to 3 conversations. Please unpin one first." });
+      }
+
+      const pinned = await storage.pinConversation(req.userId, conversationId);
+      res.status(201).json(pinned);
+    } catch (error) {
+      console.error("Pin conversation error:", error);
+      res.status(500).json({ error: "Failed to pin conversation" });
+    }
+  });
+
+  app.delete("/api/conversations/:id/unpin", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const conversationId = parseInt(req.params.id);
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ error: "Invalid conversation ID" });
+      }
+
+      const isPinned = await storage.isPinned(req.userId, conversationId);
+      if (!isPinned) {
+        return res.status(400).json({ error: "Conversation is not pinned" });
+      }
+
+      await storage.unpinConversation(req.userId, conversationId);
+      res.json({ success: true, message: "Conversation unpinned successfully" });
+    } catch (error) {
+      console.error("Unpin conversation error:", error);
+      res.status(500).json({ error: "Failed to unpin conversation" });
+    }
+  });
+
   app.get("/api/conversations/:id/messages", authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (!req.userId) {

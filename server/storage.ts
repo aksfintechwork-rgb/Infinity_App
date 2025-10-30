@@ -7,6 +7,8 @@ import {
   type InsertMessage,
   type ConversationMember,
   type InsertConversationMember,
+  type PinnedConversation,
+  type InsertPinnedConversation,
   type Meeting,
   type InsertMeeting,
   type MeetingParticipant,
@@ -20,6 +22,7 @@ import {
   conversations,
   messages,
   conversationMembers,
+  pinnedConversations,
   meetings,
   meetingParticipants,
   tasks,
@@ -46,6 +49,12 @@ export interface IStorage {
   getConversationMembers(conversationId: number): Promise<User[]>;
   getConversationMemberInfo(conversationId: number, userId: number): Promise<{ joinedAt: Date; canViewHistory: boolean } | undefined>;
   getUserConversationIds(userId: number): Promise<number[]>;
+  
+  getPinnedConversations(userId: number): Promise<number[]>;
+  pinConversation(userId: number, conversationId: number): Promise<PinnedConversation>;
+  unpinConversation(userId: number, conversationId: number): Promise<void>;
+  countPinnedConversations(userId: number): Promise<number>;
+  isPinned(userId: number, conversationId: number): Promise<boolean>;
   
   createMessage(message: InsertMessage): Promise<Message>;
   getMessagesByConversationId(conversationId: number): Promise<Message[]>;
@@ -203,6 +212,59 @@ export class PostgresStorage implements IStorage {
       joinedAt: result[0].joinedAt,
       canViewHistory: result[0].canViewHistory,
     };
+  }
+
+  async getPinnedConversations(userId: number): Promise<number[]> {
+    const result = await db
+      .select({ conversationId: pinnedConversations.conversationId })
+      .from(pinnedConversations)
+      .where(eq(pinnedConversations.userId, userId))
+      .orderBy(desc(pinnedConversations.pinnedAt));
+    
+    return result.map(r => r.conversationId);
+  }
+
+  async pinConversation(userId: number, conversationId: number): Promise<PinnedConversation> {
+    const result = await db
+      .insert(pinnedConversations)
+      .values({ userId, conversationId })
+      .returning();
+    return result[0];
+  }
+
+  async unpinConversation(userId: number, conversationId: number): Promise<void> {
+    await db
+      .delete(pinnedConversations)
+      .where(
+        and(
+          eq(pinnedConversations.userId, userId),
+          eq(pinnedConversations.conversationId, conversationId)
+        )
+      );
+  }
+
+  async countPinnedConversations(userId: number): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(pinnedConversations)
+      .where(eq(pinnedConversations.userId, userId));
+    
+    return result[0]?.count || 0;
+  }
+
+  async isPinned(userId: number, conversationId: number): Promise<boolean> {
+    const result = await db
+      .select({ id: pinnedConversations.id })
+      .from(pinnedConversations)
+      .where(
+        and(
+          eq(pinnedConversations.userId, userId),
+          eq(pinnedConversations.conversationId, conversationId)
+        )
+      )
+      .limit(1);
+    
+    return result.length > 0;
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
