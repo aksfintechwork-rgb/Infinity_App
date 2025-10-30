@@ -59,6 +59,20 @@ export default function Calendar({ currentUser }: CalendarProps) {
   const [activeVideoMeeting, setActiveVideoMeeting] = useState<string | null>(null);
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (isCreateOpen) {
+      setTitle('');
+      setDescription('');
+      setStartTime('');
+      setEndTime('');
+      setMeetingLink('');
+      setSelectedParticipants([]);
+      setRecurrencePattern('none');
+      setRecurrenceFrequency(1);
+      setRecurrenceEndDate('');
+    }
+  }, [isCreateOpen]);
+
   const { data: meetings = [], isLoading } = useQuery<Meeting[]>({
     queryKey: ['/api/meetings'],
   });
@@ -84,15 +98,6 @@ export default function Calendar({ currentUser }: CalendarProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
       setIsCreateOpen(false);
-      setTitle('');
-      setDescription('');
-      setStartTime('');
-      setEndTime('');
-      setMeetingLink('');
-      setSelectedParticipants([]);
-      setRecurrencePattern('none');
-      setRecurrenceFrequency(1);
-      setRecurrenceEndDate('');
       toast({
         title: 'Meeting created',
         description: 'Your meeting has been scheduled successfully.',
@@ -166,9 +171,9 @@ export default function Calendar({ currentUser }: CalendarProps) {
       endTime,
       meetingLink: meetingLink || undefined,
       participantIds: selectedParticipants.length > 0 ? selectedParticipants : undefined,
-      recurrencePattern: recurrencePattern !== 'none' ? recurrencePattern : null,
-      recurrenceFrequency: recurrencePattern !== 'none' ? recurrenceFrequency : null,
-      recurrenceEndDate: recurrencePattern !== 'none' ? recurrenceEndDate : null,
+      recurrencePattern: recurrencePattern || 'none',
+      recurrenceFrequency: recurrencePattern !== 'none' ? recurrenceFrequency : undefined,
+      recurrenceEndDate: recurrencePattern !== 'none' ? recurrenceEndDate : undefined,
     });
   };
 
