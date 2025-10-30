@@ -7,7 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repeat } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
@@ -22,6 +24,16 @@ interface Meeting {
   createdBy: number;
   creatorName: string;
   createdAt: string;
+  participants?: { id: number; name: string }[];
+  recurrencePattern?: string | null;
+  recurrenceFrequency?: number | null;
+  recurrenceEndDate?: string | null;
+}
+
+interface TeamMember {
+  id: number;
+  name: string;
+  email: string;
 }
 
 interface CalendarProps {
@@ -40,11 +52,19 @@ export default function Calendar({ currentUser }: CalendarProps) {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [meetingLink, setMeetingLink] = useState('');
+  const [selectedParticipants, setSelectedParticipants] = useState<number[]>([]);
+  const [recurrencePattern, setRecurrencePattern] = useState<string>('none');
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState<number>(1);
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [activeVideoMeeting, setActiveVideoMeeting] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { data: meetings = [], isLoading } = useQuery<Meeting[]>({
     queryKey: ['/api/meetings'],
+  });
+
+  const { data: users = [] } = useQuery<TeamMember[]>({
+    queryKey: ['/api/users'],
   });
 
   const createMeeting = useMutation({
@@ -54,6 +74,10 @@ export default function Calendar({ currentUser }: CalendarProps) {
       startTime: string;
       endTime: string;
       meetingLink?: string;
+      participantIds?: number[];
+      recurrencePattern?: string | null;
+      recurrenceFrequency?: number | null;
+      recurrenceEndDate?: string | null;
     }) => {
       return apiRequest('POST', '/api/meetings', data);
     },
@@ -65,6 +89,10 @@ export default function Calendar({ currentUser }: CalendarProps) {
       setStartTime('');
       setEndTime('');
       setMeetingLink('');
+      setSelectedParticipants([]);
+      setRecurrencePattern('none');
+      setRecurrenceFrequency(1);
+      setRecurrenceEndDate('');
       toast({
         title: 'Meeting created',
         description: 'Your meeting has been scheduled successfully.',
@@ -121,12 +149,26 @@ export default function Calendar({ currentUser }: CalendarProps) {
       return;
     }
 
+    // Validate recurring end date if pattern is selected
+    if (recurrencePattern !== 'none' && !recurrenceEndDate) {
+      toast({
+        title: 'Error',
+        description: 'Please select an end date for recurring meetings',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     createMeeting.mutate({
       title,
       description,
       startTime,
       endTime,
       meetingLink: meetingLink || undefined,
+      participantIds: selectedParticipants.length > 0 ? selectedParticipants : undefined,
+      recurrencePattern: recurrencePattern !== 'none' ? recurrencePattern : null,
+      recurrenceFrequency: recurrencePattern !== 'none' ? recurrenceFrequency : null,
+      recurrenceEndDate: recurrencePattern !== 'none' ? recurrenceEndDate : null,
     });
   };
 
@@ -284,6 +326,92 @@ export default function Calendar({ currentUser }: CalendarProps) {
                     Only Jitsi Meet URLs are allowed (https://meet.jit.si/...)
                   </p>
                 </div>
+                
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Invite Team Members
+                  </Label>
+                  <div className="border rounded-md p-3 max-h-32 overflow-y-auto space-y-2">
+                    {users.filter(u => u.id !== currentUser.id).map((user) => (
+                      <div key={user.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`participant-${user.id}`}
+                          checked={selectedParticipants.includes(user.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedParticipants([...selectedParticipants, user.id]);
+                            } else {
+                              setSelectedParticipants(selectedParticipants.filter(id => id !== user.id));
+                            }
+                          }}
+                          data-testid={`checkbox-participant-${user.id}`}
+                        />
+                        <label
+                          htmlFor={`participant-${user.id}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                          {user.name} ({user.email})
+                        </label>
+                      </div>
+                    ))}
+                    {users.filter(u => u.id !== currentUser.id).length === 0 && (
+                      <p className="text-sm text-muted-foreground">No other team members available</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Repeat className="w-4 h-4" />
+                    Recurring Meeting
+                  </Label>
+                  <Select value={recurrencePattern} onValueChange={setRecurrencePattern}>
+                    <SelectTrigger data-testid="select-recurrence-pattern">
+                      <SelectValue placeholder="Select recurrence pattern" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Does not repeat</SelectItem>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {recurrencePattern !== 'none' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="frequency">Repeat every</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="frequency"
+                          type="number"
+                          min="1"
+                          max="30"
+                          value={recurrenceFrequency}
+                          onChange={(e) => setRecurrenceFrequency(parseInt(e.target.value) || 1)}
+                          className="w-20"
+                          data-testid="input-recurrence-frequency"
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          {recurrencePattern === 'daily' ? 'day(s)' : recurrencePattern === 'weekly' ? 'week(s)' : 'month(s)'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="endDate">Repeat until *</Label>
+                      <Input
+                        id="endDate"
+                        type="date"
+                        value={recurrenceEndDate}
+                        onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                        data-testid="input-recurrence-end-date"
+                        required
+                      />
+                    </div>
+                  </>
+                )}
               </div>
               <DialogFooter>
                 <Button
@@ -356,6 +484,27 @@ export default function Calendar({ currentUser }: CalendarProps) {
                               <User className="w-4 h-4" />
                               <span>Organized by {meeting.creatorName}</span>
                             </div>
+                            {meeting.participants && meeting.participants.length > 0 && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Users className="w-4 h-4" />
+                                <span data-testid={`text-participants-${meeting.id}`}>
+                                  {meeting.participants.map(p => p.name).join(', ')}
+                                </span>
+                              </div>
+                            )}
+                            {meeting.recurrencePattern && meeting.recurrencePattern !== 'none' && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Repeat className="w-4 h-4" />
+                                <span data-testid={`text-recurrence-${meeting.id}`}>
+                                  Repeats {meeting.recurrencePattern}
+                                  {meeting.recurrenceFrequency && meeting.recurrenceFrequency > 1 
+                                    ? ` (every ${meeting.recurrenceFrequency} ${meeting.recurrencePattern === 'daily' ? 'days' : meeting.recurrencePattern === 'weekly' ? 'weeks' : 'months'})`
+                                    : ''
+                                  }
+                                  {meeting.recurrenceEndDate && ` until ${format(new Date(meeting.recurrenceEndDate), 'PP')}`}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </CardContent>
                         {meeting.meetingLink && (
@@ -417,6 +566,27 @@ export default function Calendar({ currentUser }: CalendarProps) {
                               <User className="w-4 h-4" />
                               <span>Organized by {meeting.creatorName}</span>
                             </div>
+                            {meeting.participants && meeting.participants.length > 0 && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Users className="w-4 h-4" />
+                                <span data-testid={`text-participants-${meeting.id}`}>
+                                  {meeting.participants.map(p => p.name).join(', ')}
+                                </span>
+                              </div>
+                            )}
+                            {meeting.recurrencePattern && meeting.recurrencePattern !== 'none' && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Repeat className="w-4 h-4" />
+                                <span data-testid={`text-recurrence-${meeting.id}`}>
+                                  Repeats {meeting.recurrencePattern}
+                                  {meeting.recurrenceFrequency && meeting.recurrenceFrequency > 1 
+                                    ? ` (every ${meeting.recurrenceFrequency} ${meeting.recurrencePattern === 'daily' ? 'days' : meeting.recurrencePattern === 'weekly' ? 'weeks' : 'months'})`
+                                    : ''
+                                  }
+                                  {meeting.recurrenceEndDate && ` until ${format(new Date(meeting.recurrenceEndDate), 'PP')}`}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
