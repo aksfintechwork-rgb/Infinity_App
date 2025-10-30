@@ -679,6 +679,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/meetings/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const meetingId = parseInt(req.params.id);
+      const meeting = await storage.getMeetingById(meetingId);
+
+      if (!meeting) {
+        return res.status(404).json({ error: "Meeting not found" });
+      }
+
+      const user = await storage.getUserById(req.userId);
+      if (meeting.createdBy !== req.userId && user?.role !== 'admin') {
+        return res.status(403).json({ error: "Only the creator or an admin can edit this meeting" });
+      }
+
+      const updateData = {
+        ...req.body,
+        id: meetingId,
+        createdBy: meeting.createdBy,
+        createdAt: meeting.createdAt,
+      };
+
+      await storage.updateMeeting(meetingId, updateData);
+      
+      if (req.body.participantIds !== undefined) {
+        await storage.clearMeetingParticipants(meetingId);
+        for (const userId of req.body.participantIds) {
+          await storage.addMeetingParticipant(meetingId, userId);
+        }
+      }
+
+      const updatedMeeting = await storage.getMeetingById(meetingId);
+      const creator = await storage.getUserById(updatedMeeting!.createdBy);
+      const participants = await storage.getMeetingParticipants(meetingId);
+
+      res.json({
+        ...updatedMeeting,
+        creatorName: creator?.name || 'Unknown',
+        participants: participants.map(p => ({ id: p.id, name: p.name })),
+      });
+    } catch (error) {
+      console.error("Update meeting error:", error);
+      res.status(500).json({ error: "Failed to update meeting" });
+    }
+  });
+
   app.delete("/api/meetings/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (!req.userId) {

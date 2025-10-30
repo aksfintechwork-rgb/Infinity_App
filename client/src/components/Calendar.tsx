@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repeat, Sparkles, Copy, Languages } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repeat, Sparkles, Copy, Languages, Pencil, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
@@ -161,6 +161,8 @@ interface CalendarProps {
 
 export default function Calendar({ currentUser }: CalendarProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingMeetingId, setEditingMeetingId] = useState<number | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [startTime, setStartTime] = useState('');
@@ -221,6 +223,40 @@ export default function Calendar({ currentUser }: CalendarProps) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to create meeting',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateMeeting = useMutation({
+    mutationFn: async (data: {
+      id: number;
+      title: string;
+      description?: string;
+      startTime: string;
+      endTime: string;
+      meetingLink?: string;
+      participantIds?: number[];
+      recurrencePattern?: string | null;
+      recurrenceFrequency?: number | null;
+      recurrenceEndDate?: string | null;
+    }) => {
+      const { id, ...updateData } = data;
+      return apiRequest('PUT', `/api/meetings/${id}`, updateData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
+      setIsEditOpen(false);
+      setEditingMeetingId(null);
+      toast({
+        title: 'Meeting updated',
+        description: 'Your meeting has been updated successfully.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update meeting',
         variant: 'destructive',
       });
     },
@@ -361,6 +397,74 @@ export default function Calendar({ currentUser }: CalendarProps) {
     const roomName = `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const baseLink = `https://meet.jit.si/${roomName}`;
     setMeetingLink(addJitsiConfig(baseLink));
+  };
+
+  const handleEditMeeting = (meeting: Meeting) => {
+    setEditingMeetingId(meeting.id);
+    setTitle(meeting.title);
+    setDescription(meeting.description || '');
+    setStartTime(meeting.startTime.slice(0, 16));
+    setEndTime(meeting.endTime.slice(0, 16));
+    setMeetingLink(meeting.meetingLink || '');
+    setSelectedParticipants(meeting.participants?.map(p => p.id) || []);
+    setRecurrencePattern(meeting.recurrencePattern || 'none');
+    setRecurrenceFrequency(meeting.recurrenceFrequency || 1);
+    setRecurrenceEndDate(meeting.recurrenceEndDate ? meeting.recurrenceEndDate.slice(0, 10) : '');
+    setIsEditOpen(true);
+  };
+
+  const handleUpdateMeeting = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingMeetingId || !title || !startTime || !endTime) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (meetingLink && !meetingLink.startsWith('https://meet.jit.si/')) {
+      toast({
+        title: 'Invalid meeting link',
+        description: 'Meeting link must be a Jitsi Meet URL',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (recurrencePattern !== 'none' && !recurrenceEndDate) {
+      toast({
+        title: 'Error',
+        description: 'Please select an end date for recurring meetings',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    updateMeeting.mutate({
+      id: editingMeetingId,
+      title,
+      description,
+      startTime,
+      endTime,
+      meetingLink: meetingLink || undefined,
+      participantIds: selectedParticipants.length > 0 ? selectedParticipants : undefined,
+      recurrencePattern: recurrencePattern || 'none',
+      recurrenceFrequency: recurrencePattern !== 'none' ? recurrenceFrequency : undefined,
+      recurrenceEndDate: recurrencePattern !== 'none' ? recurrenceEndDate : undefined,
+    });
+  };
+
+  const handleQuickStartMeeting = (meeting: Meeting) => {
+    if (meeting.meetingLink) {
+      handleJoinMeeting(meeting.meetingLink);
+    } else {
+      const roomName = `supremo-meeting-${meeting.id}`;
+      const jitsiLink = `https://meet.jit.si/${roomName}`;
+      handleJoinMeeting(jitsiLink);
+    }
   };
 
   // Sort meetings by start time
@@ -599,6 +703,172 @@ export default function Calendar({ currentUser }: CalendarProps) {
             </form>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Meeting</DialogTitle>
+              <DialogDescription>
+                Update meeting details and participants
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleUpdateMeeting}>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-title">Meeting Title *</Label>
+                  <Input
+                    id="edit-title"
+                    placeholder="Weekly Team Sync"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    data-testid="input-edit-meeting-title"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    placeholder="Discuss project updates and roadmap"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    data-testid="input-edit-meeting-description"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-startTime">Start Time *</Label>
+                    <Input
+                      id="edit-startTime"
+                      type="datetime-local"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      data-testid="input-edit-meeting-start"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-endTime">End Time *</Label>
+                    <Input
+                      id="edit-endTime"
+                      type="datetime-local"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      data-testid="input-edit-meeting-end"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-meetingLink">Jitsi Meeting Link</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="edit-meetingLink"
+                      placeholder="https://meet.jit.si/your-room-name"
+                      value={meetingLink}
+                      onChange={(e) => setMeetingLink(e.target.value)}
+                      data-testid="input-edit-meeting-link"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleGenerateMeetingLink}
+                      data-testid="button-edit-generate-link"
+                    >
+                      Generate
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Participants</Label>
+                  <ScrollArea className="h-32 border rounded-md p-2">
+                    <div className="space-y-2">
+                      {users
+                        .filter((user) => user.id !== currentUser.id)
+                        .map((user) => (
+                          <div key={user.id} className="flex items-center gap-2">
+                            <Checkbox
+                              id={`edit-participant-${user.id}`}
+                              checked={selectedParticipants.includes(user.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedParticipants([...selectedParticipants, user.id]);
+                                } else {
+                                  setSelectedParticipants(selectedParticipants.filter((id) => id !== user.id));
+                                }
+                              }}
+                              data-testid={`checkbox-edit-participant-${user.id}`}
+                            />
+                            <label htmlFor={`edit-participant-${user.id}`} className="text-sm flex-1 cursor-pointer">
+                              {user.name} ({user.email})
+                            </label>
+                          </div>
+                        ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-recurrence">Recurrence</Label>
+                  <Select value={recurrencePattern} onValueChange={setRecurrencePattern}>
+                    <SelectTrigger id="edit-recurrence" data-testid="select-edit-recurrence">
+                      <SelectValue placeholder="Select recurrence pattern" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Recurrence</SelectItem>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {recurrencePattern !== 'none' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-frequency">Frequency (Every X {recurrencePattern === 'daily' ? 'days' : recurrencePattern === 'weekly' ? 'weeks' : 'months'})</Label>
+                      <Input
+                        id="edit-frequency"
+                        type="number"
+                        min="1"
+                        max="365"
+                        value={recurrenceFrequency}
+                        onChange={(e) => setRecurrenceFrequency(parseInt(e.target.value) || 1)}
+                        data-testid="input-edit-recurrence-frequency"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-endDate">End Date *</Label>
+                      <Input
+                        id="edit-endDate"
+                        type="date"
+                        value={recurrenceEndDate}
+                        onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                        data-testid="input-edit-recurrence-end-date"
+                        required
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditOpen(false)}
+                  data-testid="button-cancel-edit-meeting"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateMeeting.isPending}
+                  data-testid="button-submit-edit-meeting"
+                >
+                  {updateMeeting.isPending ? 'Updating...' : 'Update Meeting'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <ScrollArea className="flex-1">
@@ -626,14 +896,24 @@ export default function Calendar({ currentUser }: CalendarProps) {
                               )}
                             </div>
                             {(meeting.createdBy === currentUser.id || currentUser.role === 'admin') && (
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => deleteMeeting.mutate(meeting.id)}
-                                data-testid={`button-delete-${meeting.id}`}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleEditMeeting(meeting)}
+                                  data-testid={`button-edit-${meeting.id}`}
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => deleteMeeting.mutate(meeting.id)}
+                                  data-testid={`button-delete-${meeting.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             )}
                           </div>
                         </CardHeader>
@@ -699,23 +979,34 @@ export default function Calendar({ currentUser }: CalendarProps) {
                               </p>
                             </div>
                           )}
-                          <div className="flex gap-2 w-full">
-                            <SummaryGenerator
-                              meetingId={meeting.id}
-                              hasSummary={!!meeting.summary}
-                              onGenerate={generateSummary}
-                              isGenerating={generateSummary.isPending}
-                            />
-                            {meeting.meetingLink && (
-                              <Button
-                                className="flex-1"
-                                onClick={() => handleJoinMeeting(meeting.meetingLink)}
-                                data-testid={`button-join-${meeting.id}`}
-                              >
-                                <Video className="w-4 h-4 mr-2" />
-                                Join Meeting
-                              </Button>
-                            )}
+                          <div className="flex flex-col gap-2 w-full">
+                            <Button
+                              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                              onClick={() => handleQuickStartMeeting(meeting)}
+                              data-testid={`button-quick-start-${meeting.id}`}
+                            >
+                              <Zap className="w-4 h-4 mr-2" />
+                              Start Meeting Now
+                            </Button>
+                            <div className="flex gap-2 w-full">
+                              <SummaryGenerator
+                                meetingId={meeting.id}
+                                hasSummary={!!meeting.summary}
+                                onGenerate={generateSummary}
+                                isGenerating={generateSummary.isPending}
+                              />
+                              {meeting.meetingLink && (
+                                <Button
+                                  variant="outline"
+                                  className="flex-1"
+                                  onClick={() => handleJoinMeeting(meeting.meetingLink)}
+                                  data-testid={`button-join-${meeting.id}`}
+                                >
+                                  <Video className="w-4 h-4 mr-2" />
+                                  Join Meeting
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </CardFooter>
                       </Card>
@@ -741,14 +1032,24 @@ export default function Calendar({ currentUser }: CalendarProps) {
                               )}
                             </div>
                             {(meeting.createdBy === currentUser.id || currentUser.role === 'admin') && (
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => deleteMeeting.mutate(meeting.id)}
-                                data-testid={`button-delete-${meeting.id}`}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleEditMeeting(meeting)}
+                                  data-testid={`button-edit-${meeting.id}`}
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => deleteMeeting.mutate(meeting.id)}
+                                  data-testid={`button-delete-${meeting.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             )}
                           </div>
                         </CardHeader>

@@ -63,11 +63,13 @@ export interface IStorage {
   createMeeting(meeting: InsertMeeting): Promise<Meeting>;
   getAllMeetings(): Promise<Meeting[]>;
   getMeetingById(id: number): Promise<Meeting | undefined>;
+  updateMeeting(id: number, updates: Partial<InsertMeeting>): Promise<void>;
   deleteMeeting(id: number): Promise<void>;
   updateMeetingSummary(meetingId: number, summary: string, language: string): Promise<void>;
   addMeetingParticipant(participant: InsertMeetingParticipant): Promise<MeetingParticipant>;
   getMeetingParticipants(meetingId: number): Promise<User[]>;
   removeMeetingParticipant(meetingId: number, userId: number): Promise<void>;
+  clearMeetingParticipants(meetingId: number): Promise<void>;
   
   createTask(task: InsertTask): Promise<Task>;
   getTaskById(id: number): Promise<TaskWithDetails | undefined>;
@@ -305,6 +307,10 @@ export class PostgresStorage implements IStorage {
     return result[0];
   }
 
+  async updateMeeting(id: number, updates: Partial<InsertMeeting>): Promise<void> {
+    await db.update(meetings).set(updates).where(eq(meetings.id, id));
+  }
+
   async deleteMeeting(id: number): Promise<void> {
     await db.delete(meetings).where(eq(meetings.id, id));
   }
@@ -347,6 +353,10 @@ export class PostgresStorage implements IStorage {
         eq(meetingParticipants.userId, userId)
       )
     );
+  }
+
+  async clearMeetingParticipants(meetingId: number): Promise<void> {
+    await db.delete(meetingParticipants).where(eq(meetingParticipants.meetingId, meetingId));
   }
 
   async createTask(task: InsertTask): Promise<Task> {
