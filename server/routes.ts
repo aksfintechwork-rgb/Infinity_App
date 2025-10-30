@@ -606,13 +606,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const filter = req.query.filter as string | undefined;
+      const filterUserId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
       const user = await storage.getUserById(req.userId);
       const isAdmin = user?.role === 'admin';
 
       let tasks;
       
+      // Admins can filter by specific user
+      if (isAdmin && filterUserId) {
+        tasks = await storage.getAllTasksForUser(filterUserId);
+      }
       // Admins can see all tasks
-      if (isAdmin && filter === 'all') {
+      else if (isAdmin && filter === 'all') {
         tasks = await storage.getAllTasks();
       } else if (filter === 'created') {
         tasks = await storage.getTasksByCreator(req.userId);
