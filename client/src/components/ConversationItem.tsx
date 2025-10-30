@@ -13,6 +13,7 @@ interface ConversationItemProps {
   unreadCount?: number;
   isActive?: boolean;
   avatarUrl?: string;
+  isOnline?: boolean;
   onClick: () => void;
 }
 
@@ -50,6 +51,7 @@ export default function ConversationItem({
   unreadCount = 0,
   isActive = false,
   avatarUrl,
+  isOnline = false,
   onClick,
 }: ConversationItemProps) {
   const displayName = title || members;
@@ -90,7 +92,7 @@ export default function ConversationItem({
           </div>
         )}
         {/* Online status indicator for direct messages */}
-        {!isGroup && (
+        {!isGroup && isOnline && (
           <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-background" />
         )}
       </div>

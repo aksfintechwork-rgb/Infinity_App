@@ -44,6 +44,7 @@ function App() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('auth_token'));
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -131,10 +132,36 @@ function App() {
       console.log('User deleted:', data.id);
     });
 
+    // Listen for initial online users list
+    const unsubscribeOnlineUsers = ws.on('online_users', (data: { userIds: number[] }) => {
+      setOnlineUserIds(data.userIds);
+      console.log('Online users:', data.userIds);
+    });
+
+    // Listen for user online events
+    const unsubscribeUserOnline = ws.on('user_online', (data: { userId: number }) => {
+      setOnlineUserIds((prev) => {
+        if (prev.includes(data.userId)) {
+          return prev;
+        }
+        return [...prev, data.userId];
+      });
+      console.log('User online:', data.userId);
+    });
+
+    // Listen for user offline events
+    const unsubscribeUserOffline = ws.on('user_offline', (data: { userId: number }) => {
+      setOnlineUserIds((prev) => prev.filter((id) => id !== data.userId));
+      console.log('User offline:', data.userId);
+    });
+
     return () => {
       unsubscribeMessage();
       unsubscribeUserCreated();
       unsubscribeUserDeleted();
+      unsubscribeOnlineUsers();
+      unsubscribeUserOnline();
+      unsubscribeUserOffline();
     };
   }, [ws.isConnected, ws.on, currentUser, activeConversationId, conversations]);
 
@@ -286,6 +313,7 @@ function App() {
             currentUser={currentUser}
             conversations={conversations}
             allUsers={allUsers}
+            onlineUserIds={onlineUserIds}
             messages={messages}
             onSendMessage={handleSendMessage}
             onCreateConversation={handleCreateConversation}

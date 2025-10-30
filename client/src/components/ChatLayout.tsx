@@ -34,6 +34,7 @@ interface Conversation {
   lastMessageTime?: string;
   unreadCount?: number;
   avatarUrl?: string;
+  memberIds?: number[];
 }
 
 interface MessageType {
@@ -51,6 +52,7 @@ interface ChatLayoutProps {
   currentUser: User;
   conversations: Conversation[];
   allUsers: User[];
+  onlineUserIds: number[];
   messages: MessageType[];
   onSendMessage: (conversationId: number, body: string, attachmentUrl?: string) => void;
   onCreateConversation: (title: string, memberIds: number[]) => void;
@@ -68,6 +70,7 @@ export default function ChatLayout({
   currentUser,
   conversations,
   allUsers,
+  onlineUserIds,
   messages,
   onSendMessage,
   onCreateConversation,
@@ -105,6 +108,13 @@ export default function ChatLayout({
       conv.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       conv.members.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Helper function to check if a conversation's other user is online
+  const isConversationOnline = (conv: Conversation): boolean => {
+    if (conv.isGroup || !conv.memberIds) return false;
+    const otherUserId = conv.memberIds.find(id => id !== currentUser.id);
+    return otherUserId ? onlineUserIds.includes(otherUserId) : false;
+  };
 
   const getAvailableUsersForGroup = () => {
     if (!activeConversation?.isGroup) return [];
@@ -244,6 +254,7 @@ export default function ChatLayout({
                       key={conv.id}
                       {...conv}
                       isActive={conv.id === activeConversationId}
+                      isOnline={isConversationOnline(conv)}
                       onClick={() => {
                         setActiveConversationId(conv.id);
                         onConversationSelect?.(conv.id);
@@ -484,6 +495,7 @@ export default function ChatLayout({
                         key={conv.id}
                         {...conv}
                         isActive={conv.id === activeConversationId}
+                        isOnline={isConversationOnline(conv)}
                         onClick={() => {
                           setActiveConversationId(conv.id);
                           onConversationSelect?.(conv.id);

@@ -823,6 +823,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 
+  // Helper function to get currently online user IDs
+  const getOnlineUserIds = (): number[] => {
+    const onlineIds: number[] = [];
+    wss.clients.forEach((client: WebSocketClient) => {
+      if (client.readyState === WebSocket.OPEN && client.userId) {
+        if (!onlineIds.includes(client.userId)) {
+          onlineIds.push(client.userId);
+        }
+      }
+    });
+    return onlineIds;
+  };
+
+  // Helper function to broadcast user presence status
+  const broadcastUserPresence = (userId: number, status: 'online' | 'offline') => {
+    wss.clients.forEach((client: WebSocketClient) => {
+      if (client.readyState === WebSocket.OPEN && client.userId) {
+        client.send(JSON.stringify({
+          type: status === 'online' ? 'user_online' : 'user_offline',
+          data: { userId },
+        }));
+      }
+    });
+  };
+
   wss.on('connection', (ws: WebSocketClient, req) => {
     const url = new URL(req.url || '', `http://${req.headers.host}`);
     const token = url.searchParams.get('token');
@@ -842,6 +867,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.isAlive = true;
 
     console.log(`WebSocket client connected: userId=${ws.userId}`);
+
+    // Broadcast that this user is online
+    broadcastUserPresence(ws.userId, 'online');
+
+    // Send list of currently online users to the newly connected client
+    const onlineUserIds = getOnlineUserIds();
+    ws.send(JSON.stringify({
+      type: 'online_users',
+      data: { userIds: onlineUserIds },
+    }));
 
     ws.on('pong', () => {
       ws.isAlive = true;
@@ -932,6 +967,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     ws.on('close', () => {
       console.log(`WebSocket client disconnected: userId=${ws.userId}`);
+      
+      // Check if user still has other active connections
+      const userId = ws.userId;
+      if (userId) {
+        let stillOnline = false;
+        wss.clients.forEach((client: WebSocketClient) => {
+          if (client !== ws && client.readyState === WebSocket.OPEN && client.userId === userId) {
+            stillOnline = true;
+          }
+        });
+        
+        // Only broadcast offline if user has no other connections
+        if (!stillOnline) {
+          broadcastUserPresence(userId, 'offline');
+        }
+      }
     });
 
     ws.on('error', (error) => {

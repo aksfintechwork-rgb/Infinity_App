@@ -33,22 +33,30 @@ export async function playNotificationSound() {
       }
     }
 
-    // Create a new oscillator for each beep (oscillators are single-use)
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.value = 800; // 800 Hz tone
-    oscillator.type = 'sine';
-    
     const now = audioContext.currentTime;
-    gainNode.gain.setValueAtTime(0.3, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
     
-    oscillator.start(now);
-    oscillator.stop(now + 0.2);
+    // Play a triple-beep pattern for better noticeability
+    const playBeep = (startTime: number, frequency: number, duration: number, volume: number) => {
+      const oscillator = audioContext!.createOscillator();
+      const gainNode = audioContext!.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext!.destination);
+      
+      oscillator.frequency.value = frequency;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(volume, startTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+      
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration);
+    };
+    
+    // Triple beep: high volume, pleasant frequencies
+    playBeep(now, 880, 0.15, 0.5);           // First beep (A5)
+    playBeep(now + 0.2, 1046.5, 0.15, 0.5);  // Second beep (C6)
+    playBeep(now + 0.4, 1318.5, 0.2, 0.6);   // Third beep (E6) - slightly longer and louder
   } catch (error) {
     console.error('Failed to play notification sound:', error);
   }
