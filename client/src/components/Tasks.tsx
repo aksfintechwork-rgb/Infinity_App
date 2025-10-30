@@ -74,6 +74,8 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
   const [filterView, setFilterView] = useState<'all' | 'created' | 'assigned'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
+  
+  const isAdmin = currentUser.role === 'admin';
 
   // Listen for WebSocket task updates
   useEffect(() => {
@@ -112,7 +114,10 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
   const { data: tasks = [], isLoading } = useQuery<TaskWithDetails[]>({
     queryKey: ['/api/tasks', filterView],
     queryFn: async () => {
-      const filterParam = filterView !== 'all' ? `?filter=${filterView}` : '';
+      // For admins, pass 'all' filter to get all tasks from everyone
+      // For regular users, no filter shows their involved tasks
+      const filterParam = filterView === 'all' && isAdmin ? '?filter=all' : 
+                          filterView !== 'all' ? `?filter=${filterView}` : '';
       const response = await fetch(`/api/tasks${filterParam}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
@@ -348,7 +353,7 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
               onClick={() => setFilterView('all')}
               data-testid="button-filter-all"
             >
-              All
+              {isAdmin ? 'All Tasks' : 'My Tasks'}
             </Button>
             <Button
               size="sm"
