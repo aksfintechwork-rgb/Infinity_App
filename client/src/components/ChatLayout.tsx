@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, Phone } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
@@ -89,6 +89,7 @@ export default function ChatLayout({
   const [isDark, setIsDark] = useState(false);
   const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar' | 'tasks'>('chat');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeVideoCall, setActiveVideoCall] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = currentUser.role === 'admin';
@@ -151,6 +152,19 @@ export default function ChatLayout({
       document.documentElement.classList.remove('dark');
     }
   }, [isDark]);
+
+  const handleStartCall = () => {
+    if (!activeConversation) return;
+    
+    // Generate a unique Jitsi room name based on conversation
+    const roomName = `supremo-chat-${activeConversation.id}-${Date.now()}`;
+    const jitsiLink = `https://meet.jit.si/${roomName}`;
+    setActiveVideoCall(jitsiLink);
+  };
+
+  const handleLeaveCall = () => {
+    setActiveVideoCall(null);
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -299,6 +313,32 @@ export default function ChatLayout({
           <Calendar currentUser={currentUser} />
         ) : currentView === 'tasks' ? (
           <Tasks currentUser={currentUser} allUsers={allUsers} ws={ws} />
+        ) : activeVideoCall ? (
+          <div className="flex flex-col h-full">
+            <div className="flex items-center justify-between p-4 border-b">
+              <div className="flex items-center gap-2">
+                <Video className="w-5 h-5" />
+                <h2 className="font-semibold">
+                  {activeConversation?.isGroup ? 'Group Call' : 'Video Call'}
+                </h2>
+              </div>
+              <Button
+                variant="outline"
+                onClick={handleLeaveCall}
+                data-testid="button-leave-call"
+              >
+                Leave Call
+              </Button>
+            </div>
+            <div className="flex-1">
+              <iframe
+                src={activeVideoCall}
+                allow="camera; microphone; fullscreen; display-capture; autoplay"
+                className="w-full h-full border-0"
+                title="Video Call"
+              />
+            </div>
+          </div>
         ) : activeConversation ? (
           <>
             <div className="min-h-[64px] md:h-16 border-b border-border flex items-center justify-between px-3 md:px-6 flex-shrink-0">
@@ -328,29 +368,50 @@ export default function ChatLayout({
                   )}
                 </div>
               </div>
-              {activeConversation.isGroup && (
+              <div className="flex items-center gap-2">
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="sm"
-                  onClick={() => setIsAddMembersOpen(true)}
+                  onClick={handleStartCall}
                   className="hidden md:flex"
-                  data-testid="button-add-members-to-group"
+                  data-testid="button-start-call"
                 >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Add Members
+                  <Video className="w-4 h-4 mr-2" />
+                  {activeConversation.isGroup ? 'Start Group Call' : 'Start Call'}
                 </Button>
-              )}
-              {activeConversation.isGroup && (
                 <Button
-                  variant="ghost"
+                  variant="default"
                   size="icon"
-                  onClick={() => setIsAddMembersOpen(true)}
+                  onClick={handleStartCall}
                   className="md:hidden h-11 w-11"
-                  data-testid="button-add-members-mobile"
+                  data-testid="button-start-call-mobile"
                 >
-                  <UserPlus className="w-5 h-5" />
+                  <Video className="w-5 h-5" />
                 </Button>
-              )}
+                {activeConversation.isGroup && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsAddMembersOpen(true)}
+                      className="hidden md:flex"
+                      data-testid="button-add-members-to-group"
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Add Members
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsAddMembersOpen(true)}
+                      className="md:hidden h-11 w-11"
+                      data-testid="button-add-members-mobile"
+                    >
+                      <UserPlus className="w-5 h-5" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
 
             <ScrollArea className="flex-1 px-3 md:px-6 py-4">
