@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Calendar, User, CheckCircle2, Circle, Clock, XCircle, Search, Filter } from 'lucide-react';
+import { Plus, Calendar, User, CheckCircle2, Circle, Clock, XCircle, Search, Filter, TrendingUp, AlertCircle, Target, Zap, ArrowUpDown } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -75,6 +75,8 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
   const [filterUserId, setFilterUserId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'recent' | 'dueDate' | 'status'>('recent');
   
   const isAdmin = currentUser.role === 'admin';
 
@@ -180,10 +182,55 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
     createTaskMutation.mutate(data);
   };
 
-  const filteredTasks = tasks.filter(task =>
-    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    task.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Calculate statistics
+  const statistics = {
+    total: tasks.length,
+    completed: tasks.filter(t => t.status === 'completed').length,
+    inProgress: tasks.filter(t => t.status === 'in_progress').length,
+    todo: tasks.filter(t => t.status === 'pending').length,
+    overdue: tasks.filter(t => {
+      if (t.status === 'completed' || !t.targetDate) return false;
+      return new Date(t.targetDate) < new Date();
+    }).length,
+  };
+
+  // Filter and sort tasks
+  let filteredTasks = tasks.filter(task => {
+    const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      task.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  // Sort tasks
+  filteredTasks = [...filteredTasks].sort((a, b) => {
+    if (sortBy === 'recent') {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    } else if (sortBy === 'dueDate') {
+      if (!a.targetDate) return 1;
+      if (!b.targetDate) return -1;
+      return new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime();
+    } else if (sortBy === 'status') {
+      const statusOrder = { pending: 0, in_progress: 1, completed: 2, cancelled: 3 };
+      return statusOrder[a.status] - statusOrder[b.status];
+    }
+    return 0;
+  });
+
+  // Helper to check if task is overdue
+  const isTaskOverdue = (task: TaskWithDetails) => {
+    if (task.status === 'completed' || !task.targetDate) return false;
+    return new Date(task.targetDate) < new Date();
+  };
+
+  // Helper to check if task is due soon (within 3 days)
+  const isTaskDueSoon = (task: TaskWithDetails) => {
+    if (task.status === 'completed' || !task.targetDate) return false;
+    const daysUntilDue = Math.ceil((new Date(task.targetDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    return daysUntilDue > 0 && daysUntilDue <= 3;
+  };
 
   const getStatusBadge = (status: string) => {
     const config = statusConfig[status as keyof typeof statusConfig];
@@ -346,6 +393,69 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
           </Dialog>
         </div>
 
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3 mb-4">
+          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border-purple-200 dark:border-purple-800 hover-elevate" data-testid="card-stat-total">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Total Tasks</p>
+                  <p className="text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400">{statistics.total}</p>
+                </div>
+                <Target className="w-8 h-8 text-purple-600/20 dark:text-purple-400/20" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-200 dark:border-blue-800 hover-elevate" data-testid="card-stat-todo">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">To Do</p>
+                  <p className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">{statistics.todo}</p>
+                </div>
+                <Circle className="w-8 h-8 text-blue-600/20 dark:text-blue-400/20" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/10 border-cyan-200 dark:border-cyan-800 hover-elevate" data-testid="card-stat-inprogress">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">In Progress</p>
+                  <p className="text-2xl md:text-3xl font-bold text-cyan-600 dark:text-cyan-400">{statistics.inProgress}</p>
+                </div>
+                <Zap className="w-8 h-8 text-cyan-600/20 dark:text-cyan-400/20" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-teal-500/10 to-teal-600/10 border-teal-200 dark:border-teal-800 hover-elevate" data-testid="card-stat-completed">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Completed</p>
+                  <p className="text-2xl md:text-3xl font-bold text-teal-600 dark:text-teal-400">{statistics.completed}</p>
+                </div>
+                <CheckCircle2 className="w-8 h-8 text-teal-600/20 dark:text-teal-400/20" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-rose-500/10 to-rose-600/10 border-rose-200 dark:border-rose-800 hover-elevate" data-testid="card-stat-overdue">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Overdue</p>
+                  <p className="text-2xl md:text-3xl font-bold text-rose-600 dark:text-rose-400">{statistics.overdue}</p>
+                </div>
+                <AlertCircle className="w-8 h-8 text-rose-600/20 dark:text-rose-400/20" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {isAdmin && (
           <div className="mb-3">
             <label className="text-sm font-medium mb-2 block">Filter by Team Member</label>
@@ -421,6 +531,67 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
             </Button>
           </div>
         </div>
+
+        {/* Status Filter and Sort Controls */}
+        <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-muted-foreground">Status:</span>
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant={statusFilter === 'all' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('all')}
+                className="text-xs px-2"
+                data-testid="button-status-all"
+              >
+                All
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === 'pending' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('pending')}
+                className="text-xs px-2 bg-purple-100/50 dark:bg-purple-900/20"
+                data-testid="button-status-pending"
+              >
+                To Do
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === 'in_progress' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('in_progress')}
+                className="text-xs px-2 bg-cyan-100/50 dark:bg-cyan-900/20"
+                data-testid="button-status-inprogress"
+              >
+                In Progress
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === 'completed' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('completed')}
+                className="text-xs px-2 bg-teal-100/50 dark:bg-teal-900/20"
+                data-testid="button-status-completed"
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 ml-auto">
+            <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-muted-foreground">Sort:</span>
+            <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+              <SelectTrigger className="w-32 h-8 text-xs" data-testid="select-sort">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">Recent</SelectItem>
+                <SelectItem value="dueDate">Due Date</SelectItem>
+                <SelectItem value="status">Status</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
       <ScrollArea className="flex-1">
@@ -440,58 +611,91 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredTasks.map((task) => (
-                <Card 
-                  key={task.id} 
-                  className="hover-elevate cursor-pointer transition-all shadow-lg shadow-purple-100/50 dark:shadow-purple-900/20"
-                  onClick={() => setSelectedTask(task)}
-                  data-testid={`card-task-${task.id}`}
-                >
-                  <CardHeader className="space-y-2 pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="text-lg line-clamp-2" data-testid={`text-task-title-${task.id}`}>
-                        {task.title}
-                      </CardTitle>
-                    </div>
-                    {getStatusBadge(task.status)}
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {task.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2" data-testid={`text-task-description-${task.id}`}>
-                        {task.description}
-                      </p>
+              {filteredTasks.map((task) => {
+                const overdue = isTaskOverdue(task);
+                const dueSoon = isTaskDueSoon(task);
+                
+                return (
+                  <Card 
+                    key={task.id} 
+                    className={`hover-elevate cursor-pointer transition-all shadow-lg ${
+                      overdue 
+                        ? 'border-rose-300 dark:border-rose-700 shadow-rose-100/50 dark:shadow-rose-900/20' 
+                        : dueSoon 
+                        ? 'border-amber-300 dark:border-amber-700 shadow-amber-100/50 dark:shadow-amber-900/20'
+                        : 'shadow-purple-100/50 dark:shadow-purple-900/20'
+                    }`}
+                    onClick={() => setSelectedTask(task)}
+                    data-testid={`card-task-${task.id}`}
+                  >
+                    {(overdue || dueSoon) && (
+                      <div className={`h-1.5 rounded-t-md ${overdue ? 'bg-gradient-to-r from-rose-500 to-pink-500' : 'bg-gradient-to-r from-amber-500 to-orange-500'}`} />
                     )}
-                    <div className="space-y-2">
-                      {task.startDate && (
-                        <div className="flex items-center gap-2 text-sm" data-testid={`text-task-start-date-${task.id}`}>
-                          <Calendar className="w-3 h-3 text-purple-600 dark:text-purple-400" />
-                          <span className="text-muted-foreground">Start:</span>
-                          <span>{format(new Date(task.startDate), 'MMM dd, yyyy')}</span>
-                        </div>
-                      )}
-                      {task.targetDate && (
-                        <div className="flex items-center gap-2 text-sm" data-testid={`text-task-target-date-${task.id}`}>
-                          <Calendar className="w-3 h-3 text-teal-600 dark:text-teal-400" />
-                          <span className="text-muted-foreground">Target:</span>
-                          <span>{format(new Date(task.targetDate), 'MMM dd, yyyy')}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 text-sm" data-testid={`text-task-creator-${task.id}`}>
-                        <User className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                        <span className="text-muted-foreground">Created by:</span>
-                        <span>{task.creatorName}</span>
+                    <CardHeader className="space-y-2 pb-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-base sm:text-lg line-clamp-2" data-testid={`text-task-title-${task.id}`}>
+                          {task.title}
+                        </CardTitle>
                       </div>
-                      {task.assigneeName && (
-                        <div className="flex items-center gap-2 text-sm" data-testid={`text-task-assignee-${task.id}`}>
-                          <User className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
-                          <span className="text-muted-foreground">Assigned to:</span>
-                          <span>{task.assigneeName}</span>
-                        </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {getStatusBadge(task.status)}
+                        {overdue && (
+                          <Badge variant="secondary" className="bg-rose-500/20 text-rose-700 dark:text-rose-300 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            Overdue
+                          </Badge>
+                        )}
+                        {dueSoon && !overdue && (
+                          <Badge variant="secondary" className="bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Due Soon
+                          </Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {task.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2" data-testid={`text-task-description-${task.id}`}>
+                          {task.description}
+                        </p>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="space-y-2">
+                        {task.targetDate && (
+                          <div className={`flex items-center gap-2 text-sm p-2 rounded-md ${
+                            overdue 
+                              ? 'bg-rose-50 dark:bg-rose-950/30' 
+                              : dueSoon 
+                              ? 'bg-amber-50 dark:bg-amber-950/30'
+                              : 'bg-gray-50 dark:bg-gray-900/30'
+                          }`} data-testid={`text-task-target-date-${task.id}`}>
+                            <Calendar className={`w-4 h-4 ${
+                              overdue 
+                                ? 'text-rose-600 dark:text-rose-400' 
+                                : dueSoon 
+                                ? 'text-amber-600 dark:text-amber-400'
+                                : 'text-teal-600 dark:text-teal-400'
+                            }`} />
+                            <span className="text-muted-foreground font-medium">Due:</span>
+                            <span className={overdue ? 'font-semibold text-rose-700 dark:text-rose-400' : dueSoon ? 'font-semibold text-amber-700 dark:text-amber-400' : ''}>
+                              {format(new Date(task.targetDate), 'MMM dd, yyyy')}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground" data-testid={`text-task-creator-${task.id}`}>
+                          <User className="w-3 h-3" />
+                          <span>By {task.creatorName}</span>
+                          {task.assigneeName && (
+                            <>
+                              <span>•</span>
+                              <span>Assigned to {task.assigneeName}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
