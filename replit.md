@@ -93,6 +93,15 @@ Preferred communication style: Simple, everyday language.
     - Consistent visual enhancements in Sheet component for mobile
     - Touch-friendly button sizes using Shadcn variants
     - Responsive design that adapts gracefully across all viewport sizes
+- **Pin Chat Feature**: Users can pin up to 3 important conversations to the top of their conversation list for quick access:
+  - **Database**: `pinned_conversations` table with UNIQUE constraint on (user_id, conversation_id) to prevent duplicate pins
+  - **3-Pin Limit**: Backend validation ensures each user can only pin a maximum of 3 conversations
+  - **Authorization**: Users can only pin conversations they are members of
+  - **Sorting**: Pinned conversations appear at the top of the list, sorted by pin timestamp (most recently pinned first)
+  - **Visual Indicator**: Pin icon displayed on pinned conversations with hover interactions
+  - **Pin/Unpin Controls**: Quick toggle buttons in conversation list for easy management
+  - **API Endpoints**: GET /api/pinned-conversations, POST /api/conversations/:id/pin, DELETE /api/conversations/:id/unpin
+  - **Real-time Updates**: React Query integration with optimistic updates for instant feedback
 - **Password Management**: Self-service password change feature accessible from user menu, with validation, security checks, and password visibility toggles. Both admins and regular users can change their own passwords.
 - **User Profile & Settings**:
   - **Profile Dialog**: View complete user profile information including name, login ID, email, role, and join date. Features loading state while fetching data and error handling for failed requests. Accessible from user menu.

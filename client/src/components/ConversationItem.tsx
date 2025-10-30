@@ -126,6 +126,8 @@ export default function ConversationItem({
                 onClick={handlePinClick}
                 className={`h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity ${isPinned ? 'opacity-100' : ''}`}
                 data-testid="button-pin-toggle"
+                aria-pressed={isPinned}
+                aria-label={isPinned ? "Unpin conversation" : "Pin conversation"}
               >
                 {isPinned ? (
                   <PinOff className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
