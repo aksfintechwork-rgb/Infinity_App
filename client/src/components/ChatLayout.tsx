@@ -164,7 +164,7 @@ export default function ChatLayout({
               size="sm"
               variant={currentView === 'chat' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('chat')}
-              className={`h-9 transition-all ${currentView === 'chat' ? 'shadow-md' : ''}`}
+              className={`transition-all ${currentView === 'chat' ? 'shadow-md' : ''}`}
               data-testid="button-view-chat"
             >
               <MessageSquare className="w-4 h-4 mr-1" />
@@ -174,7 +174,7 @@ export default function ChatLayout({
               size="sm"
               variant={currentView === 'tasks' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('tasks')}
-              className={`h-9 transition-all ${currentView === 'tasks' ? 'shadow-md' : ''}`}
+              className={`transition-all ${currentView === 'tasks' ? 'shadow-md' : ''}`}
               data-testid="button-view-tasks"
             >
               <CheckCircle2 className="w-4 h-4 mr-1" />
@@ -184,7 +184,7 @@ export default function ChatLayout({
               size="sm"
               variant={currentView === 'calendar' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('calendar')}
-              className={`h-9 transition-all ${currentView === 'calendar' ? 'shadow-md' : ''}`}
+              className={`transition-all ${currentView === 'calendar' ? 'shadow-md' : ''}`}
               data-testid="button-view-calendar"
             >
               <CalendarIcon className="w-4 h-4 mr-1" />
@@ -195,7 +195,7 @@ export default function ChatLayout({
                 size="sm"
                 variant={currentView === 'admin' ? 'default' : 'ghost'}
                 onClick={() => setCurrentView('admin')}
-                className={`h-9 transition-all ${currentView === 'admin' ? 'shadow-md' : ''}`}
+                className={`transition-all ${currentView === 'admin' ? 'shadow-md' : ''}`}
                 data-testid="button-view-admin"
               >
                 <Shield className="w-4 h-4 mr-1" />
@@ -214,12 +214,12 @@ export default function ChatLayout({
                   placeholder="Search conversations..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 h-10 bg-gray-50/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                  className="pl-9 bg-gray-50/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
                   data-testid="input-search-conversations"
                 />
               </div>
               <Button
-                className="w-full h-10 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-md hover:shadow-lg transition-all"
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 shadow-md"
                 onClick={() => setIsNewConversationOpen(true)}
                 data-testid="button-new-conversation"
               >
@@ -414,7 +414,6 @@ export default function ChatLayout({
                   size="sm"
                   variant={currentView === 'chat' ? 'default' : 'ghost'}
                   onClick={() => { setCurrentView('chat'); setIsMobileMenuOpen(false); }}
-                  className="h-8"
                   data-testid="button-view-chat-mobile"
                 >
                   <MessageSquare className="w-4 h-4 mr-1" />
@@ -424,7 +423,6 @@ export default function ChatLayout({
                   size="sm"
                   variant={currentView === 'tasks' ? 'default' : 'ghost'}
                   onClick={() => { setCurrentView('tasks'); setIsMobileMenuOpen(false); }}
-                  className="h-8"
                   data-testid="button-view-tasks-mobile"
                 >
                   <CheckCircle2 className="w-4 h-4 mr-1" />
@@ -434,7 +432,6 @@ export default function ChatLayout({
                   size="sm"
                   variant={currentView === 'calendar' ? 'default' : 'ghost'}
                   onClick={() => { setCurrentView('calendar'); setIsMobileMenuOpen(false); }}
-                  className="h-8"
                   data-testid="button-view-calendar-mobile"
                 >
                   <CalendarIcon className="w-4 h-4 mr-1" />
@@ -445,7 +442,6 @@ export default function ChatLayout({
                     size="sm"
                     variant={currentView === 'admin' ? 'default' : 'ghost'}
                     onClick={() => { setCurrentView('admin'); setIsMobileMenuOpen(false); }}
-                    className="h-8"
                     data-testid="button-view-admin-mobile"
                   >
                     <Shield className="w-4 h-4 mr-1" />
