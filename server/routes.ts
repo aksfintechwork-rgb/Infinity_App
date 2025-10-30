@@ -6,6 +6,7 @@ import { insertUserSchema, insertConversationSchema, insertMessageSchema, insert
 import { z } from "zod";
 import { upload, getFileUrl } from "./upload";
 import { WebSocketServer, WebSocket } from "ws";
+import { generateMeetingSummary } from "./openai";
 
 interface WebSocketClient extends WebSocket {
   userId?: number;
@@ -549,6 +550,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Create meeting error:", error);
       res.status(500).json({ error: "Failed to create meeting" });
+    }
+  });
+
+  app.post("/api/meetings/:id/generate-summary", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const meetingId = parseInt(req.params.id);
+      const { language = 'en' } = req.body;
+
+      const meeting = await storage.getMeetingById(meetingId);
+      if (!meeting) {
+        return res.status(404).json({ error: "Meeting not found" });
+      }
+
+      const summary = await generateMeetingSummary(
+        meeting.title,
+        meeting.description,
+        language
+      );
+
+      await storage.updateMeetingSummary(meetingId, summary, language);
+
+      const updatedMeeting = await storage.getMeetingById(meetingId);
+      const creator = await storage.getUserById(updatedMeeting!.createdBy);
+      const participants = await storage.getMeetingParticipants(meetingId);
+
+      res.json({
+        ...updatedMeeting,
+        creatorName: creator?.name || 'Unknown',
+        participants: participants.map(p => ({ id: p.id, name: p.name })),
+      });
+    } catch (error) {
+      console.error("Generate summary error:", error);
+      res.status(500).json({ error: "Failed to generate summary" });
     }
   });
 

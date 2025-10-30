@@ -55,6 +55,7 @@ export interface IStorage {
   getAllMeetings(): Promise<Meeting[]>;
   getMeetingById(id: number): Promise<Meeting | undefined>;
   deleteMeeting(id: number): Promise<void>;
+  updateMeetingSummary(meetingId: number, summary: string, language: string): Promise<void>;
   addMeetingParticipant(participant: InsertMeetingParticipant): Promise<MeetingParticipant>;
   getMeetingParticipants(meetingId: number): Promise<User[]>;
   removeMeetingParticipant(meetingId: number, userId: number): Promise<void>;
@@ -244,6 +245,13 @@ export class PostgresStorage implements IStorage {
 
   async deleteMeeting(id: number): Promise<void> {
     await db.delete(meetings).where(eq(meetings.id, id));
+  }
+
+  async updateMeetingSummary(meetingId: number, summary: string, language: string): Promise<void> {
+    await db
+      .update(meetings)
+      .set({ summary, summaryLanguage: language })
+      .where(eq(meetings.id, meetingId));
   }
 
   async addMeetingParticipant(participant: InsertMeetingParticipant): Promise<MeetingParticipant> {

@@ -9,10 +9,112 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repeat } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repeat, Sparkles, Copy, Languages } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
+
+const LANGUAGES = [
+  { code: 'en', name: 'English' },
+  { code: 'es', name: 'Spanish' },
+  { code: 'fr', name: 'French' },
+  { code: 'de', name: 'German' },
+  { code: 'it', name: 'Italian' },
+  { code: 'pt', name: 'Portuguese' },
+  { code: 'ru', name: 'Russian' },
+  { code: 'zh', name: 'Chinese' },
+  { code: 'ja', name: 'Japanese' },
+  { code: 'ko', name: 'Korean' },
+  { code: 'ar', name: 'Arabic' },
+  { code: 'hi', name: 'Hindi' },
+  { code: 'bn', name: 'Bengali' },
+  { code: 'ta', name: 'Tamil' },
+  { code: 'te', name: 'Telugu' },
+  { code: 'mr', name: 'Marathi' },
+  { code: 'gu', name: 'Gujarati' },
+  { code: 'kn', name: 'Kannada' },
+  { code: 'ml', name: 'Malayalam' },
+  { code: 'pa', name: 'Punjabi' },
+];
+
+interface SummaryGeneratorProps {
+  meetingId: number;
+  hasSummary: boolean;
+  onGenerate: any;
+  isGenerating: boolean;
+}
+
+function SummaryGenerator({ meetingId, hasSummary, onGenerate, isGenerating }: SummaryGeneratorProps) {
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [showDialog, setShowDialog] = useState(false);
+
+  const handleGenerate = () => {
+    onGenerate.mutate({ meetingId, language: selectedLanguage });
+    setShowDialog(false);
+  };
+
+  return (
+    <Dialog open={showDialog} onOpenChange={setShowDialog}>
+      <DialogTrigger asChild>
+        <Button
+          variant={hasSummary ? "outline" : "default"}
+          className="flex-1"
+          disabled={isGenerating}
+          data-testid={`button-generate-summary-${meetingId}`}
+        >
+          <Sparkles className="w-4 h-4 mr-2" />
+          {hasSummary ? 'Regenerate Summary' : 'Generate Summary'}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Languages className="w-5 h-5" />
+            Generate Meeting Summary
+          </DialogTitle>
+          <DialogDescription>
+            Choose the language for the AI-generated summary
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="language">Summary Language</Label>
+            <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+              <SelectTrigger data-testid="select-summary-language">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {LANGUAGES.map((lang) => (
+                  <SelectItem key={lang.code} value={lang.code}>
+                    {lang.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              The AI will generate a professional summary of the meeting in your selected language
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setShowDialog(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            data-testid="button-confirm-generate"
+          >
+            {isGenerating ? 'Generating...' : 'Generate Summary'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 interface Meeting {
   id: number;
@@ -28,6 +130,8 @@ interface Meeting {
   recurrencePattern?: string | null;
   recurrenceFrequency?: number | null;
   recurrenceEndDate?: string | null;
+  summary?: string | null;
+  summaryLanguage?: string | null;
 }
 
 interface TeamMember {
@@ -127,6 +231,26 @@ export default function Calendar({ currentUser }: CalendarProps) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete meeting',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const generateSummary = useMutation({
+    mutationFn: async ({ meetingId, language }: { meetingId: number; language: string }) => {
+      return apiRequest('POST', `/api/meetings/${meetingId}/generate-summary`, { language });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
+      toast({
+        title: 'Summary generated',
+        description: 'AI-powered meeting summary created successfully.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to generate summary',
         variant: 'destructive',
       });
     },
@@ -512,18 +636,51 @@ export default function Calendar({ currentUser }: CalendarProps) {
                             )}
                           </div>
                         </CardContent>
-                        {meeting.meetingLink && (
-                          <CardFooter>
-                            <Button
-                              className="w-full"
-                              onClick={() => handleJoinMeeting(meeting.meetingLink)}
-                              data-testid={`button-join-${meeting.id}`}
-                            >
-                              <Video className="w-4 h-4 mr-2" />
-                              Join Meeting
-                            </Button>
-                          </CardFooter>
-                        )}
+                        <CardFooter className="flex flex-col gap-2">
+                          {meeting.summary && (
+                            <div className="w-full p-3 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/30 dark:to-blue-950/30 rounded-md border border-purple-200 dark:border-purple-800">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                <span className="text-xs font-medium text-purple-900 dark:text-purple-100">
+                                  AI Summary ({meeting.summaryLanguage?.toUpperCase() || 'EN'})
+                                </span>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="ml-auto h-6 w-6"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(meeting.summary || '');
+                                    toast({ title: 'Copied', description: 'Summary copied to clipboard' });
+                                  }}
+                                  data-testid={`button-copy-summary-${meeting.id}`}
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </Button>
+                              </div>
+                              <p className="text-sm text-purple-800 dark:text-purple-200" data-testid={`text-summary-${meeting.id}`}>
+                                {meeting.summary}
+                              </p>
+                            </div>
+                          )}
+                          <div className="flex gap-2 w-full">
+                            <SummaryGenerator
+                              meetingId={meeting.id}
+                              hasSummary={!!meeting.summary}
+                              onGenerate={generateSummary}
+                              isGenerating={generateSummary.isPending}
+                            />
+                            {meeting.meetingLink && (
+                              <Button
+                                className="flex-1"
+                                onClick={() => handleJoinMeeting(meeting.meetingLink)}
+                                data-testid={`button-join-${meeting.id}`}
+                              >
+                                <Video className="w-4 h-4 mr-2" />
+                                Join Meeting
+                              </Button>
+                            )}
+                          </div>
+                        </CardFooter>
                       </Card>
                     ))}
                   </div>
