@@ -606,9 +606,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const filter = req.query.filter as string | undefined;
-      const filterUserId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+      const userIdParam = req.query.userId as string | undefined;
       const user = await storage.getUserById(req.userId);
       const isAdmin = user?.role === 'admin';
+
+      // Validate userId parameter if provided
+      let filterUserId: number | undefined;
+      if (userIdParam) {
+        filterUserId = parseInt(userIdParam);
+        if (isNaN(filterUserId)) {
+          return res.status(400).json({ error: "Invalid userId parameter" });
+        }
+        // Only admins can filter by user ID
+        if (!isAdmin) {
+          return res.status(403).json({ error: "Only admins can filter by user ID" });
+        }
+      }
 
       let tasks;
       

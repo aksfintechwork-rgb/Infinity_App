@@ -117,8 +117,8 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
     queryFn: async () => {
       let queryParams = '';
       
-      // Admin filtering by specific user
-      if (isAdmin && filterUserId) {
+      // Admin filtering by specific user (ensure filterUserId is a valid number, not "all")
+      if (isAdmin && filterUserId && filterUserId !== "all" && !isNaN(Number(filterUserId))) {
         queryParams = `?userId=${filterUserId}`;
       }
       // For admins, pass 'all' filter to get all tasks from everyone
