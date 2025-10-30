@@ -697,8 +697,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Only the creator or an admin can edit this meeting" });
       }
 
+      const { participantIds, ...meetingData } = req.body;
+      
       const updateData = {
-        ...req.body,
+        ...meetingData,
         id: meetingId,
         createdBy: meeting.createdBy,
         createdAt: meeting.createdAt,
@@ -706,9 +708,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.updateMeeting(meetingId, updateData);
       
-      if (req.body.participantIds !== undefined) {
+      if (participantIds !== undefined) {
         await storage.clearMeetingParticipants(meetingId);
-        for (const userId of req.body.participantIds) {
+        for (const userId of participantIds) {
           await storage.addMeetingParticipant({ meetingId, userId });
         }
       }
