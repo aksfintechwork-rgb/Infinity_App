@@ -31,6 +31,16 @@ export async function generateMeetingSummary(
     kn: 'Kannada',
     ml: 'Malayalam',
     pa: 'Punjabi',
+    ur: 'Urdu',
+    vi: 'Vietnamese',
+    th: 'Thai',
+    id: 'Indonesian',
+    nl: 'Dutch',
+    tr: 'Turkish',
+    pl: 'Polish',
+    sv: 'Swedish',
+    no: 'Norwegian',
+    da: 'Danish',
   };
 
   const languageName = languageMap[targetLanguage] || 'English';
