@@ -689,12 +689,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Task not found" });
       }
 
-      // Only creator or assignee can update the task
-      if (task.createdBy !== req.userId && task.assignedTo !== req.userId) {
+      const user = await storage.getUserById(req.userId);
+      const isAdmin = user?.role === 'admin';
+
+      // Check permissions based on what's being updated
+      const isCreatorOrAssignee = task.createdBy === req.userId || task.assignedTo === req.userId;
+      
+      // Admins can update assignedTo and remark
+      // Creator/Assignee can update status and other fields
+      if (!isAdmin && !isCreatorOrAssignee) {
         return res.status(403).json({ error: "You don't have permission to update this task" });
       }
 
-      const updatedTask = await storage.updateTask(taskId, req.body);
+      // Prepare update data
+      let updateData: any = {};
+      
+      if (isAdmin) {
+        // Admins can update assignedTo and remark
+        if (req.body.assignedTo !== undefined) {
+          updateData.assignedTo = req.body.assignedTo;
+        }
+        if (req.body.remark !== undefined) {
+          updateData.remark = req.body.remark;
+        }
+      }
+      
+      if (isCreatorOrAssignee) {
+        // Creator/Assignee can update status and other fields
+        if (req.body.status !== undefined) {
+          updateData.status = req.body.status;
+        }
+        if (req.body.title !== undefined) {
+          updateData.title = req.body.title;
+        }
+        if (req.body.description !== undefined) {
+          updateData.description = req.body.description;
+        }
+        if (req.body.startDate !== undefined) {
+          updateData.startDate = req.body.startDate;
+        }
+        if (req.body.targetDate !== undefined) {
+          updateData.targetDate = req.body.targetDate;
+        }
+      }
+
+      const updatedTask = await storage.updateTask(taskId, updateData);
       const taskDetails = await storage.getTaskById(taskId);
       
       if (!taskDetails) {
