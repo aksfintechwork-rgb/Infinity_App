@@ -37,22 +37,22 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 md:p-6">
       <div className="w-full max-w-md">
-        <div className="flex flex-col items-center justify-center mb-8">
-          <img src={logoImage} alt="SUPREMO TRADERS" className="w-48 h-auto mb-4" />
-          <h1 className="text-xl font-semibold text-center text-foreground">Team Communication Platform</h1>
+        <div className="flex flex-col items-center justify-center mb-6 md:mb-8">
+          <img src={logoImage} alt="SUPREMO TRADERS" className="w-40 md:w-48 h-auto mb-3 md:mb-4" />
+          <h1 className="text-lg md:text-xl font-semibold text-center text-foreground">Team Communication Platform</h1>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Welcome Back</CardTitle>
-            <CardDescription>Sign in with your credentials provided by your administrator</CardDescription>
+        <Card className="border-2">
+          <CardHeader className="space-y-1 pb-4">
+            <CardTitle className="text-xl md:text-2xl">Welcome Back</CardTitle>
+            <CardDescription className="text-sm md:text-base">Sign in with your credentials provided by your administrator</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="login-id">Login ID</Label>
+                <Label htmlFor="login-id" className="text-base">Login ID</Label>
                 <Input
                   id="login-id"
                   type="text"
@@ -65,13 +65,14 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck="false"
+                  className="h-12 text-base"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs md:text-sm text-muted-foreground">
                   Use the login ID provided by your administrator
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="login-password">Password</Label>
+                <Label htmlFor="login-password" className="text-base">Password</Label>
                 <div className="relative">
                   <Input
                     id="login-password"
@@ -84,32 +85,32 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                     autoComplete="current-password"
                     autoCapitalize="none"
                     autoCorrect="off"
-                    className="pr-10"
+                    className="pr-12 h-12 text-base"
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-0 top-0 h-full hover:bg-transparent"
+                    className="absolute right-0 top-0 h-12 w-12 hover:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
                     data-testid="button-toggle-password"
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      <EyeOff className="h-5 w-5 text-muted-foreground" />
                     ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
+                      <Eye className="h-5 w-5 text-muted-foreground" />
                     )}
                   </Button>
                 </div>
               </div>
-              <Button type="submit" className="w-full" data-testid="button-login">
+              <Button type="submit" className="w-full h-12 text-base font-semibold mt-6" data-testid="button-login">
                 Sign In
               </Button>
             </form>
           </CardContent>
         </Card>
         
-        <p className="text-center text-sm text-muted-foreground mt-4">
+        <p className="text-center text-sm md:text-base text-muted-foreground mt-4 md:mt-6">
           Need an account? Contact your administrator.
         </p>
       </div>
