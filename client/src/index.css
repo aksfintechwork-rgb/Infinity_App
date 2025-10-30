@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LIGHT MODE - Vibrant Zen Theme */
+/* LIGHT MODE - Professional Business Theme */
 :root {
   --button-outline: rgba(0,0,0, .10);
   --badge-outline: rgba(0,0,0, .05);
@@ -11,91 +11,85 @@
   --opaque-button-border-intensity: -8; /* In terms of percentages */
 
   /* Backgrounds applied on top of other backgrounds when hovered/active */
-  --elevate-1: rgba(99, 102, 241, .08);
-  --elevate-2: rgba(99, 102, 241, .15);
+  --elevate-1: rgba(37, 99, 235, .08);
+  --elevate-2: rgba(37, 99, 235, .15);
 
-  --background: 255 100% 99%;
+  --background: 0 0% 100%;
 
-  --foreground: 243 20% 15%;
+  --foreground: 222 47% 11%;
 
-  --border: 255 60% 90%;
+  --border: 214 32% 91%;
 
-  --card: 255 100% 98%;
+  --card: 0 0% 100%;
 
-  --card-foreground: 243 20% 15%;
+  --card-foreground: 222 47% 11%;
 
-  --card-border: 255 50% 94%;
+  --card-border: 214 32% 91%;
 
-  --sidebar: 243 75% 96%;
+  --sidebar: 0 0% 100%;
 
-  --sidebar-foreground: 243 30% 20%;
+  --sidebar-foreground: 222 47% 11%;
 
-  --sidebar-border: 243 60% 88%;
+  --sidebar-border: 214 32% 91%;
 
-  --sidebar-primary: 243 80% 62%;
+  --sidebar-primary: 217 91% 60%;
 
-  --sidebar-primary-foreground: 255 100% 99%;
+  --sidebar-primary-foreground: 0 0% 100%;
 
-  --sidebar-accent: 255 80% 94%;
+  --sidebar-accent: 210 40% 96%;
 
-  --sidebar-accent-foreground: 243 30% 25%;
+  --sidebar-accent-foreground: 222 47% 11%;
 
-  --sidebar-ring: 243 80% 62%;
+  --sidebar-ring: 217 91% 60%;
 
-  --popover: 255 100% 98%;
+  --popover: 0 0% 100%;
 
-  --popover-foreground: 243 20% 15%;
+  --popover-foreground: 222 47% 11%;
 
-  --popover-border: 255 60% 90%;
+  --popover-border: 214 32% 91%;
 
-  --primary: 243 80% 62%;
+  --primary: 217 91% 60%;
 
-  --primary-foreground: 255 100% 99%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 213 94% 60%;
+  --secondary: 220 70% 33%;
 
-  --secondary-foreground: 213 94% 98%;
+  --secondary-foreground: 0 0% 100%;
 
-  --muted: 255 75% 94%;
+  --muted: 210 40% 96%;
 
-  --muted-foreground: 243 15% 45%;
+  --muted-foreground: 215 16% 47%;
 
-  --accent: 172 66% 50%;
+  --accent: 142 71% 45%;
 
-  --accent-foreground: 172 66% 98%;
+  --accent-foreground: 0 0% 100%;
 
-  --destructive: 340 75% 55%;
+  --destructive: 0 84% 60%;
 
-  --destructive-foreground: 340 75% 98%;
+  --destructive-foreground: 0 0% 100%;
 
-  --input: 255 70% 85%;
-  --ring: 243 80% 62%;
-  --chart-1: 243 80% 62%;
-  --chart-2: 172 66% 50%;
-  --chart-3: 291 65% 60%;
-  --chart-4: 38 92% 50%;
-  --chart-5: 340 75% 55%;
+  --input: 214 32% 91%;
+  --ring: 217 91% 60%;
+  --chart-1: 217 91% 60%;
+  --chart-2: 142 71% 45%;
+  --chart-3: 262 83% 58%;
+  --chart-4: 32 95% 44%;
+  --chart-5: 0 84% 60%;
 
   --font-sans: Inter, system-ui, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
-  --radius: 1rem; /* 16px - more rounded for zen feel */
-  --shadow-2xs: 0px 1px 2px 0px hsl(243 80% 62% / 0.05);
-  --shadow-xs: 0px 1px 3px 0px hsl(243 80% 62% / 0.08);
-  --shadow-sm: 0px 2px 4px 0px hsl(243 80% 62% / 0.06), 0px 1px 2px -1px hsl(243 80% 62% / 0.04);
-  --shadow: 0px 4px 6px -1px hsl(243 80% 62% / 0.08), 0px 2px 4px -1px hsl(243 80% 62% / 0.04);
-  --shadow-md: 0px 6px 12px -2px hsl(243 80% 62% / 0.10), 0px 3px 6px -2px hsl(243 80% 62% / 0.05);
-  --shadow-lg: 0px 10px 20px -4px hsl(243 80% 62% / 0.12), 0px 4px 8px -2px hsl(243 80% 62% / 0.06);
-  --shadow-xl: 0px 20px 25px -5px hsl(243 80% 62% / 0.15), 0px 10px 10px -5px hsl(243 80% 62% / 0.04);
-  --shadow-2xl: 0px 25px 50px -12px hsl(243 80% 62% / 0.20);
+  --radius: 0.5rem; /* 8px - professional subtle rounding */
+  --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
+  --shadow-xs: 0px 1px 3px 0px rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
+  --shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.06), 0px 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0px 4px 6px -1px rgba(0, 0, 0, 0.08), 0px 2px 4px -1px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0px 10px 15px -3px rgba(0, 0, 0, 0.10), 0px 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0px 20px 25px -5px rgba(0, 0, 0, 0.12), 0px 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0px 25px 50px -12px rgba(0, 0, 0, 0.25);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
-
-  /* Gradient colors for zen theme */
-  --gradient-purple: 243 80% 62%;
-  --gradient-blue: 213 94% 60%;
-  --gradient-teal: 172 66% 50%;
-  --gradient-pink: 291 65% 60%;
 
   /* Automatically computed borders - intensity can be controlled by the user by the --opaque-button-border-intensity setting */
 
@@ -135,85 +129,79 @@
   --opaque-button-border-intensity: 9;  /* In terms of percentages */
 
   /* Backgrounds applied on top of other backgrounds when hovered/active */
-  --elevate-1: rgba(139, 92, 246, .10);
-  --elevate-2: rgba(139, 92, 246, .18);
+  --elevate-1: rgba(59, 130, 246, .10);
+  --elevate-2: rgba(59, 130, 246, .18);
 
-  --background: 243 30% 10%;
+  --background: 222 47% 11%;
 
-  --foreground: 255 90% 95%;
+  --foreground: 210 40% 98%;
 
-  --border: 243 20% 22%;
+  --border: 217 33% 17%;
 
-  --card: 243 25% 12%;
+  --card: 222 47% 14%;
 
-  --card-foreground: 255 90% 95%;
+  --card-foreground: 210 40% 98%;
 
-  --card-border: 243 20% 18%;
+  --card-border: 217 33% 17%;
 
-  --sidebar: 243 28% 14%;
+  --sidebar: 222 47% 14%;
 
-  --sidebar-foreground: 255 85% 92%;
+  --sidebar-foreground: 210 40% 98%;
 
-  --sidebar-border: 243 22% 20%;
+  --sidebar-border: 217 33% 17%;
 
-  --sidebar-primary: 243 75% 65%;
+  --sidebar-primary: 217 91% 60%;
 
-  --sidebar-primary-foreground: 255 100% 99%;
+  --sidebar-primary-foreground: 0 0% 100%;
 
-  --sidebar-accent: 243 40% 20%;
+  --sidebar-accent: 217 33% 20%;
 
-  --sidebar-accent-foreground: 255 85% 90%;
+  --sidebar-accent-foreground: 210 40% 98%;
 
-  --sidebar-ring: 243 75% 65%;
+  --sidebar-ring: 217 91% 60%;
 
-  --popover: 243 25% 14%;
+  --popover: 222 47% 14%;
 
-  --popover-foreground: 255 90% 95%;
+  --popover-foreground: 210 40% 98%;
 
-  --popover-border: 243 20% 22%;
+  --popover-border: 217 33% 17%;
 
-  --primary: 243 75% 65%;
+  --primary: 217 91% 60%;
 
-  --primary-foreground: 255 100% 99%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 213 85% 62%;
+  --secondary: 220 70% 45%;
 
-  --secondary-foreground: 213 85% 98%;
+  --secondary-foreground: 0 0% 100%;
 
-  --muted: 243 30% 18%;
+  --muted: 217 33% 17%;
 
-  --muted-foreground: 255 20% 68%;
+  --muted-foreground: 215 20% 65%;
 
-  --accent: 172 60% 52%;
+  --accent: 142 71% 45%;
 
-  --accent-foreground: 172 60% 98%;
+  --accent-foreground: 0 0% 100%;
 
-  --destructive: 340 70% 58%;
+  --destructive: 0 84% 60%;
 
-  --destructive-foreground: 340 70% 98%;
+  --destructive-foreground: 0 0% 100%;
 
-  --input: 243 25% 25%;
-  --ring: 243 75% 65%;
-  --chart-1: 243 75% 65%;
-  --chart-2: 172 60% 52%;
-  --chart-3: 291 60% 65%;
-  --chart-4: 38 85% 55%;
-  --chart-5: 340 70% 58%;
+  --input: 217 33% 20%;
+  --ring: 217 91% 60%;
+  --chart-1: 217 91% 60%;
+  --chart-2: 142 71% 45%;
+  --chart-3: 262 83% 58%;
+  --chart-4: 32 95% 44%;
+  --chart-5: 0 84% 60%;
 
-  --shadow-2xs: 0px 1px 2px 0px hsl(243 90% 5% / 0.40);
-  --shadow-xs: 0px 1px 3px 0px hsl(243 90% 5% / 0.50);
-  --shadow-sm: 0px 2px 4px 0px hsl(243 90% 5% / 0.45), 0px 1px 2px -1px hsl(243 90% 5% / 0.40);
-  --shadow: 0px 4px 6px -1px hsl(243 90% 5% / 0.50), 0px 2px 4px -1px hsl(243 90% 5% / 0.40);
-  --shadow-md: 0px 6px 12px -2px hsl(243 90% 5% / 0.55), 0px 3px 6px -2px hsl(243 90% 5% / 0.45);
-  --shadow-lg: 0px 10px 20px -4px hsl(243 90% 5% / 0.60), 0px 4px 8px -2px hsl(243 90% 5% / 0.50);
-  --shadow-xl: 0px 20px 25px -5px hsl(243 90% 5% / 0.65), 0px 10px 10px -5px hsl(243 90% 5% / 0.40);
-  --shadow-2xl: 0px 25px 50px -12px hsl(243 90% 5% / 0.70);
-
-  /* Gradient colors for zen theme - dark mode */
-  --gradient-purple: 243 75% 65%;
-  --gradient-blue: 213 85% 62%;
-  --gradient-teal: 172 60% 52%;
-  --gradient-pink: 291 60% 65%;
+  --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.40);
+  --shadow-xs: 0px 1px 3px 0px rgba(0, 0, 0, 0.50);
+  --shadow-sm: 0px 1px 2px 0px rgba(0, 0, 0, 0.45);
+  --shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.50), 0px 1px 2px -1px rgba(0, 0, 0, 0.40);
+  --shadow-md: 0px 4px 6px -1px rgba(0, 0, 0, 0.55), 0px 2px 4px -1px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0px 10px 15px -3px rgba(0, 0, 0, 0.60), 0px 4px 6px -2px rgba(0, 0, 0, 0.50);
+  --shadow-xl: 0px 20px 25px -5px rgba(0, 0, 0, 0.65), 0px 10px 10px -5px rgba(0, 0, 0, 0.40);
+  --shadow-2xl: 0px 25px 50px -12px rgba(0, 0, 0, 0.70);
 
   /* Automatically computed borders - intensity can be controlled by the user by the --opaque-button-border-intensity setting */
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);

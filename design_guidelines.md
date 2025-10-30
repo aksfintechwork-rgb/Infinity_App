@@ -2,52 +2,51 @@
 
 ## Design Approach
 
-**Selected Approach:** Design System Hybrid (Slack + Linear) with Zen-Inspired Aesthetic
-- **Primary Inspiration:** Slack's clarity + Linear's modern polish + Notion's colorful warmth
-- **Rationale:** Internal communication demands efficiency and familiarity, enhanced with vibrant, calming aesthetics that energize daily work without sacrificing professionalism.
+**Selected Approach:** Hybrid (Slack + Linear + Microsoft Teams)
+- **Primary Inspiration:** Slack's organizational clarity + Linear's modern polish + Microsoft Teams' professional credibility
+- **Rationale:** Internal business communication demands efficiency, trust, and professional polish for daily enterprise use.
 - **Key Principles:**
-  - Vibrant gradients that energize without overwhelming
-  - Soft, rounded elements creating approachable interface
-  - Calm color harmony with purple/blue/teal palette
-  - Information clarity through thoughtful color application
-  - Professional functionality with delightful visual touches
+  - Clean, business-focused interface with refined aesthetics
+  - Solid colors with strategic subtle accents
+  - Professional blue palette conveying trust and stability
+  - Clear visual hierarchy through typography and spacing
+  - Minimal, purposeful design elements
 
 ## Color System
 
 **Primary Palette:**
-- **Deep Purple:** Primary actions, brand elements (#6366F1 to #8B5CF6)
-- **Ocean Blue:** Secondary actions, links (#3B82F6 to #06B6D4)
-- **Zen Teal:** Success states, online presence (#14B8A6 to #10B981)
-- **Soft Lavender:** Background accents (#F5F3FF to #EDE9FE)
-- **Cloud Gray:** Neutral backgrounds (#F9FAFB to #F3F4F6)
+- **Professional Blue:** Primary actions, brand elements (#2563EB)
+- **Deep Navy:** Header backgrounds, important elements (#1E3A8A)
+- **Light Blue:** Hover states, subtle accents (#DBEAFE)
+- **Neutral Gray:** Text, borders (#64748B, #94A3B8, #CBD5E1)
+- **Pure White:** Backgrounds, cards (#FFFFFF)
+- **Soft Gray:** Secondary backgrounds (#F8FAFC, #F1F5F9)
 
-**Gradient Applications:**
-- **Sidebar Header:** Purple-to-blue gradient (left-to-right)
-- **Active Conversation:** Subtle teal-to-blue gradient background
-- **Send Button:** Purple-to-pink gradient with soft glow
-- **Hover States:** Gradient shift on interactive elements
-- **Message Reactions:** Individual gradient per reaction type
-- **Top Bar Accent:** Thin gradient border bottom
+**Accent Colors:**
+- **Success Green:** #10B981
+- **Warning Amber:** #F59E0B
+- **Error Red:** #EF4444
+- **Online Teal:** #14B8A6
 
-**Supporting Colors:**
-- **Text Primary:** Deep slate (#1E293B)
-- **Text Secondary:** Medium slate (#64748B)
-- **Text Tertiary:** Light slate (#94A3B8)
-- **Borders:** Soft lavender tints (#E9D5FF, #DBEAFE)
-- **Warning:** Warm amber (#F59E0B)
-- **Error:** Soft coral (#EF4444)
+**Application Strategy:**
+- Primary buttons: Solid professional blue with subtle hover darkening
+- Active states: Light blue background (10% opacity)
+- Borders: Neutral gray with blue accent on focus
+- Shadows: Subtle, multi-layer for depth (never colored)
+- Text: Dark slate on light backgrounds, ensuring WCAG AAA
 
 ## Typography
 
 **Font System:** Inter (Google Fonts CDN)
 - **Hierarchy:**
-  - Brand/Logo: 24px, weight 700, gradient text effect
+  - Brand/Logo: 22px, weight 700
   - Page Headers: 20px, weight 600
   - Section Headers: 16px, weight 600
   - Message Sender: 14px, weight 600
-  - Body Text: 15px, weight 400, line-height 1.5
+  - Body Text: 15px, weight 400, line-height 1.6
   - Timestamps: 13px, weight 400
   - Buttons: 14px, weight 500
+  - Labels: 12px, weight 500, uppercase tracking
 
 ## Layout System
 
@@ -55,177 +54,186 @@
 - Component padding: p-4
 - Section gaps: gap-4 to gap-6
 - Container padding: p-6 to p-8
-- Message spacing: mb-4 between different senders, mb-2 same sender
-- Generous whitespace for zen aesthetic
+- Message spacing: mb-3 between different senders, mb-1 same sender
+- Consistent whitespace for clarity
 
 **Border Radius Strategy:**
-- Small elements (badges, buttons): rounded-xl (12px)
-- Medium (cards, inputs): rounded-2xl (16px)
-- Large (modals, panels): rounded-3xl (24px)
+- Small elements (badges, pills): rounded-md (6px)
+- Medium (buttons, inputs): rounded-lg (8px)
+- Large (cards, modals): rounded-xl (12px)
 - Avatars: rounded-full
+
+**Shadow System:**
+- Card elevation: shadow-sm (subtle)
+- Dropdowns/Modals: shadow-lg (pronounced)
+- Interactive hover: shadow-md (medium lift)
+- Active message: shadow-inner with blue tint
 
 **Grid Structure:**
 - Desktop: Sidebar (280px) | Conversation List (340px) | Chat Area (flex-1)
 - Tablet: Two-column with slide-over panels
-- Mobile: Single column stack
+- Mobile: Single column stack with bottom navigation
 
 ## Component Library
 
 ### Navigation & Structure
 
-**Top Bar (72px):**
-- Gradient border bottom (2px, purple-to-teal)
-- Left: "SUPREMO TRADERS LLP" with gradient text, circular gradient logo mark (40px)
-- Center: Conversation title with gradient member count badge
-- Right: Search icon (rounded-xl button with gradient on hover), notification bell with badge, profile avatar (40px) with gradient ring
+**Top Bar (64px):**
+- Background: Deep navy (#1E3A8A)
+- Border-bottom: 1px solid rgba(255,255,255,0.1)
+- Left: "SUPREMO TRADERS LLP" white text (weight 700), circular logo (36px)
+- Center: Conversation title (white, weight 500) with member count badge
+- Right: Search icon (white, hover bg white/10), notification bell with badge, profile avatar (36px) with white ring
+- Box-shadow: shadow-md for depth
 
 **Sidebar (280px):**
-- Gradient header background (purple-to-blue, 80px height)
-- White logo and "Channels" text in header
-- Section headers with gradient underline accent
-- Conversation items: rounded-2xl, gradient background on hover/active
-- Create buttons: Full-width, rounded-xl, gradient background
-- Presence indicators: 10px gradient circles (online=teal, away=amber)
-- Floating gradient orbs in background (subtle, large blur radius)
+- Background: White with subtle shadow-sm
+- Header (72px): Deep navy background, white text
+- Section headers: Uppercase labels (12px, weight 500, text gray-500)
+- Conversation items: rounded-lg, hover bg gray-50, active bg light-blue with left blue accent (3px)
+- Create buttons: Full-width, rounded-lg, professional blue background
+- Presence indicators: 10px circles (online=teal, away=amber, offline=gray)
+- Dividers: 1px gray-200 between sections
 
 **Conversation List Panel (340px):**
-- Search bar: rounded-2xl, gradient border on focus, floating appearance
-- Conversation cards: rounded-2xl, padding p-4, gradient left-border accent (4px)
-- Avatar: 48px with gradient ring for unread conversations
-- Unread count: gradient circular badge, top-right positioned
-- Last message: Truncated with gradient fade-out effect
-- Active state: Full gradient background, elevated shadow
+- Background: Soft gray (#F8FAFC)
+- Search bar: rounded-lg, white background, shadow-sm, blue border on focus
+- Conversation cards: White background, rounded-lg, padding p-4, border-l-3 blue accent for unread
+- Avatar: 48px with blue ring for unread conversations
+- Unread count: Professional blue circular badge, top-right
+- Last message: Truncated, gray-600 text
+- Active state: Light blue background, shadow-md, blue left-border
 
 ### Chat Interface
 
 **Message Area:**
 - Maximum width: 900px, centered
-- Background: Subtle gradient wash (very light lavender-to-white)
-- Date dividers: Centered pill with gradient background, rounded-full
+- Background: Pure white
+- Date dividers: Centered text with gray-300 horizontal lines, gray-600 text
 
 **Message Bubbles:**
-- Avatar: 36px, gradient ring for active users
-- Own messages: Gradient background (purple-to-pink), right-aligned, rounded-3xl
-- Other messages: Light gradient background (cloud-to-lavender), left-aligned, rounded-3xl
-- Sender name: Gradient text effect
-- Timestamp: Soft opacity with gradient on hover
-- Max-width: 600px for readability
-- Padding: p-4, generous line-height
+- Avatar: 36px, blue ring for online users
+- Own messages: Professional blue background (#2563EB), white text, right-aligned, rounded-2xl (but square on sender side)
+- Other messages: Soft gray background (#F1F5F9), dark text, left-aligned, rounded-2xl (but square on sender side)
+- Sender name: Weight 600, gray-900
+- Timestamp: Gray-500, 13px
+- Max-width: 600px
+- Padding: p-4, line-height 1.6
+- Shadow-sm on hover
 
 **Message Types:**
-- Text: Standard with link highlighting in gradient color
-- Files: Card with gradient icon background, rounded-2xl, shadow-sm
-- Images: Max 500px, rounded-2xl, soft shadow, lightbox on click
-- Code blocks: Dark background with syntax highlighting, rounded-xl
-- Reactions: Gradient pill badges below message, rounded-full
+- Text: Standard with blue links
+- Files: White card with gray border, file icon (24px), shadow-sm, rounded-lg
+- Images: Max 500px, rounded-lg, shadow-md, lightbox on click
+- Code blocks: Gray-900 background with syntax highlighting, rounded-lg, p-4
+- Reactions: Gray-100 pill badges, rounded-full, blue text, border on hover
 
-**Message Input (96px height):**
-- Rounded-3xl container with gradient border
-- Textarea: Seamless, p-4, auto-expand
-- Toolbar: Gradient icon buttons (24px) - attachment, emoji, formatting, voice
-- Send button: Prominent gradient (purple-to-pink), rounded-xl, floating effect with soft glow
-- Typing indicator: Animated gradient dots above input
+**Message Input (80px height):**
+- White background, rounded-xl, shadow-lg, border gray-200
+- Textarea: p-4, auto-expand to 120px max
+- Toolbar: Gray icon buttons (20px) - attachment, emoji, formatting
+- Send button: Professional blue, rounded-lg, px-6, shadow-sm, hover shadow-md
+- Typing indicator: Blue animated dots above input
 
 ### Modal Components
 
 **New Conversation Modal:**
-- Centered, max-width 480px, rounded-3xl
-- Gradient header with white text
-- Backdrop: Blur(20px) with gradient tint overlay
-- Member selection: Gradient checkboxes, avatar list with presence rings
-- Selected members: Gradient pill chips, rounded-full, with remove icon
-- Footer buttons: Primary gradient, secondary outlined with gradient border
-- Smooth scale-fade entrance animation
+- Centered, max-width 520px, rounded-xl, shadow-2xl
+- White background with gray-50 header
+- Header: Deep navy text, border-bottom gray-200
+- Backdrop: Blur(12px) with dark overlay (rgba(0,0,0,0.4))
+- Member selection: Blue checkboxes, avatar list with presence indicators
+- Selected members: Blue pill chips, rounded-full, with remove icon
+- Footer: Border-top gray-200, primary button (blue), secondary (gray outline)
 
 **Profile Dropdown:**
-- Width: 280px, rounded-2xl
-- Gradient header with user avatar (56px, gradient ring)
-- Menu items: rounded-xl on hover with gradient background
-- Presence selector: Gradient color swatches
-- Divider: Gradient horizontal line
+- Width: 280px, rounded-lg, shadow-xl
+- White background, border gray-200
+- User section: Gray-50 background, avatar (48px, blue ring), padding p-4
+- Menu items: rounded-md hover bg gray-50, gray-700 text
+- Presence selector: Colored circles with labels
+- Dividers: Gray-200
 
 ### Form Elements
 
 **Inputs:**
-- Height: h-12, rounded-2xl
-- Gradient border on focus (2px)
-- Placeholder: Gradient text when focused
-- Background: Soft white-to-lavender gradient
+- Height: h-11, rounded-lg
+- Border: 1px gray-300, focus blue with shadow-sm
+- Background: White
+- Placeholder: Gray-400
 
 **Buttons:**
-- Primary: h-12, px-8, rounded-xl, gradient background, soft glow shadow
-- Secondary: Same size, gradient border (2px), gradient text
-- Icon-only: w-12 h-12, rounded-xl, gradient on hover
-- Disabled: Reduced opacity, no gradient
+- Primary: h-11, px-6, rounded-lg, professional blue, shadow-sm, hover shadow-md
+- Secondary: Same size, gray-200 border, gray-700 text, hover bg gray-50
+- Icon-only: w-11 h-11, rounded-lg, gray hover
+- Disabled: Opacity 40%
 
 **Toggle Switches:**
-- Track: 48px width, rounded-full, gradient when active
-- Thumb: 24px, white with subtle shadow
+- Track: 44px width, rounded-full, gray-200 inactive, blue active
+- Thumb: 20px, white with shadow-sm
 
 ### Status & Feedback
 
 **Presence Indicators:**
-- Size: 12px, rounded-full, gradient fills
-- Online: Teal gradient with pulse animation
-- Away: Amber gradient
-- Busy: Red gradient
-- Offline: Gray
+- Size: 10px, rounded-full, solid colors
+- Online: Teal (#14B8A6)
+- Away: Amber (#F59E0B)
+- Busy: Red (#EF4444)
+- Offline: Gray (#94A3B8)
 
 **Unread Badges:**
-- Gradient background (purple-to-pink)
-- Min 24px, rounded-full, weight 600
-- Soft glow effect
+- Professional blue background, white text
+- Min 22px, rounded-full, weight 600
+- Shadow-sm
 
 **Toast Notifications:**
-- Top-right, max-width 360px, rounded-2xl
-- Icon with gradient background circle
-- Gradient left-border accent (4px)
-- Slide-in with fade animation
-- Auto-dismiss, 5 seconds
+- Top-right, max-width 360px, rounded-lg, shadow-xl
+- White background, border-l-4 (success=green, error=red, info=blue)
+- Icon circle with colored background
+- Slide-in animation, auto-dismiss 4 seconds
 
 **Loading States:**
-- Gradient skeleton screens
-- Shimmer effect with teal-to-purple gradient animation
-- Rounded elements matching component style
+- Gray shimmer skeleton screens
+- Pulse animation (gray-200 to gray-300)
+- Rounded elements matching components
 
 ## Images
 
-**No Large Hero Images** - This is an internal communication tool. Focus is on functional beauty through gradients and color.
+**Hero Image:** No large hero image - this is an internal communication tool focused on functional efficiency.
 
 **Avatar System:**
-- All user avatars with gradient ring treatment when active/online
-- Fallback: Gradient background with white initials
+- User avatars with colored ring when online (blue for general active state, teal for online)
+- Fallback: Blue background (#DBEAFE) with navy initials
 - Sizes: 32px (inline), 36px (messages), 48px (list), 56px (profile)
 
 **File Thumbnails:**
-- Document icons: Gradient backgrounds matching file type
-- Image previews: Rounded-2xl with hover zoom effect
-- Max width: 500px
+- Document icons: Gray backgrounds with colored type indicators
+- Image previews: Rounded-lg, max 500px, shadow-md
 
 ## Animations
 
-**Subtle Zen Touches:**
-- Gradient transitions on all interactive states (300ms ease)
-- Soft scale on button press (0.98 transform)
-- Gentle fade-in for messages (400ms)
-- Smooth slide for sidebars (250ms cubic-bezier)
-- Pulse animation on presence indicators
-- Shimmer effect on gradients during loading
+**Subtle Professional Touches:**
+- Color transitions: 200ms ease
+- Shadow transitions: 200ms ease
+- Scale on button press: 0.98 transform, 100ms
+- Fade-in for messages: 300ms
+- Slide for panels: 250ms cubic-bezier
+- No pulse animations except loading states
 
 ## Accessibility
 
 - Minimum 44px touch targets
-- Focus rings: 3px gradient ring offset
-- ARIA labels for all icon buttons
+- Focus rings: 2px blue ring, 2px offset
+- ARIA labels on all icon buttons
 - Keyboard navigation throughout
-- High contrast gradients meeting WCAG AA
-- Screen reader message announcements
-- Color-blind friendly gradient combinations
+- WCAG AA contrast ratios minimum
+- Screen reader announcements
+- Color-blind friendly indicators
 
 ## Responsive Behavior
 
-- Desktop (1024px+): Full three-column with gradients
-- Tablet (768-1023px): Two-column, sidebar overlay with blur backdrop
-- Mobile (<768px): Single stack, slide-out navigation, conversation-focused view, gradient top bar
+- Desktop (1024px+): Full three-column layout
+- Tablet (768-1023px): Two-column, sidebar overlay with backdrop
+- Mobile (<768px): Single stack, bottom navigation bar, full-screen chat view
 
-This design creates an energizing yet professional communication platform where SUPREMO TRADERS LLP's team experiences daily delight through thoughtful color, soft forms, and zen-inspired visual harmony.
+This design creates a professional, trustworthy communication platform where SUPREMO TRADERS LLP's team experiences clarity, efficiency, and business-grade polish in daily collaboration.

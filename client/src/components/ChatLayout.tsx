@@ -251,26 +251,24 @@ export default function ChatLayout({
   return (
     <div className="flex h-screen bg-background">
       <div className="hidden md:flex w-80 border-r border-border flex-col bg-background">
-        <div className="h-16 border-b border-border flex items-center justify-between px-4 flex-shrink-0">
+        <div className="h-16 border-b border-border flex items-center justify-between px-4 flex-shrink-0 bg-secondary shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-10 h-10 object-contain rounded-lg" data-testid="img-brand-logo" />
-              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
-            </div>
+            <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-9 h-9 object-contain rounded" data-testid="img-brand-logo" />
             <div>
-              <h1 className="text-sm font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">SUPREMO TRADERS</h1>
-              <p className="text-xs text-muted-foreground">Team Chat</p>
+              <h1 className="text-base font-bold text-secondary-foreground tracking-tight">SUPREMO TRADERS</h1>
+              <p className="text-xs text-secondary-foreground/70 font-medium">Team Chat</p>
             </div>
           </div>
         </div>
 
-        <div className="p-3 border-b border-border flex-shrink-0">
-          <div className={`grid ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 p-0.5 bg-muted/50 rounded-lg`}>
+        <div className="p-3 border-b border-border flex-shrink-0 bg-background">
+          <div className={`grid ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} gap-1 p-1 bg-muted rounded-lg`}>
             <Button
               size="sm"
               variant={currentView === 'chat' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('chat')}
               data-testid="button-view-chat"
+              className="font-medium"
             >
               <MessageSquare className="w-4 h-4 mr-1.5" />
               <span className="text-xs">Chat</span>
@@ -280,6 +278,7 @@ export default function ChatLayout({
               variant={currentView === 'tasks' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('tasks')}
               data-testid="button-view-tasks"
+              className="font-medium"
             >
               <CheckCircle2 className="w-4 h-4 mr-1.5" />
               <span className="text-xs">Tasks</span>
@@ -289,6 +288,7 @@ export default function ChatLayout({
               variant={currentView === 'calendar' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('calendar')}
               data-testid="button-view-calendar"
+              className="font-medium"
             >
               <CalendarIcon className="w-4 h-4 mr-1.5" />
               <span className="text-xs">Calendar</span>
@@ -299,6 +299,7 @@ export default function ChatLayout({
                 variant={currentView === 'admin' ? 'default' : 'ghost'}
                 onClick={() => setCurrentView('admin')}
                 data-testid="button-view-admin"
+                className="font-medium"
               >
                 <Shield className="w-4 h-4 mr-1.5" />
                 <span className="text-xs">Admin</span>
@@ -321,7 +322,7 @@ export default function ChatLayout({
                 />
               </div>
               <Button
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600"
+                className="w-full"
                 size="sm"
                 onClick={() => setIsNewConversationOpen(true)}
                 data-testid="button-new-conversation"
@@ -367,10 +368,16 @@ export default function ChatLayout({
             </p>
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center p-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Switch to Admin view to manage team members
-            </p>
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center max-w-sm">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-base font-semibold mb-2">Admin Panel</h3>
+              <p className="text-sm text-muted-foreground">
+                Switch to Admin view to manage team members and settings
+              </p>
+            </div>
           </div>
         )}
 
