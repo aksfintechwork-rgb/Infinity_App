@@ -107,11 +107,11 @@ Preferred communication style: Simple, everyday language.
   - **Profile Dialog**: View complete user profile information including name, login ID, email, role, and join date. Features loading state while fetching data and error handling for failed requests. Accessible from user menu.
   - **Settings Dialog**: Manage application preferences including dark mode toggle, desktop notifications, sound alerts, and auto-play video settings. All settings persist via localStorage and provide immediate visual feedback.
   - Clean, professional UI with loading states, error handling, and responsive design throughout.
+- **Task Assignment & Remarks**: All users can create tasks with assignments and add remarks. Task creators can edit assignments and remarks for their own tasks, allowing them to reassign tasks to other team members and add/update notes. Admins can edit assignments and remarks for any task. The edit dialog is accessible from the task detail view and includes form validation.
 - **Admin Tools**: 
   - Credential Verification Tool to aid in troubleshooting login issues
   - Admins can view all tasks from all team members for oversight and coordination
   - **Task Filtering by Team Member**: Admins can filter tasks to view only those related to a specific team member (tasks created by or assigned to them) using a dedicated dropdown filter. Includes validation to prevent invalid requests and seamless integration with existing filter buttons.
-  - **Task Assignment & Remark Editing**: Admins can edit task assignments and add/update remarks for any task. This allows administrators to reassign tasks to different team members and add administrative notes or instructions. The edit dialog is accessible from the task detail view and includes form validation.
 
 ## External Dependencies
 
