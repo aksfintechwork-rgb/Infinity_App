@@ -187,13 +187,12 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-purple-50 via-blue-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="p-4 border-b bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-teal-600 bg-clip-text text-transparent" data-testid="text-tasks-title">
-              Task Management
-            </h1>
-          </div>
+      <div className="p-3 md:p-4 border-b bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-teal-600 bg-clip-text text-transparent" data-testid="text-tasks-title">
+            <span className="hidden sm:inline">Task Management</span>
+            <span className="sm:hidden">Tasks</span>
+          </h1>
           
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
@@ -202,11 +201,11 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover-elevate active-elevate-2"
                 data-testid="button-create-task"
               >
-                <Plus className="w-4 h-4 mr-1" />
-                New Task
+                <Plus className="w-4 h-4 md:mr-1" />
+                <span className="hidden md:inline">New Task</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Task</DialogTitle>
               </DialogHeader>
@@ -335,8 +334,8 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
           </Dialog>
         </div>
 
-        <div className="flex items-center gap-2 mt-4 flex-wrap">
-          <div className="relative flex-1 min-w-[200px]">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search tasks..."
@@ -346,30 +345,36 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
               data-testid="input-search-tasks"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 sm:gap-2">
             <Button
               size="sm"
               variant={filterView === 'all' ? 'default' : 'outline'}
               onClick={() => setFilterView('all')}
+              className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
               data-testid="button-filter-all"
             >
-              {isAdmin ? 'All Tasks' : 'My Tasks'}
+              <span className="hidden sm:inline">{isAdmin ? 'All Tasks' : 'My Tasks'}</span>
+              <span className="sm:hidden">{isAdmin ? 'All' : 'Mine'}</span>
             </Button>
             <Button
               size="sm"
               variant={filterView === 'created' ? 'default' : 'outline'}
               onClick={() => setFilterView('created')}
+              className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
               data-testid="button-filter-created"
             >
-              Created by Me
+              <span className="hidden sm:inline">Created by Me</span>
+              <span className="sm:hidden">Created</span>
             </Button>
             <Button
               size="sm"
               variant={filterView === 'assigned' ? 'default' : 'outline'}
               onClick={() => setFilterView('assigned')}
+              className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
               data-testid="button-filter-assigned"
             >
-              Assigned to Me
+              <span className="hidden sm:inline">Assigned to Me</span>
+              <span className="sm:hidden">Assigned</span>
             </Button>
           </div>
         </div>
@@ -451,9 +456,9 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
 
       {selectedTask && (
         <Dialog open={!!selectedTask} onOpenChange={() => setSelectedTask(null)}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{selectedTask.title}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg">{selectedTask.title}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -462,49 +467,49 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
               
               {selectedTask.description && (
                 <div>
-                  <h4 className="font-semibold mb-2">Description</h4>
+                  <h4 className="font-semibold mb-2 text-sm">Description</h4>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedTask.description}</p>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {selectedTask.startDate && (
                   <div>
-                    <h4 className="font-semibold mb-2">Start Date</h4>
+                    <h4 className="font-semibold mb-2 text-sm">Start Date</h4>
                     <p className="text-sm">{format(new Date(selectedTask.startDate), 'MMMM dd, yyyy')}</p>
                   </div>
                 )}
                 {selectedTask.targetDate && (
                   <div>
-                    <h4 className="font-semibold mb-2">Target Date</h4>
+                    <h4 className="font-semibold mb-2 text-sm">Target Date</h4>
                     <p className="text-sm">{format(new Date(selectedTask.targetDate), 'MMMM dd, yyyy')}</p>
                   </div>
                 )}
               </div>
 
               <div>
-                <h4 className="font-semibold mb-2">Created By</h4>
+                <h4 className="font-semibold mb-2 text-sm">Created By</h4>
                 <p className="text-sm">{selectedTask.creatorName}</p>
               </div>
 
               {selectedTask.assigneeName && (
                 <div>
-                  <h4 className="font-semibold mb-2">Assigned To</h4>
+                  <h4 className="font-semibold mb-2 text-sm">Assigned To</h4>
                   <p className="text-sm">{selectedTask.assigneeName}</p>
                 </div>
               )}
 
               {selectedTask.remark && (
                 <div>
-                  <h4 className="font-semibold mb-2">Remarks</h4>
+                  <h4 className="font-semibold mb-2 text-sm">Remarks</h4>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedTask.remark}</p>
                 </div>
               )}
 
               {(selectedTask.createdBy === currentUser.id || selectedTask.assignedTo === currentUser.id) && (
                 <div className="pt-4 border-t">
-                  <h4 className="font-semibold mb-3">Update Status</h4>
-                  <div className="flex gap-2 flex-wrap">
+                  <h4 className="font-semibold mb-3 text-sm">Update Status</h4>
+                  <div className="grid grid-cols-2 sm:flex gap-2">
                     {Object.entries(statusConfig).map(([status, config]) => {
                       const Icon = config.icon;
                       return (
