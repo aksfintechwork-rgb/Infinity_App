@@ -301,16 +301,16 @@ export default function ChatLayout({
           <Tasks currentUser={currentUser} allUsers={allUsers} ws={ws} />
         ) : activeConversation ? (
           <>
-            <div className="h-16 border-b border-border flex items-center justify-between px-4 md:px-6 flex-shrink-0">
-              <div className="flex items-center gap-3">
+            <div className="min-h-[64px] md:h-16 border-b border-border flex items-center justify-between px-3 md:px-6 flex-shrink-0">
+              <div className="flex items-center gap-2 md:gap-3">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="md:hidden"
+                  className="md:hidden h-11 w-11"
                   onClick={() => setIsMobileMenuOpen(true)}
                   data-testid="button-mobile-menu"
                 >
-                  <Menu className="w-5 h-5" />
+                  <Menu className="w-6 h-6" />
                 </Button>
                 {activeConversation.isGroup ? (
                   <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
@@ -345,10 +345,10 @@ export default function ChatLayout({
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsAddMembersOpen(true)}
-                  className="md:hidden"
+                  className="md:hidden h-11 w-11"
                   data-testid="button-add-members-mobile"
                 >
-                  <UserPlus className="w-4 h-4" />
+                  <UserPlus className="w-5 h-5" />
                 </Button>
               )}
             </div>
@@ -404,12 +404,12 @@ export default function ChatLayout({
       />
 
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-        <SheetContent side="left" className="w-80 p-0 bg-gradient-to-b from-background via-background to-purple-50/30 dark:to-purple-950/10">
+        <SheetContent side="left" className="w-[90vw] max-w-sm p-0 bg-gradient-to-b from-background via-background to-purple-50/30 dark:to-purple-950/10">
           <div className="flex flex-col h-full">
-            <div className="h-18 border-b border-border/50 flex items-center justify-between px-4 bg-gradient-to-r from-purple-600/5 to-blue-600/5">
+            <div className="min-h-[72px] border-b border-border/50 flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600/5 to-blue-600/5">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-11 h-11 object-contain rounded-xl shadow-md ring-2 ring-purple-200/50 dark:ring-purple-800/50" />
+                  <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-12 h-12 object-contain rounded-xl shadow-md ring-2 ring-purple-200/50 dark:ring-purple-800/50" />
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background" />
                 </div>
                 <div>
@@ -419,77 +419,90 @@ export default function ChatLayout({
               </div>
             </div>
 
-            <div className="p-2 border-b border-border">
-              <div className={`grid ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} gap-1 p-1 bg-muted rounded-md`}>
+            <div className="p-3 border-b border-border">
+              <div className={`grid ${isAdmin ? 'grid-cols-2' : 'grid-cols-3'} gap-2 p-1.5 bg-muted rounded-lg`}>
                 <Button
-                  size="sm"
                   variant={currentView === 'chat' ? 'default' : 'ghost'}
                   onClick={() => { setCurrentView('chat'); setIsMobileMenuOpen(false); }}
                   data-testid="button-view-chat-mobile"
+                  className="h-11 text-sm font-medium"
                 >
-                  <MessageSquare className="w-4 h-4 mr-1" />
+                  <MessageSquare className="w-4 h-4 mr-1.5" />
                   Chat
                 </Button>
                 <Button
-                  size="sm"
                   variant={currentView === 'tasks' ? 'default' : 'ghost'}
                   onClick={() => { setCurrentView('tasks'); setIsMobileMenuOpen(false); }}
                   data-testid="button-view-tasks-mobile"
+                  className="h-11 text-sm font-medium"
                 >
-                  <CheckCircle2 className="w-4 h-4 mr-1" />
+                  <CheckCircle2 className="w-4 h-4 mr-1.5" />
                   Tasks
                 </Button>
-                <Button
-                  size="sm"
-                  variant={currentView === 'calendar' ? 'default' : 'ghost'}
-                  onClick={() => { setCurrentView('calendar'); setIsMobileMenuOpen(false); }}
-                  data-testid="button-view-calendar-mobile"
-                >
-                  <CalendarIcon className="w-4 h-4 mr-1" />
-                  Calendar
-                </Button>
-                {isAdmin && (
+                {!isAdmin && (
                   <Button
-                    size="sm"
-                    variant={currentView === 'admin' ? 'default' : 'ghost'}
-                    onClick={() => { setCurrentView('admin'); setIsMobileMenuOpen(false); }}
-                    data-testid="button-view-admin-mobile"
+                    variant={currentView === 'calendar' ? 'default' : 'ghost'}
+                    onClick={() => { setCurrentView('calendar'); setIsMobileMenuOpen(false); }}
+                    data-testid="button-view-calendar-mobile"
+                    className="h-11 text-sm font-medium"
                   >
-                    <Shield className="w-4 h-4 mr-1" />
-                    Admin
+                    <CalendarIcon className="w-4 h-4 mr-1.5" />
+                    Calendar
                   </Button>
+                )}
+                {isAdmin && (
+                  <>
+                    <Button
+                      variant={currentView === 'calendar' ? 'default' : 'ghost'}
+                      onClick={() => { setCurrentView('calendar'); setIsMobileMenuOpen(false); }}
+                      data-testid="button-view-calendar-mobile"
+                      className="h-11 text-sm font-medium"
+                    >
+                      <CalendarIcon className="w-4 h-4 mr-1.5" />
+                      Calendar
+                    </Button>
+                    <Button
+                      variant={currentView === 'admin' ? 'default' : 'ghost'}
+                      onClick={() => { setCurrentView('admin'); setIsMobileMenuOpen(false); }}
+                      data-testid="button-view-admin-mobile"
+                      className="h-11 text-sm font-medium"
+                    >
+                      <Shield className="w-4 h-4 mr-1.5" />
+                      Admin
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
 
             {currentView === 'chat' && (
               <>
-                <div className="p-4 border-b border-border">
-                  <div className="relative mb-3">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <div className="p-4 border-b border-border space-y-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
                       placeholder="Search conversations..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
+                      className="pl-10 h-11 text-base"
                       data-testid="input-search-conversations-mobile"
                     />
                   </div>
                   <Button
-                    className="w-full"
+                    className="w-full h-11 text-base font-semibold"
                     onClick={() => {
                       setIsNewConversationOpen(true);
                       setIsMobileMenuOpen(false);
                     }}
                     data-testid="button-new-conversation-mobile"
                   >
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus className="w-5 h-5 mr-2" />
                     New Conversation
                   </Button>
                 </div>
 
                 <ScrollArea className="flex-1">
-                  <div className="p-2 space-y-1">
+                  <div className="p-2 space-y-1.5">
                     {filteredConversations.map((conv) => (
                       <ConversationItem
                         key={conv.id}
@@ -508,12 +521,13 @@ export default function ChatLayout({
               </>
             )}
 
-            <div className="h-16 border-t border-border flex items-center justify-between px-4">
+            <div className="min-h-[68px] border-t border-border flex items-center justify-between px-4 py-2">
               <Button
                 size="icon"
                 variant="ghost"
                 onClick={() => setIsDark(!isDark)}
                 data-testid="button-theme-toggle-mobile"
+                className="h-11 w-11"
               >
                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </Button>
