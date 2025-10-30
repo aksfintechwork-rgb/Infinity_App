@@ -150,6 +150,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/auth/me", authMiddleware, getCurrentUser);
 
+  app.get("/api/profile", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.userId!;
+      const user = await storage.getUserById(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const { password, ...userProfile } = user;
+      res.json(userProfile);
+    } catch (error) {
+      console.error("Get profile error:", error);
+      res.status(500).json({ error: "Failed to fetch profile" });
+    }
+  });
+
   app.post("/api/auth/change-password", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const { currentPassword, newPassword } = req.body;

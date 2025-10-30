@@ -10,6 +10,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Settings, LogOut, User as UserIcon, KeyRound } from 'lucide-react';
 import ChangePasswordDialog from './ChangePasswordDialog';
+import ProfileDialog from './ProfileDialog';
+import SettingsDialog from './SettingsDialog';
 
 interface User {
   name: string;
@@ -24,6 +26,8 @@ interface UserMenuProps {
 
 export default function UserMenu({ user, onLogout }: UserMenuProps) {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const initials = user.name
     .split(' ')
@@ -55,7 +59,10 @@ export default function UserMenu({ user, onLogout }: UserMenuProps) {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem data-testid="menu-profile">
+          <DropdownMenuItem 
+            onClick={() => setIsProfileOpen(true)}
+            data-testid="menu-profile"
+          >
             <UserIcon className="w-4 h-4 mr-2" />
             Profile
           </DropdownMenuItem>
@@ -66,7 +73,10 @@ export default function UserMenu({ user, onLogout }: UserMenuProps) {
             <KeyRound className="w-4 h-4 mr-2" />
             Change Password
           </DropdownMenuItem>
-          <DropdownMenuItem data-testid="menu-settings">
+          <DropdownMenuItem 
+            onClick={() => setIsSettingsOpen(true)}
+            data-testid="menu-settings"
+          >
             <Settings className="w-4 h-4 mr-2" />
             Settings
           </DropdownMenuItem>
@@ -78,9 +88,17 @@ export default function UserMenu({ user, onLogout }: UserMenuProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
+      <ProfileDialog
+        open={isProfileOpen}
+        onOpenChange={setIsProfileOpen}
+      />
       <ChangePasswordDialog
         open={isChangePasswordOpen}
         onOpenChange={setIsChangePasswordOpen}
+      />
+      <SettingsDialog
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
       />
     </>
   );
