@@ -709,7 +709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.body.participantIds !== undefined) {
         await storage.clearMeetingParticipants(meetingId);
         for (const userId of req.body.participantIds) {
-          await storage.addMeetingParticipant(meetingId, userId);
+          await storage.addMeetingParticipant({ meetingId, userId });
         }
       }
 
