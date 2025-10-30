@@ -49,6 +49,12 @@ Preferred communication style: Simple, everyday language.
 - **Admin Features**: User deletion and real-time user list updates across clients.
 - **Meeting Calendar**: Integrated with video conferencing (Jitsi Meet), team member participation tracking, recurring meeting schedules (daily/weekly/monthly with customizable frequency and end date), and AI-powered meeting summarization.
 - **AI Meeting Summaries**: Automatic generation of professional meeting summaries using OpenAI (via Replit AI Integrations), with support for 20+ languages including English (default), Spanish, French, German, Italian, Portuguese, Russian, Chinese, Japanese, Korean, Arabic, and Indian languages (Hindi, Bengali, Tamil, Telugu, Marathi, Gujarati, Kannada, Malayalam, Punjabi). Summaries can be copied and shared with team members in any language.
+- **Instant Video/Audio Calling**: Integrated Jitsi Meet video calling directly within chat conversations, supporting both direct and group calls with screen sharing capability. Deterministic room naming ensures all participants in the same conversation join the same call session. Features include:
+  - Start Call button in chat header (desktop and mobile optimized)
+  - Full Jitsi Meet interface with camera, microphone, and screen sharing controls
+  - Leave Call functionality to return to normal chat view
+  - Works for both one-on-one and group conversations
+  - No additional setup required - instant access from any conversation
 - **Task Management System**: Complete task management with start/target dates, remarks, status tracking (todo/in_progress/completed), priority levels (low/medium/high), task assignment, real-time WebSocket updates with authorization filtering (only creator and assignee receive updates), and colorful zen-themed UI. Admins can view all tasks created by any team member using the "All Tasks" filter.
   - **Smart Dashboard Features**:
     - Statistics cards showing overview metrics (Total Tasks, To Do, In Progress, Completed, Overdue)
