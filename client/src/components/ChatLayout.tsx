@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, Phone } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
@@ -156,8 +156,9 @@ export default function ChatLayout({
   const handleStartCall = () => {
     if (!activeConversation) return;
     
-    // Generate a unique Jitsi room name based on conversation
-    const roomName = `supremo-chat-${activeConversation.id}-${Date.now()}`;
+    // Generate a deterministic Jitsi room name so all participants join the same room
+    // Using conversation ID ensures everyone in the same conversation joins the same call
+    const roomName = `supremo-chat-conv-${activeConversation.id}`;
     const jitsiLink = `https://meet.jit.si/${roomName}`;
     setActiveVideoCall(jitsiLink);
   };
