@@ -62,6 +62,14 @@ Preferred communication style: Simple, everyday language.
     - Sorting options (Recent, Due Date, Status)
     - Visual due date indicators (Overdue badges in rose/pink, Due Soon badges in amber for tasks within 3 days)
     - Enhanced task cards with gradient borders, colored top bars for urgent tasks, and improved visual hierarchy
+  - **Automated Task Reminders**: Background service that monitors task deadlines and sends automated reminder messages via chat:
+    - System user (ID: 25) automatically sends reminder messages to assigned team members
+    - Reminders triggered for tasks due within 24 hours or already overdue
+    - 24-hour cooldown period between reminders to prevent notification spam
+    - Creates or reuses direct message conversations between system and user
+    - Text-based headers: [TASK REMINDER], [URGENT - OVERDUE TASK], [TASK DUE SOON]
+    - Service runs every 60 minutes checking all active tasks
+    - Tracks reminder delivery via lastReminderSent timestamp in database
 - **Chat Page UI Enhancements**: Smart, attractive, and responsive chat interface with modern design elements:
   - **Enhanced Conversation List**:
     - Colorful gradient avatars with 7 distinct color schemes based on user/group name
