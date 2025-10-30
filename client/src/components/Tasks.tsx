@@ -799,7 +799,7 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
                 </div>
               )}
 
-              {isAdmin && (
+              {(isAdmin || selectedTask.createdBy === currentUser.id) && (
                 <div className="pt-4 border-t">
                   <Button
                     size="sm"
@@ -848,14 +848,14 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
         </Dialog>
       )}
 
-      {/* Edit Task Dialog for Admins */}
-      {isAdmin && selectedTask && (
+      {/* Edit Task Dialog for Task Creators and Admins */}
+      {(isAdmin || (selectedTask && selectedTask.createdBy === currentUser.id)) && selectedTask && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Edit Task Assignment & Remarks</DialogTitle>
               <DialogDescription>
-                Change the task assignee or add/update remarks as an administrator.
+                Change the task assignee or add/update remarks for this task.
               </DialogDescription>
             </DialogHeader>
             <Form {...editForm}>

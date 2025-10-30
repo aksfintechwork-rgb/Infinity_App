@@ -930,12 +930,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const user = await storage.getUserById(req.userId);
       const isAdmin = user?.role === 'admin';
-
-      // Check permissions based on what's being updated
-      const isCreatorOrAssignee = task.createdBy === req.userId || task.assignedTo === req.userId;
+      const isCreator = task.createdBy === req.userId;
+      const isAssignee = task.assignedTo === req.userId;
+      const isCreatorOrAssignee = isCreator || isAssignee;
       
-      // Admins can update assignedTo and remark
-      // Creator/Assignee can update status and other fields
+      // Only creator, assignee, or admin can update the task
       if (!isAdmin && !isCreatorOrAssignee) {
         return res.status(403).json({ error: "You don't have permission to update this task" });
       }
@@ -943,8 +942,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Prepare update data
       let updateData: any = {};
       
-      if (isAdmin) {
-        // Admins can update assignedTo and remark
+      // Task creator and admins can update all fields including assignedTo and remark
+      if (isCreator || isAdmin) {
         if (req.body.assignedTo !== undefined) {
           updateData.assignedTo = req.body.assignedTo;
         }
@@ -953,8 +952,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      if (isCreatorOrAssignee) {
-        // Creator/Assignee can update status and other fields
+      // Creator, assignee, and admins can update status and other fields
+      if (isCreatorOrAssignee || isAdmin) {
         if (req.body.status !== undefined) {
           updateData.status = req.body.status;
         }
