@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is an internal team communication platform for SUPREMO TRADERS LLP. It is a real-time chat application with role-based access control, supporting direct messaging, group conversations, file attachments, typing indicators, and a user management panel for administrators. The platform also includes a meeting calendar with AI-powered summarization, video conferencing system, and comprehensive task management, aiming to provide an efficient and professional communication tool.
+This is an internal team communication platform for SUPREMO TRADERS LLP. It is a real-time chat application with role-based access control, supporting direct messaging, group conversations, file attachments, typing indicators, and a user management panel for administrators. The platform also includes a meeting calendar with AI-powered summarization, video conferencing system, comprehensive task management, and fully functional user profile and settings management, aiming to provide an efficient and professional communication tool.
 
 ## User Preferences
 
@@ -70,7 +70,12 @@ Preferred communication style: Simple, everyday language.
     - Text-based headers: [TASK REMINDER], [URGENT - OVERDUE TASK], [TASK DUE SOON]
     - Service runs every 60 minutes checking all active tasks
     - Tracks reminder delivery via lastReminderSent timestamp in database
-- **Chat Page UI Enhancements**: Smart, attractive, and responsive chat interface with modern design elements:
+- **Chat Page UI Enhancements**: Clean, professional, and responsive chat interface with modern design:
+  - **Clean Dashboard Layout**:
+    - Simplified sidebar with consistent spacing and minimal distractions
+    - Cleaner header design with smaller logo and status indicator
+    - Reduced gradients and visual noise for better focus on content
+    - Improved navigation buttons with better sizing and spacing
   - **Enhanced Conversation List**:
     - Colorful gradient avatars with 7 distinct color schemes based on user/group name
     - Online status indicators (green dot) for direct messages
@@ -78,23 +83,21 @@ Preferred communication style: Simple, everyday language.
     - Enhanced visual hierarchy with bold text for unread messages
     - Read receipts with CheckCheck icons for read messages
     - Smart timestamp formatting (Today/Yesterday/Date format)
-    - Gradient hover overlays for smooth interactions
+    - Smooth hover interactions
     - Enhanced unread badges with gradient backgrounds showing count (99+ for large numbers)
-  - **Header Design**:
-    - Purple-to-blue gradient branding on company logo and title
-    - Logo with rounded corners, shadow, and ring effects
-    - Online status indicator on logo
-    - Gradient container backgrounds for navigation
-    - Enhanced navigation buttons with proper Shadcn sizing and shadow effects
   - **Search & Actions**:
-    - Styled search input with focus ring effects (purple glow on focus)
+    - Clean search input with subtle styling
     - Gradient "New Conversation" button with purple-to-blue color scheme
-    - Empty state UI with icon and descriptive messaging
+    - Minimal empty state UI with icon and descriptive messaging
   - **Mobile Optimizations**:
     - Consistent visual enhancements in Sheet component for mobile
     - Touch-friendly button sizes using Shadcn variants
     - Responsive design that adapts gracefully across all viewport sizes
 - **Password Management**: Self-service password change feature accessible from user menu, with validation, security checks, and password visibility toggles. Both admins and regular users can change their own passwords.
+- **User Profile & Settings**:
+  - **Profile Dialog**: View complete user profile information including name, login ID, email, role, and join date. Features loading state while fetching data and error handling for failed requests. Accessible from user menu.
+  - **Settings Dialog**: Manage application preferences including dark mode toggle, desktop notifications, sound alerts, and auto-play video settings. All settings persist via localStorage and provide immediate visual feedback.
+  - Clean, professional UI with loading states, error handling, and responsive design throughout.
 - **Admin Tools**: 
   - Credential Verification Tool to aid in troubleshooting login issues
   - Admins can view all tasks from all team members for oversight and coordination
