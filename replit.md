@@ -36,9 +36,9 @@ Preferred communication style: Simple, everyday language.
 - **Group Conversation Management**: Required group names, ability to add members to existing groups with optional access to message history.
 - **Admin Features**: User deletion and real-time user list updates across clients.
 - **Meeting Calendar**: Integrated with video conferencing (Jitsi Meet).
-- **Task Management System**: Complete task management with start/target dates, remarks, status tracking (todo/in_progress/completed), priority levels (low/medium/high), task assignment, real-time WebSocket updates with authorization filtering (only creator and assignee receive updates), and colorful zen-themed UI.
+- **Task Management System**: Complete task management with start/target dates, remarks, status tracking (todo/in_progress/completed), priority levels (low/medium/high), task assignment, real-time WebSocket updates with authorization filtering (only creator and assignee receive updates), and colorful zen-themed UI. Admins can view all tasks created by any team member using the "All Tasks" filter.
 - **Password Management**: Self-service password change feature accessible from user menu, with validation, security checks, and password visibility toggles. Both admins and regular users can change their own passwords.
-- **Admin Tools**: Credential Verification Tool to aid in troubleshooting login issues.
+- **Admin Tools**: Credential Verification Tool to aid in troubleshooting login issues. Admins can view all tasks from all team members for oversight and coordination.
 
 ## External Dependencies
 
