@@ -72,6 +72,7 @@ const statusConfig = {
 export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [filterView, setFilterView] = useState<'all' | 'created' | 'assigned'>('all');
+  const [filterUserId, setFilterUserId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
   
@@ -112,13 +113,24 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
   }, [ws, selectedTask]);
 
   const { data: tasks = [], isLoading } = useQuery<TaskWithDetails[]>({
-    queryKey: ['/api/tasks', filterView],
+    queryKey: ['/api/tasks', filterView, filterUserId],
     queryFn: async () => {
+      let queryParams = '';
+      
+      // Admin filtering by specific user
+      if (isAdmin && filterUserId) {
+        queryParams = `?userId=${filterUserId}`;
+      }
       // For admins, pass 'all' filter to get all tasks from everyone
-      // For regular users, no filter shows their involved tasks
-      const filterParam = filterView === 'all' && isAdmin ? '?filter=all' : 
-                          filterView !== 'all' ? `?filter=${filterView}` : '';
-      const response = await fetch(`/api/tasks${filterParam}`, {
+      else if (filterView === 'all' && isAdmin) {
+        queryParams = '?filter=all';
+      }
+      // Regular filter views
+      else if (filterView !== 'all') {
+        queryParams = `?filter=${filterView}`;
+      }
+      
+      const response = await fetch(`/api/tasks${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
         },
@@ -334,6 +346,28 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
           </Dialog>
         </div>
 
+        {isAdmin && (
+          <div className="mb-3">
+            <label className="text-sm font-medium mb-2 block">Filter by Team Member</label>
+            <Select value={filterUserId} onValueChange={(value) => {
+              setFilterUserId(value);
+              setFilterView('all');
+            }}>
+              <SelectTrigger className="w-full sm:w-64" data-testid="select-filter-user">
+                <SelectValue placeholder="All team members" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All team members</SelectItem>
+                {allUsers.map(user => (
+                  <SelectItem key={user.id} value={user.id.toString()}>
+                    {user.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -348,8 +382,11 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
           <div className="flex gap-1.5 sm:gap-2">
             <Button
               size="sm"
-              variant={filterView === 'all' ? 'default' : 'outline'}
-              onClick={() => setFilterView('all')}
+              variant={filterView === 'all' && !filterUserId ? 'default' : 'outline'}
+              onClick={() => {
+                setFilterView('all');
+                setFilterUserId('');
+              }}
               className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
               data-testid="button-filter-all"
             >
@@ -359,7 +396,10 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
             <Button
               size="sm"
               variant={filterView === 'created' ? 'default' : 'outline'}
-              onClick={() => setFilterView('created')}
+              onClick={() => {
+                setFilterView('created');
+                setFilterUserId('');
+              }}
               className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
               data-testid="button-filter-created"
             >
@@ -369,7 +409,10 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
             <Button
               size="sm"
               variant={filterView === 'assigned' ? 'default' : 'outline'}
-              onClick={() => setFilterView('assigned')}
+              onClick={() => {
+                setFilterView('assigned');
+                setFilterUserId('');
+              }}
               className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
               data-testid="button-filter-assigned"
             >
