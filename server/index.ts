@@ -4,6 +4,7 @@ import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./seed";
+import { taskReminderService } from "./task-reminders";
 
 const app = express();
 
@@ -104,5 +105,9 @@ app.use((req, res, next) => {
     log(`serving on port ${port}`);
     // Initialize database with admin user if empty
     await initializeDatabase();
+    
+    // Start task reminder service (checks every 60 minutes)
+    await taskReminderService.start(60);
+    log('Task reminder service started');
   });
 })();
