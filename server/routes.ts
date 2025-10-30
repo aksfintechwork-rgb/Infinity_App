@@ -699,6 +699,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { participantIds, ...meetingData } = req.body;
       
+      console.log("Meeting update request body:", req.body);
+      console.log("Meeting data to update:", meetingData);
+      
       const updateData = {
         ...meetingData,
         id: meetingId,
@@ -706,6 +709,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: meeting.createdAt,
       };
 
+      console.log("Final update data:", updateData);
+      
       await storage.updateMeeting(meetingId, updateData);
       
       if (participantIds !== undefined) {
@@ -726,6 +731,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Update meeting error:", error);
+      console.error("Error details:", error instanceof Error ? error.message : String(error));
+      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
       res.status(500).json({ error: "Failed to update meeting" });
     }
   });
