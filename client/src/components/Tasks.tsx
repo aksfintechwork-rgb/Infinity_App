@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -177,7 +177,7 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
   const updateTaskMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: EditTaskFormValues }) => {
       return apiRequest('PATCH', `/api/tasks/${id}`, {
-        assignedTo: data.assignedTo ? parseInt(data.assignedTo) : null,
+        assignedTo: data.assignedTo && data.assignedTo !== 'unassigned' ? parseInt(data.assignedTo) : null,
         remark: data.remark || '',
       });
     },
@@ -854,6 +854,9 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
           <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Edit Task Assignment & Remarks</DialogTitle>
+              <DialogDescription>
+                Change the task assignee or add/update remarks as an administrator.
+              </DialogDescription>
             </DialogHeader>
             <Form {...editForm}>
               <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
@@ -863,14 +866,14 @@ export default function Tasks({ currentUser, allUsers, ws }: TasksProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Assign To</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger data-testid="select-edit-assignee">
                             <SelectValue placeholder="Select team member" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Unassigned</SelectItem>
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
                           {allUsers.map(user => (
                             <SelectItem key={user.id} value={user.id.toString()}>
                               {user.name}

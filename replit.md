@@ -84,6 +84,7 @@ Preferred communication style: Simple, everyday language.
   - Credential Verification Tool to aid in troubleshooting login issues
   - Admins can view all tasks from all team members for oversight and coordination
   - **Task Filtering by Team Member**: Admins can filter tasks to view only those related to a specific team member (tasks created by or assigned to them) using a dedicated dropdown filter. Includes validation to prevent invalid requests and seamless integration with existing filter buttons.
+  - **Task Assignment & Remark Editing**: Admins can edit task assignments and add/update remarks for any task. This allows administrators to reassign tasks to different team members and add administrative notes or instructions. The edit dialog is accessible from the task detail view and includes form validation.
 
 ## External Dependencies
 
