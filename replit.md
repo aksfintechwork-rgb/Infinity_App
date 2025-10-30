@@ -30,7 +30,18 @@ Preferred communication style: Simple, everyday language.
 - **Security**: JWT_SECRET environment variable, password validation, auth/admin middleware, public registration defaults to 'user' role, and WebSocket connection verification. Includes an auto-healing admin password system for production robustness.
 
 ### Cross-Device Compatibility
-- Designed for seamless operation across all devices and browsers with automatic WebSocket reconnection, dynamic URL construction for real-time communication, robust file handling, and desktop notifications with sound alerts. Features mobile keyboard compatibility fixes for login.
+- Designed for seamless operation across all devices and browsers with automatic WebSocket reconnection, dynamic URL construction for real-time communication, robust file handling, and desktop notifications with enhanced loud sound alerts. Features mobile keyboard compatibility fixes for login.
+
+### Real-Time Presence Tracking
+- **Online/Offline Status**: WebSocket-based user presence system that accurately tracks which users are currently connected
+- **Multi-Tab Support**: Backend maintains deduplicated online user roster and only broadcasts `user_offline` when the final connection for a user closes
+- **Visual Indicators**: Green dot indicators on direct message conversations show when the other user is truly online
+- **WebSocket Events**: `online_users` (initial list on connect), `user_online`, and `user_offline` events for real-time presence updates
+
+### Enhanced Notifications
+- **Desktop Notifications**: Browser notifications with attention-grabbing triple-beep sound pattern
+- **Loud Sound Alert**: Ascending melodic pattern (A5→C6→E6 frequencies) with increased volume (0.5-0.6 gain) for better noticeability
+- **AudioContext Management**: Automatic audio context initialization and handling of browser autoplay policies
 
 ### Key Features
 - **Group Conversation Management**: Required group names, ability to add members to existing groups with optional access to message history.
