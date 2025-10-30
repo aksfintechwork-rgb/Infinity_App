@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Mail, Shield, Calendar } from 'lucide-react';
+import { User, Mail, Shield, Calendar, Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
 interface ProfileDialogProps {
@@ -28,25 +28,27 @@ interface UserProfile {
 }
 
 export default function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
-  const { data: profile } = useQuery<UserProfile>({
+  const { data: profile, isLoading, error } = useQuery<UserProfile>({
     queryKey: ['/api/profile'],
     enabled: open,
   });
 
-  if (!profile) return null;
+  const initials = profile
+    ? profile.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : 'U';
 
-  const initials = profile.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-
-  const joinDate = new Date(profile.createdAt).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const joinDate = profile
+    ? new Date(profile.createdAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : '';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -58,7 +60,21 @@ export default function ProfileDialog({ open, onOpenChange }: ProfileDialogProps
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : error ? (
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-destructive text-center">Failed to load profile information</p>
+            <div className="flex justify-end">
+              <Button onClick={() => onOpenChange(false)} data-testid="button-close-profile">
+                Close
+              </Button>
+            </div>
+          </div>
+        ) : profile ? (
+          <div className="space-y-6 py-4">
           <div className="flex justify-center">
             <Avatar className="w-24 h-24 ring-4 ring-purple-100 dark:ring-purple-900">
               <AvatarImage src="" />
@@ -153,6 +169,7 @@ export default function ProfileDialog({ open, onOpenChange }: ProfileDialogProps
             </Button>
           </div>
         </div>
+        ) : null}
       </DialogContent>
     </Dialog>
   );
