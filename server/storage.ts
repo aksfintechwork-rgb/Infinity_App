@@ -58,6 +58,7 @@ export interface IStorage {
   getTasksByCreator(creatorId: number): Promise<TaskWithDetails[]>;
   getTasksByAssignee(assigneeId: number): Promise<TaskWithDetails[]>;
   getAllTasksForUser(userId: number): Promise<TaskWithDetails[]>;
+  getAllTasks(): Promise<TaskWithDetails[]>;
   updateTask(id: number, updates: Partial<InsertTask>): Promise<Task | undefined>;
   deleteTask(id: number): Promise<void>;
   
@@ -349,6 +350,32 @@ export class PostgresStorage implements IStorage {
       .where(
         sql`${tasks.createdBy} = ${userId} OR ${tasks.assignedTo} = ${userId}`
       )
+      .orderBy(desc(tasks.createdAt));
+
+    return result as TaskWithDetails[];
+  }
+
+  async getAllTasks(): Promise<TaskWithDetails[]> {
+    const result = await db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        description: tasks.description,
+        startDate: tasks.startDate,
+        targetDate: tasks.targetDate,
+        status: tasks.status,
+        remark: tasks.remark,
+        createdBy: tasks.createdBy,
+        assignedTo: tasks.assignedTo,
+        conversationId: tasks.conversationId,
+        createdAt: tasks.createdAt,
+        updatedAt: tasks.updatedAt,
+        creatorName: users.name,
+        assigneeName: sql<string>`assignee.name`,
+      })
+      .from(tasks)
+      .innerJoin(users, eq(tasks.createdBy, users.id))
+      .leftJoin(sql`users as assignee`, sql`tasks.assigned_to = assignee.id`)
       .orderBy(desc(tasks.createdAt));
 
     return result as TaskWithDetails[];

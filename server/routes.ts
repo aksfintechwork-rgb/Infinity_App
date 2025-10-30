@@ -606,13 +606,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const filter = req.query.filter as string | undefined;
+      const user = await storage.getUserById(req.userId);
+      const isAdmin = user?.role === 'admin';
 
       let tasks;
-      if (filter === 'created') {
+      
+      // Admins can see all tasks
+      if (isAdmin && filter === 'all') {
+        tasks = await storage.getAllTasks();
+      } else if (filter === 'created') {
         tasks = await storage.getTasksByCreator(req.userId);
       } else if (filter === 'assigned') {
         tasks = await storage.getTasksByAssignee(req.userId);
       } else {
+        // Default: show tasks user is involved in (creator or assignee)
         tasks = await storage.getAllTasksForUser(req.userId);
       }
 
@@ -636,8 +643,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Task not found" });
       }
 
-      // Check if user has access to this task
-      if (task.createdBy !== req.userId && task.assignedTo !== req.userId) {
+      const user = await storage.getUserById(req.userId);
+      const isAdmin = user?.role === 'admin';
+
+      // Admins can see all tasks, regular users only see tasks they're involved in
+      if (!isAdmin && task.createdBy !== req.userId && task.assignedTo !== req.userId) {
         return res.status(403).json({ error: "You don't have access to this task" });
       }
 
