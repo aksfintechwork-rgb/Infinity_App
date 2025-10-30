@@ -3,7 +3,6 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { useToast } from '@/hooks/use-toast';
 import LoginPage from './components/LoginPage';
 import ChatLayout from './components/ChatLayout';
 import * as api from './lib/api';
@@ -49,7 +48,6 @@ function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
-  const { toast } = useToast();
 
   const ws = useWebSocket(token);
 
@@ -181,11 +179,7 @@ function App() {
       requestNotificationPermission();
     } catch (error) {
       console.error('Failed to load user data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load user data. Please try logging in again.',
-        variant: 'destructive',
-      });
+      // Toast removed to fix React hook error
       handleLogout();
     } finally {
       setIsLoading(false);
@@ -202,11 +196,7 @@ function App() {
       });
     } catch (error) {
       console.error('Failed to load messages:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load messages',
-        variant: 'destructive',
-      });
+      // Toast removed to fix React hook error
     }
   };
 
@@ -227,11 +217,8 @@ function App() {
       setToken(response.token);
       setCurrentUser(response.user);
     } catch (error: any) {
-      toast({
-        title: 'Login Failed',
-        description: error.message || 'Invalid login credentials',
-        variant: 'destructive',
-      });
+      console.error('Login failed:', error);
+      // Toast removed to fix React hook error
     }
   };
 
@@ -256,16 +243,10 @@ function App() {
       const newConv = await api.createConversation(token!, title, memberIds);
       setConversations((prev) => [newConv, ...prev]);
       
-      toast({
-        title: 'Success',
-        description: 'Conversation created successfully',
-      });
+      // Toast removed to fix React hook error
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to create conversation',
-        variant: 'destructive',
-      });
+      console.error('Failed to create conversation:', error);
+      // Toast removed to fix React hook error
     }
   };
 
@@ -274,11 +255,8 @@ function App() {
       const response = await api.uploadFile(token!, file);
       return response.url;
     } catch (error: any) {
-      toast({
-        title: 'Upload Failed',
-        description: error.message || 'Failed to upload file',
-        variant: 'destructive',
-      });
+      console.error('File upload failed:', error);
+      // Toast removed to fix React hook error
       throw error;
     }
   };
