@@ -37,6 +37,12 @@ Preferred communication style: Simple, everyday language.
 - **Admin Features**: User deletion and real-time user list updates across clients.
 - **Meeting Calendar**: Integrated with video conferencing (Jitsi Meet).
 - **Task Management System**: Complete task management with start/target dates, remarks, status tracking (todo/in_progress/completed), priority levels (low/medium/high), task assignment, real-time WebSocket updates with authorization filtering (only creator and assignee receive updates), and colorful zen-themed UI. Admins can view all tasks created by any team member using the "All Tasks" filter.
+  - **Smart Dashboard Features**:
+    - Statistics cards showing overview metrics (Total Tasks, To Do, In Progress, Completed, Overdue)
+    - Status filtering (All, To Do, In Progress, Done)
+    - Sorting options (Recent, Due Date, Status)
+    - Visual due date indicators (Overdue badges in rose/pink, Due Soon badges in amber for tasks within 3 days)
+    - Enhanced task cards with gradient borders, colored top bars for urgent tasks, and improved visual hierarchy
 - **Password Management**: Self-service password change feature accessible from user menu, with validation, security checks, and password visibility toggles. Both admins and regular users can change their own passwords.
 - **Admin Tools**: 
   - Credential Verification Tool to aid in troubleshooting login issues
