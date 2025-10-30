@@ -187,62 +187,58 @@ export default function ChatLayout({
 
   return (
     <div className="flex h-screen bg-background">
-      <div className="hidden md:flex w-80 border-r border-border flex-col bg-gradient-to-b from-background via-background to-purple-50/30 dark:to-purple-950/10">
-        <div className="h-18 border-b border-border/50 flex items-center justify-between px-4 flex-shrink-0 bg-gradient-to-r from-purple-600/5 to-blue-600/5 backdrop-blur-sm">
+      <div className="hidden md:flex w-80 border-r border-border flex-col bg-background">
+        <div className="h-16 border-b border-border flex items-center justify-between px-4 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-11 h-11 object-contain rounded-xl shadow-md ring-2 ring-purple-200/50 dark:ring-purple-800/50" data-testid="img-brand-logo" />
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background" />
+              <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-10 h-10 object-contain rounded-lg" data-testid="img-brand-logo" />
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
             </div>
             <div>
-              <h1 className="text-base font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">SUPREMO TRADERS</h1>
-              <p className="text-xs text-muted-foreground font-medium">Team Chat</p>
+              <h1 className="text-sm font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">SUPREMO TRADERS</h1>
+              <p className="text-xs text-muted-foreground">Team Chat</p>
             </div>
           </div>
         </div>
 
-        <div className="p-2 border-b border-border/50 flex-shrink-0">
-          <div className={`grid ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} gap-1 p-1 bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-900 dark:to-gray-800 rounded-lg shadow-inner`}>
+        <div className="p-3 border-b border-border flex-shrink-0">
+          <div className={`grid ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 p-0.5 bg-muted/50 rounded-lg`}>
             <Button
               size="sm"
               variant={currentView === 'chat' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('chat')}
-              className={`transition-all ${currentView === 'chat' ? 'shadow-md' : ''}`}
               data-testid="button-view-chat"
             >
-              <MessageSquare className="w-4 h-4 mr-1" />
-              <span className="hidden sm:inline">Chat</span>
+              <MessageSquare className="w-4 h-4 mr-1.5" />
+              <span className="text-xs">Chat</span>
             </Button>
             <Button
               size="sm"
               variant={currentView === 'tasks' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('tasks')}
-              className={`transition-all ${currentView === 'tasks' ? 'shadow-md' : ''}`}
               data-testid="button-view-tasks"
             >
-              <CheckCircle2 className="w-4 h-4 mr-1" />
-              <span className="hidden sm:inline">Tasks</span>
+              <CheckCircle2 className="w-4 h-4 mr-1.5" />
+              <span className="text-xs">Tasks</span>
             </Button>
             <Button
               size="sm"
               variant={currentView === 'calendar' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('calendar')}
-              className={`transition-all ${currentView === 'calendar' ? 'shadow-md' : ''}`}
               data-testid="button-view-calendar"
             >
-              <CalendarIcon className="w-4 h-4 mr-1" />
-              <span className="hidden sm:inline">Calendar</span>
+              <CalendarIcon className="w-4 h-4 mr-1.5" />
+              <span className="text-xs">Calendar</span>
             </Button>
             {isAdmin && (
               <Button
                 size="sm"
                 variant={currentView === 'admin' ? 'default' : 'ghost'}
                 onClick={() => setCurrentView('admin')}
-                className={`transition-all ${currentView === 'admin' ? 'shadow-md' : ''}`}
                 data-testid="button-view-admin"
               >
-                <Shield className="w-4 h-4 mr-1" />
-                <span className="hidden sm:inline">Admin</span>
+                <Shield className="w-4 h-4 mr-1.5" />
+                <span className="text-xs">Admin</span>
               </Button>
             )}
           </div>
@@ -250,19 +246,20 @@ export default function ChatLayout({
 
         {currentView === 'chat' ? (
           <>
-            <div className="p-4 border-b border-border/50 flex-shrink-0 space-y-3">
+            <div className="p-3 border-b border-border flex-shrink-0 space-y-2.5">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search conversations..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 bg-gray-50/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                  className="pl-9 h-9"
                   data-testid="input-search-conversations"
                 />
               </div>
               <Button
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 shadow-md"
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600"
+                size="sm"
                 onClick={() => setIsNewConversationOpen(true)}
                 data-testid="button-new-conversation"
               >
@@ -272,14 +269,14 @@ export default function ChatLayout({
             </div>
 
             <ScrollArea className="flex-1">
-              <div className="p-2 space-y-2">
+              <div className="p-2 space-y-1">
                 {filteredConversations.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 flex items-center justify-center mb-4">
-                      <MessageSquare className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                  <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                      <MessageSquare className="w-6 h-6 text-muted-foreground" />
                     </div>
-                    <h3 className="font-semibold text-sm text-foreground mb-1">No conversations found</h3>
-                    <p className="text-xs text-muted-foreground">Start a new conversation to begin chatting</p>
+                    <h3 className="font-medium text-sm mb-1">No conversations</h3>
+                    <p className="text-xs text-muted-foreground">Start a new conversation</p>
                   </div>
                 ) : (
                   filteredConversations.map((conv) => (
@@ -312,14 +309,14 @@ export default function ChatLayout({
           </div>
         )}
 
-        <div className="h-16 border-t border-border flex items-center justify-between px-4 flex-shrink-0">
+        <div className="h-14 border-t border-border flex items-center justify-between px-3 flex-shrink-0">
           <Button
             size="icon"
             variant="ghost"
             onClick={() => setIsDark(!isDark)}
             data-testid="button-theme-toggle"
           >
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </Button>
           <UserMenu user={currentUser} onLogout={onLogout} />
         </div>
