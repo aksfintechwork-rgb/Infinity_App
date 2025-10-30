@@ -159,7 +159,25 @@ export default function ChatLayout({
     // Generate a deterministic Jitsi room name so all participants join the same room
     // Using conversation ID ensures everyone in the same conversation joins the same call
     const roomName = `supremo-chat-conv-${activeConversation.id}`;
-    const jitsiLink = `https://meet.jit.si/${roomName}`;
+    
+    // Configure Jitsi to hide branding and customize interface
+    const config = [
+      'config.prejoinPageEnabled=false',
+      'config.startWithAudioMuted=false',
+      'config.startWithVideoMuted=false',
+      'interfaceConfig.SHOW_JITSI_WATERMARK=false',
+      'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
+      'interfaceConfig.SHOW_BRAND_WATERMARK=false',
+      'interfaceConfig.BRAND_WATERMARK_LINK=""',
+      'interfaceConfig.JITSI_WATERMARK_LINK=""',
+      'interfaceConfig.SHOW_POWERED_BY=false',
+      'interfaceConfig.DISPLAY_WELCOME_PAGE_CONTENT=false',
+      'interfaceConfig.DISPLAY_WELCOME_FOOTER=false',
+      'interfaceConfig.APP_NAME="SUPREMO TRADERS"',
+      'interfaceConfig.NATIVE_APP_NAME="SUPREMO TRADERS"'
+    ].join('&');
+    
+    const jitsiLink = `https://meet.jit.si/${roomName}#${config}`;
     setActiveVideoCall(jitsiLink);
   };
 
