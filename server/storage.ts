@@ -9,6 +9,8 @@ import {
   type InsertConversationMember,
   type Meeting,
   type InsertMeeting,
+  type MeetingParticipant,
+  type InsertMeetingParticipant,
   type Task,
   type InsertTask,
   type TaskWithDetails,
@@ -19,6 +21,7 @@ import {
   messages,
   conversationMembers,
   meetings,
+  meetingParticipants,
   tasks,
   taskSupportRequests,
 } from "@shared/schema";
@@ -52,6 +55,9 @@ export interface IStorage {
   getAllMeetings(): Promise<Meeting[]>;
   getMeetingById(id: number): Promise<Meeting | undefined>;
   deleteMeeting(id: number): Promise<void>;
+  addMeetingParticipant(participant: InsertMeetingParticipant): Promise<MeetingParticipant>;
+  getMeetingParticipants(meetingId: number): Promise<User[]>;
+  removeMeetingParticipant(meetingId: number, userId: number): Promise<void>;
   
   createTask(task: InsertTask): Promise<Task>;
   getTaskById(id: number): Promise<TaskWithDetails | undefined>;
@@ -238,6 +244,39 @@ export class PostgresStorage implements IStorage {
 
   async deleteMeeting(id: number): Promise<void> {
     await db.delete(meetings).where(eq(meetings.id, id));
+  }
+
+  async addMeetingParticipant(participant: InsertMeetingParticipant): Promise<MeetingParticipant> {
+    const result = await db.insert(meetingParticipants).values(participant).returning();
+    return result[0];
+  }
+
+  async getMeetingParticipants(meetingId: number): Promise<User[]> {
+    const result = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        loginId: users.loginId,
+        email: users.email,
+        password: users.password,
+        role: users.role,
+        avatar: users.avatar,
+        createdAt: users.createdAt,
+      })
+      .from(meetingParticipants)
+      .innerJoin(users, eq(meetingParticipants.userId, users.id))
+      .where(eq(meetingParticipants.meetingId, meetingId));
+    
+    return result;
+  }
+
+  async removeMeetingParticipant(meetingId: number, userId: number): Promise<void> {
+    await db.delete(meetingParticipants).where(
+      and(
+        eq(meetingParticipants.meetingId, meetingId),
+        eq(meetingParticipants.userId, userId)
+      )
+    );
   }
 
   async createTask(task: InsertTask): Promise<Task> {

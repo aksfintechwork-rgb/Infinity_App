@@ -490,17 +490,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const meetings = await storage.getAllMeetings();
       
-      const meetingsWithCreatorInfo = await Promise.all(
+      const meetingsWithDetails = await Promise.all(
         meetings.map(async (meeting) => {
           const creator = await storage.getUserById(meeting.createdBy);
+          const participants = await storage.getMeetingParticipants(meeting.id);
           return {
             ...meeting,
             creatorName: creator?.name || 'Unknown',
+            participants: participants.map(p => ({ id: p.id, name: p.name })),
           };
         })
       );
 
-      res.json(meetingsWithCreatorInfo);
+      res.json(meetingsWithDetails);
     } catch (error) {
       console.error("Get meetings error:", error);
       res.status(500).json({ error: "Failed to fetch meetings" });
@@ -513,8 +515,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
+      const { participantIds, ...meetingData } = req.body;
+
       const validation = insertMeetingSchema.safeParse({
-        ...req.body,
+        ...meetingData,
         createdBy: req.userId,
       });
 
@@ -523,11 +527,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const meeting = await storage.createMeeting(validation.data);
+      
+      // Add participants if provided
+      if (participantIds && Array.isArray(participantIds)) {
+        for (const userId of participantIds) {
+          await storage.addMeetingParticipant({
+            meetingId: meeting.id,
+            userId: parseInt(userId),
+          });
+        }
+      }
+
       const creator = await storage.getUserById(meeting.createdBy);
+      const participants = await storage.getMeetingParticipants(meeting.id);
 
       res.status(201).json({
         ...meeting,
         creatorName: creator?.name || 'Unknown',
+        participants: participants.map(p => ({ id: p.id, name: p.name })),
       });
     } catch (error) {
       console.error("Create meeting error:", error);

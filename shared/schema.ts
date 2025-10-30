@@ -102,6 +102,9 @@ export const insertMessageSchema = _baseMessageSchema.omit({
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
 
+export const recurrencePatternEnum = z.enum(["none", "daily", "weekly", "monthly"]);
+export type RecurrencePattern = z.infer<typeof recurrencePatternEnum>;
+
 export const meetings = pgTable("meetings", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   title: text("title").notNull(),
@@ -109,6 +112,9 @@ export const meetings = pgTable("meetings", {
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
   meetingLink: text("meeting_link"),
+  recurrencePattern: text("recurrence_pattern").notNull().default("none"),
+  recurrenceInterval: integer("recurrence_interval").default(1),
+  recurrenceEndDate: timestamp("recurrence_end_date"),
   createdBy: integer("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -116,6 +122,10 @@ export const meetings = pgTable("meetings", {
 const _baseMeetingSchema = createInsertSchema(meetings, {
   startTime: z.string().transform((val) => new Date(val)),
   endTime: z.string().transform((val) => new Date(val)),
+  recurrencePattern: recurrencePatternEnum.default("none"),
+  recurrenceEndDate: z.string().optional().nullable().refine((val) => !val || !isNaN(Date.parse(val)), {
+    message: "Recurrence end date must be a valid date string",
+  }).transform((val) => val ? new Date(val) : null),
   meetingLink: z.string().optional().refine(
     (link) => !link || link.startsWith('https://meet.jit.si/'),
     { message: 'Meeting link must be a Jitsi Meet URL (https://meet.jit.si/...)' }
@@ -131,6 +141,25 @@ export const insertMeetingSchema = _baseMeetingSchema.omit({
 
 export type InsertMeeting = z.infer<typeof insertMeetingSchema>;
 export type Meeting = typeof meetings.$inferSelect;
+
+export const meetingParticipants = pgTable("meeting_participants", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  meetingId: integer("meeting_id").notNull().references(() => meetings.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  addedAt: timestamp("added_at").notNull().defaultNow(),
+});
+
+const _baseMeetingParticipantSchema = createInsertSchema(meetingParticipants, {});
+
+export const insertMeetingParticipantSchema = _baseMeetingParticipantSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  addedAt: true,
+});
+
+export type InsertMeetingParticipant = z.infer<typeof insertMeetingParticipantSchema>;
+export type MeetingParticipant = typeof meetingParticipants.$inferSelect;
 
 export const tasks = pgTable("tasks", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
