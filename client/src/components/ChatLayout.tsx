@@ -91,7 +91,6 @@ export default function ChatLayout({
   const [isDark, setIsDark] = useState(false);
   const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar' | 'tasks'>('chat');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeVideoCall, setActiveVideoCall] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -253,11 +252,14 @@ export default function ChatLayout({
     ].join('&');
     
     const jitsiLink = `https://meet.jit.si/${roomName}#${config}`;
-    setActiveVideoCall(jitsiLink);
-  };
-
-  const handleLeaveCall = () => {
-    setActiveVideoCall(null);
+    
+    // Open in new window for unlimited duration (embedded has 5-minute limit)
+    window.open(jitsiLink, '_blank', 'noopener,noreferrer');
+    
+    toast({
+      title: 'Meeting started',
+      description: 'The video call has been opened in a new window',
+    });
   };
 
   return (
@@ -413,32 +415,6 @@ export default function ChatLayout({
           <Calendar currentUser={currentUser} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
         ) : currentView === 'tasks' ? (
           <Tasks currentUser={currentUser} allUsers={allUsers} ws={ws} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
-        ) : activeVideoCall ? (
-          <div className="flex flex-col h-full">
-            <div className="flex items-center justify-between p-4 border-b">
-              <div className="flex items-center gap-2">
-                <Video className="w-5 h-5" />
-                <h2 className="font-semibold">
-                  {activeConversation?.isGroup ? 'Group Call' : 'Video Call'}
-                </h2>
-              </div>
-              <Button
-                variant="outline"
-                onClick={handleLeaveCall}
-                data-testid="button-leave-call"
-              >
-                Leave Call
-              </Button>
-            </div>
-            <div className="flex-1">
-              <iframe
-                src={activeVideoCall}
-                allow="camera; microphone; fullscreen; display-capture; autoplay"
-                className="w-full h-full border-0"
-                title="Video Call"
-              />
-            </div>
-          </div>
         ) : activeConversation ? (
           <>
             <div className="min-h-[64px] md:h-16 border-b border-border flex items-center justify-between px-3 md:px-6 flex-shrink-0">
