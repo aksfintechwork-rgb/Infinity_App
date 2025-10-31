@@ -463,8 +463,8 @@ export default function ChatLayout({
                 </Button>
 
                 {activeConversation.isGroup ? (
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center shadow-sm">
-                    <Users className="w-5 h-5 text-white" />
+                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-sm">
+                    <Users className="w-5 h-5 text-primary-foreground" />
                   </div>
                 ) : null}
                 <div className="flex-1 min-w-0">
@@ -553,15 +553,12 @@ export default function ChatLayout({
           <div className="flex-1 flex flex-col">
             {/* Mobile: Show conversation list when no conversation selected */}
             <div className="md:hidden flex flex-col h-full">
-              <div className="min-h-[64px] border-b border-border flex items-center justify-between px-4 flex-shrink-0 bg-gradient-to-r from-purple-600/5 to-blue-600/5">
+              <div className="min-h-[64px] border-b border-border flex items-center justify-between px-4 flex-shrink-0 bg-secondary">
                 <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-10 h-10 object-contain rounded-lg shadow-sm" />
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
-                  </div>
+                  <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-9 h-9 object-contain rounded" />
                   <div>
-                    <h1 className="text-sm font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">SUPREMO TRADERS</h1>
-                    <p className="text-xs text-muted-foreground font-medium">Team Chat</p>
+                    <h1 className="text-sm font-bold text-secondary-foreground">SUPREMO TRADERS</h1>
+                    <p className="text-xs text-secondary-foreground/70 font-medium">Team Chat</p>
                   </div>
                 </div>
                 <Button
@@ -690,17 +687,14 @@ export default function ChatLayout({
       />
 
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-        <SheetContent side="left" className="w-[90vw] max-w-sm p-0 bg-gradient-to-b from-background via-background to-purple-50/30 dark:to-purple-950/10">
+        <SheetContent side="left" className="w-[90vw] max-w-sm p-0 bg-background">
           <div className="flex flex-col h-full">
-            <div className="min-h-[72px] border-b border-border/50 flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600/5 to-blue-600/5">
+            <div className="min-h-[72px] border-b border-border flex items-center justify-between px-4 py-3 bg-secondary">
               <div className="flex items-center gap-3">
-                <div className="relative">
-                  <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-12 h-12 object-contain rounded-xl shadow-md ring-2 ring-purple-200/50 dark:ring-purple-800/50" />
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background" />
-                </div>
+                <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-10 h-10 object-contain rounded" />
                 <div>
-                  <h1 className="text-base font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">SUPREMO TRADERS</h1>
-                  <p className="text-xs text-muted-foreground font-medium">Team Chat</p>
+                  <h1 className="text-base font-bold text-secondary-foreground">SUPREMO TRADERS</h1>
+                  <p className="text-xs text-secondary-foreground/70 font-medium">Team Chat</p>
                 </div>
               </div>
             </div>

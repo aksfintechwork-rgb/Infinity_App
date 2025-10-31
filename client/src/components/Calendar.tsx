@@ -68,7 +68,7 @@ function SummaryGenerator({ meetingId, hasSummary, onGenerate, isGenerating }: S
       <DialogTrigger asChild>
         <Button
           variant={hasSummary ? "outline" : "default"}
-          className="flex-1"
+          className="w-full"
           disabled={isGenerating}
           data-testid={`button-generate-summary-${meetingId}`}
         >
@@ -993,14 +993,14 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                           )}
                           <div className="flex flex-col gap-2 w-full">
                             <Button
-                              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                              className="w-full"
                               onClick={() => handleQuickStartMeeting(meeting)}
                               data-testid={`button-quick-start-${meeting.id}`}
                             >
                               <Zap className="w-4 h-4 mr-2" />
                               Start Meeting Now
                             </Button>
-                            <div className="flex gap-2 w-full">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
                               <SummaryGenerator
                                 meetingId={meeting.id}
                                 hasSummary={!!meeting.summary}
@@ -1010,7 +1010,7 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                               {meeting.meetingLink && (
                                 <Button
                                   variant="outline"
-                                  className="flex-1"
+                                  className="w-full"
                                   onClick={() => handleJoinMeeting(meeting.meetingLink)}
                                   data-testid={`button-join-${meeting.id}`}
                                 >
