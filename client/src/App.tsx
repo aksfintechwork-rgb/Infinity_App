@@ -106,7 +106,8 @@ function App() {
           notifyNewMessage(
             message.senderName,
             message.body || 'Sent an attachment',
-            conversation?.title
+            conversation?.title,
+            conversation?.isGroup || false
           );
         }
       }

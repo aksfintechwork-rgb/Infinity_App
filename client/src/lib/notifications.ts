@@ -109,17 +109,31 @@ export function showNotification(title: string, options?: NotificationOptions) {
 export function notifyNewMessage(
   senderName: string,
   messageBody: string,
-  conversationTitle?: string
+  conversationTitle?: string,
+  isGroupChat: boolean = false
 ) {
-  const title = conversationTitle
-    ? `${senderName} in ${conversationTitle}`
-    : senderName;
+  // Create clear, informative title showing conversation context
+  let title: string;
   
-  const body = messageBody || 'Sent an attachment';
+  if (conversationTitle) {
+    // Group chat with name
+    title = `💬 ${conversationTitle}`;
+  } else if (isGroupChat) {
+    // Group chat without name (shouldn't happen but handle it)
+    title = `💬 Group Chat`;
+  } else {
+    // Direct message
+    title = `💬 Direct Message`;
+  }
+  
+  // Create detailed body showing sender and message
+  const messagePreview = messageBody || 'Sent an attachment';
+  const body = `${senderName}: ${messagePreview}`;
 
   showNotification(title, {
     body,
     tag: 'new-message', // Replaces previous notification
+    requireInteraction: false,
   });
 
   playNotificationSound();
