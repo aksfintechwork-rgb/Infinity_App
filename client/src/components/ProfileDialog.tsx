@@ -76,9 +76,9 @@ export default function ProfileDialog({ open, onOpenChange }: ProfileDialogProps
         ) : profile ? (
           <div className="space-y-6 py-4">
           <div className="flex justify-center">
-            <Avatar className="w-24 h-24 ring-4 ring-purple-100 dark:ring-purple-900">
+            <Avatar className="w-24 h-24 ring-4 ring-primary/20">
               <AvatarImage src="" />
-              <AvatarFallback className="text-3xl bg-gradient-to-br from-purple-500 to-blue-600 text-white">
+              <AvatarFallback className="text-3xl bg-primary text-primary-foreground">
                 {initials}
               </AvatarFallback>
             </Avatar>
@@ -141,7 +141,7 @@ export default function ProfileDialog({ open, onOpenChange }: ProfileDialogProps
                   data-testid="input-profile-role"
                 />
                 {profile.role === 'admin' && (
-                  <div className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-blue-600 text-white text-sm rounded-md font-medium">
+                  <div className="px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-md font-medium">
                     Admin
                   </div>
                 )}

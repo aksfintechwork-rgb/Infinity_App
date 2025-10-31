@@ -292,8 +292,8 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
   };
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-purple-50 via-blue-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="p-3 md:p-4 border-b bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+    <div className="flex flex-col h-full bg-background">
+      <div className="p-3 md:p-4 border-b bg-secondary/50">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
             {onOpenMobileMenu && (
@@ -307,7 +307,7 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
                 <Menu className="w-5 h-5" />
               </Button>
             )}
-            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-teal-600 bg-clip-text text-transparent" data-testid="text-tasks-title">
+            <h1 className="text-xl md:text-2xl font-bold text-foreground" data-testid="text-tasks-title">
               <span className="hidden sm:inline">Task Management</span>
               <span className="sm:hidden">Tasks</span>
             </h1>
@@ -317,7 +317,6 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
             <DialogTrigger asChild>
               <Button 
                 size="sm" 
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover-elevate active-elevate-2"
                 data-testid="button-create-task"
               >
                 <Plus className="w-4 h-4 md:mr-1" />
@@ -455,19 +454,19 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3 mb-4">
-          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border-purple-200 dark:border-purple-800 hover-elevate" data-testid="card-stat-total">
+          <Card className="hover-elevate" data-testid="card-stat-total">
             <CardContent className="p-3 md:p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground font-medium">Total Tasks</p>
-                  <p className="text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400">{statistics.total}</p>
+                  <p className="text-2xl md:text-3xl font-bold text-primary">{statistics.total}</p>
                 </div>
-                <Target className="w-8 h-8 text-purple-600/20 dark:text-purple-400/20" />
+                <Target className="w-8 h-8 text-primary/20" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-200 dark:border-blue-800 hover-elevate" data-testid="card-stat-todo">
+          <Card className="hover-elevate" data-testid="card-stat-todo">
             <CardContent className="p-3 md:p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -479,7 +478,7 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/10 border-cyan-200 dark:border-cyan-800 hover-elevate" data-testid="card-stat-inprogress">
+          <Card className="hover-elevate" data-testid="card-stat-inprogress">
             <CardContent className="p-3 md:p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -491,7 +490,7 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-teal-500/10 to-teal-600/10 border-teal-200 dark:border-teal-800 hover-elevate" data-testid="card-stat-completed">
+          <Card className="hover-elevate" data-testid="card-stat-completed">
             <CardContent className="p-3 md:p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -503,7 +502,7 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-rose-500/10 to-rose-600/10 border-rose-200 dark:border-rose-800 hover-elevate" data-testid="card-stat-overdue">
+          <Card className="hover-elevate" data-testid="card-stat-overdue">
             <CardContent className="p-3 md:p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -689,7 +688,7 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
                     data-testid={`card-task-${task.id}`}
                   >
                     {(overdue || dueSoon) && (
-                      <div className={`h-1.5 rounded-t-md ${overdue ? 'bg-gradient-to-r from-rose-500 to-pink-500' : 'bg-gradient-to-r from-amber-500 to-orange-500'}`} />
+                      <div className={`h-1.5 rounded-t-md ${overdue ? 'bg-rose-500' : 'bg-amber-500'}`} />
                     )}
                     <CardHeader className="space-y-2 pb-3">
                       <div className="flex items-start justify-between gap-2">

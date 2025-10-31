@@ -39,7 +39,7 @@ export default function BottomNav({
               onClick={() => onViewChange(item.id)}
               className={`relative flex flex-col items-center justify-center gap-1 h-14 min-w-[64px] px-3 ${
                 isActive
-                  ? 'text-purple-600 dark:text-purple-400'
+                  ? 'text-primary'
                   : 'text-muted-foreground'
               }`}
               data-testid={`nav-${item.id}`}
@@ -47,7 +47,7 @@ export default function BottomNav({
               <div className="relative">
                 <Icon className="w-6 h-6" />
                 {item.showBadge && unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-[10px] font-bold text-white">
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -56,7 +56,7 @@ export default function BottomNav({
                 {item.label}
               </span>
               {isActive && (
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 rounded-t-full bg-gradient-to-r from-purple-600 to-blue-600" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 rounded-t-full bg-primary" />
               )}
             </Button>
           );
