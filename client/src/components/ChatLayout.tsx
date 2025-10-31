@@ -93,6 +93,7 @@ export default function ChatLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const lastConversationIdRef = useRef<number | null>(null);
 
   const isAdmin = currentUser.role === 'admin';
   const token = localStorage.getItem('auth_token') || '';
@@ -204,20 +205,29 @@ export default function ChatLayout({
     }
   };
 
-  // Smart auto-scroll: only scroll to bottom if user is already near the bottom
+  // Smart auto-scroll: scroll to bottom on conversation switch or when user is near bottom
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
     if (!scrollContainer || !messagesEndRef.current) return;
+
+    // Check if we've switched to a different conversation
+    const hasConversationChanged = lastConversationIdRef.current !== activeConversationId;
+    if (hasConversationChanged) {
+      // Always scroll to bottom when switching conversations or on initial load
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      lastConversationIdRef.current = activeConversationId;
+      return;
+    }
 
     // Check if user is near the bottom (within 150px)
     const isNearBottom = 
       scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 150;
 
-    // Only auto-scroll if user is near the bottom or it's the initial load
-    if (isNearBottom || activeMessages.length === 0) {
+    // Only auto-scroll if user is near the bottom
+    if (isNearBottom) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [activeMessages]);
+  }, [activeMessages, activeConversationId]);
 
   useEffect(() => {
     if (isDark) {
