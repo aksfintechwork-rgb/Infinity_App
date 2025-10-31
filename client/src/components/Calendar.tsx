@@ -967,10 +967,10 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                         </CardContent>
                         <CardFooter className="flex flex-col gap-2">
                           {meeting.summary && (
-                            <div className="w-full p-3 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/30 dark:to-blue-950/30 rounded-md border border-purple-200 dark:border-purple-800">
+                            <div className="w-full p-3 bg-primary/5 dark:bg-primary/10 rounded-md border border-primary/20">
                               <div className="flex items-center gap-2 mb-2">
-                                <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                                <span className="text-xs font-medium text-purple-900 dark:text-purple-100">
+                                <Sparkles className="w-4 h-4 text-primary" />
+                                <span className="text-xs font-medium text-foreground">
                                   AI Summary ({meeting.summaryLanguage?.toUpperCase() || 'EN'})
                                 </span>
                                 <Button
@@ -986,7 +986,7 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                                   <Copy className="w-3 h-3" />
                                 </Button>
                               </div>
-                              <p className="text-sm text-purple-800 dark:text-purple-200" data-testid={`text-summary-${meeting.id}`}>
+                              <p className="text-sm text-foreground/90" data-testid={`text-summary-${meeting.id}`}>
                                 {meeting.summary}
                               </p>
                             </div>

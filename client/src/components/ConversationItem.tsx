@@ -22,13 +22,13 @@ interface ConversationItemProps {
 
 const getColorForName = (name: string) => {
   const colors = [
-    'bg-gradient-to-br from-purple-500 to-blue-500',
-    'bg-gradient-to-br from-blue-500 to-cyan-500',
-    'bg-gradient-to-br from-cyan-500 to-teal-500',
-    'bg-gradient-to-br from-teal-500 to-emerald-500',
-    'bg-gradient-to-br from-pink-500 to-rose-500',
-    'bg-gradient-to-br from-orange-500 to-amber-500',
-    'bg-gradient-to-br from-indigo-500 to-purple-500',
+    'bg-primary',
+    'bg-blue-600',
+    'bg-cyan-600',
+    'bg-teal-600',
+    'bg-rose-600',
+    'bg-amber-600',
+    'bg-indigo-600',
   ];
   const index = name.charCodeAt(0) % colors.length;
   return colors[index];
@@ -82,26 +82,26 @@ export default function ConversationItem({
       onClick={onClick}
       className={`group relative flex gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 ${
         isActive 
-          ? 'bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 shadow-md' 
+          ? 'bg-primary/10 dark:bg-primary/20 shadow-sm border border-primary/20' 
           : 'hover-elevate active-elevate-2'
       }`}
       data-testid={`conversation-item-${displayName}`}
     >
       {/* Active indicator */}
       {isActive && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-gradient-to-b from-purple-600 to-blue-600 rounded-r-full" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-primary rounded-r-full" />
       )}
 
       <div className="relative flex-shrink-0">
-        <Avatar className={`w-12 h-12 border-2 ${isActive ? 'border-purple-400 dark:border-purple-600' : 'border-transparent'} transition-all`}>
+        <Avatar className={`w-12 h-12 border-2 ${isActive ? 'border-primary/50' : 'border-transparent'} transition-all`}>
           <AvatarImage src={avatarUrl} />
           <AvatarFallback className={`text-sm font-semibold text-white ${getColorForName(displayName)}`}>
             {initials}
           </AvatarFallback>
         </Avatar>
         {isGroup && (
-          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center border-2 border-background shadow-sm">
-            <Users className="w-3 h-3 text-white" />
+          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center border-2 border-background shadow-sm">
+            <Users className="w-3 h-3 text-primary-foreground" />
           </div>
         )}
         {/* Online status indicator for direct messages */}
@@ -113,7 +113,7 @@ export default function ConversationItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline justify-between gap-2 mb-1">
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
-            {isPinned && <Pin className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 flex-shrink-0" />}
+            {isPinned && <Pin className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
             <h3 className={`font-semibold text-sm truncate ${hasUnread ? 'text-foreground' : 'text-foreground/80'}`}>
               {displayName}
             </h3>
@@ -130,14 +130,14 @@ export default function ConversationItem({
                 aria-label={isPinned ? "Unpin conversation" : "Pin conversation"}
               >
                 {isPinned ? (
-                  <PinOff className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                  <PinOff className="w-3.5 h-3.5 text-primary" />
                 ) : (
-                  <Pin className="w-3.5 h-3.5 text-muted-foreground hover:text-purple-600 dark:hover:text-purple-400" />
+                  <Pin className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
                 )}
               </Button>
             )}
             {lastMessageTime && (
-              <span className={`text-xs ${hasUnread ? 'text-purple-600 dark:text-purple-400 font-medium' : 'text-muted-foreground'}`}>
+              <span className={`text-xs ${hasUnread ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
                 {formatTimestamp(lastMessageTime)}
               </span>
             )}
@@ -156,7 +156,7 @@ export default function ConversationItem({
           {hasUnread && (
             <Badge
               variant="default"
-              className="flex-shrink-0 min-w-[22px] h-5.5 px-2 text-xs justify-center bg-gradient-to-r from-purple-600 to-blue-600 border-0 font-semibold shadow-sm"
+              className="flex-shrink-0 min-w-[22px] h-5.5 px-2 text-xs justify-center border-0 font-semibold shadow-sm"
               data-testid="badge-unread"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
@@ -164,9 +164,6 @@ export default function ConversationItem({
           )}
         </div>
       </div>
-
-      {/* Hover effect overlay */}
-      <div className={`absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 to-blue-500/0 group-hover:from-purple-500/5 group-hover:to-blue-500/5 transition-all duration-200 pointer-events-none ${isActive ? 'opacity-0' : ''}`} />
     </div>
   );
 }
