@@ -208,15 +208,19 @@ export default function ChatLayout({
   // Smart auto-scroll: scroll to bottom on conversation switch or when user is near bottom
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
-    if (!scrollContainer || !messagesEndRef.current) return;
+    if (!scrollContainer) return;
 
     // Check if we've switched to a different conversation
     const hasConversationChanged = lastConversationIdRef.current !== activeConversationId;
     if (hasConversationChanged) {
       lastConversationIdRef.current = activeConversationId;
-      // Use requestAnimationFrame to ensure DOM is updated before scrolling
+      // Use double requestAnimationFrame to ensure messages have fully rendered
       requestAnimationFrame(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        requestAnimationFrame(() => {
+          if (scrollContainer) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+          }
+        });
       });
       return;
     }
@@ -227,7 +231,7 @@ export default function ChatLayout({
 
     // Only auto-scroll if user is near the bottom
     if (isNearBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      scrollContainer.scrollTop = scrollContainer.scrollHeight;
     }
   }, [activeMessages, activeConversationId]);
 
