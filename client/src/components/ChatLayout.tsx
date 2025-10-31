@@ -213,9 +213,11 @@ export default function ChatLayout({
     // Check if we've switched to a different conversation
     const hasConversationChanged = lastConversationIdRef.current !== activeConversationId;
     if (hasConversationChanged) {
-      // Always scroll to bottom when switching conversations or on initial load
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       lastConversationIdRef.current = activeConversationId;
+      // Use requestAnimationFrame to ensure DOM is updated before scrolling
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      });
       return;
     }
 
