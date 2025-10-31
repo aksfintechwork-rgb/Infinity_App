@@ -56,7 +56,18 @@ Preferred communication style: Simple, everyday language.
 - **Group Conversation Management**: Required group names, ability to add members to existing groups with optional access to message history.
 - **Admin Features**: User deletion and real-time user list updates across clients.
 - **Meeting Calendar**: Integrated with video conferencing (Jitsi Meet), team member participation tracking, recurring meeting schedules (daily/weekly/monthly with customizable frequency and end date), and AI-powered meeting summarization.
-- **AI Meeting Summaries**: Automatic generation of professional meeting summaries using OpenAI (via Replit AI Integrations), with support for 20+ languages including English (default), Spanish, French, German, Italian, Portuguese, Russian, Chinese, Japanese, Korean, Arabic, and Indian languages (Hindi, Bengali, Tamil, Telugu, Marathi, Gujarati, Kannada, Malayalam, Punjabi). Summaries can be copied and shared with team members in any language.
+- **AI Meeting Summaries**: Automatic generation of comprehensive, professional meeting summaries using OpenAI GPT-4o (via Replit AI Integrations). Upgraded from GPT-4o-mini for superior accuracy and detail. Generates structured summaries including:
+  - Meeting objectives and goals
+  - Key topics and discussion points organized by priority
+  - Expected outcomes and deliverables
+  - Participant roles and preparation guidance
+  - Success criteria for productive meetings
+  - Support for 30+ languages including English (default), Spanish, French, German, Italian, Portuguese, Russian, Chinese, Japanese, Korean, Arabic, and Indian languages (Hindi, Bengali, Tamil, Telugu, Marathi, Gujarati, Kannada, Malayalam, Punjabi)
+  - Enhanced prompt engineering for 5-8 structured sentences/bullet points (vs. previous 3-5 sentences)
+  - Increased token limit (800 tokens) for comprehensive content
+  - Professional business terminology and clear formatting
+  - Summaries can be copied and shared with team members in any language
+  - Can be regenerated in different languages at any time
 - **Instant Video/Audio Calling**: Integrated Jitsi Meet video calling directly within chat conversations, supporting both direct and group calls with screen sharing capability. Deterministic room naming ensures all participants in the same conversation join the same call session. Features include:
   - Start Call button in chat header (desktop and mobile optimized)
   - Full Jitsi Meet interface with camera, microphone, and screen sharing controls
