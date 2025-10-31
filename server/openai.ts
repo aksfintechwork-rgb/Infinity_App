@@ -45,33 +45,37 @@ export async function generateMeetingSummary(
 
   const languageName = languageMap[targetLanguage] || 'English';
 
-  const prompt = `You are a professional meeting assistant. Generate a concise meeting summary based on the following information:
+  const prompt = `You are an expert meeting facilitator and professional business analyst. Generate a comprehensive, well-structured meeting summary based on the following information:
 
 Meeting Title: ${meetingTitle}
 ${meetingDescription ? `Meeting Description: ${meetingDescription}` : ''}
 
-Create a brief, professional summary that includes:
-1. Meeting purpose
-2. Key topics to discuss
-3. Expected outcomes
+Create a detailed, professional summary that includes:
+1. **Meeting Objective**: Clear statement of the meeting's primary purpose and goals
+2. **Key Topics & Discussion Points**: Specific areas to be covered, organized by priority
+3. **Expected Outcomes & Deliverables**: Concrete results, decisions, or action items anticipated
+4. **Participants' Roles**: How team members should prepare or contribute
+5. **Success Criteria**: What would make this meeting productive and successful
 
-Keep the summary concise (3-5 sentences) and in ${languageName} language.`;
+Format the summary in a clear, structured manner with appropriate headings or bullet points. Make it actionable and specific rather than generic. The summary should be comprehensive enough (5-8 sentences or bullet points) to give participants a complete understanding of what to expect.
+
+Provide the entire summary in ${languageName} language, maintaining professional business terminology.`;
 
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',
-          content: 'You are a professional meeting assistant that creates clear, concise summaries.',
+          content: 'You are an expert meeting facilitator and business analyst specializing in creating comprehensive, actionable meeting summaries. Your summaries are detailed, well-structured, and provide clear value to meeting participants.',
         },
         {
           role: 'user',
           content: prompt,
         },
       ],
-      temperature: 0.7,
-      max_tokens: 300,
+      temperature: 0.5,
+      max_tokens: 800,
     });
 
     return completion.choices[0]?.message?.content || 'Unable to generate summary';
