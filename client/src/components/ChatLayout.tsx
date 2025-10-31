@@ -93,6 +93,7 @@ export default function ChatLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeVideoCall, setActiveVideoCall] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = currentUser.role === 'admin';
   const token = localStorage.getItem('auth_token') || '';
@@ -204,8 +205,19 @@ export default function ChatLayout({
     }
   };
 
+  // Smart auto-scroll: only scroll to bottom if user is already near the bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer || !messagesEndRef.current) return;
+
+    // Check if user is near the bottom (within 150px)
+    const isNearBottom = 
+      scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 150;
+
+    // Only auto-scroll if user is near the bottom or it's the initial load
+    if (isNearBottom || activeMessages.length === 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [activeMessages]);
 
   useEffect(() => {
@@ -524,7 +536,10 @@ export default function ChatLayout({
               </div>
             </div>
 
-            <ScrollArea className="flex-1 px-3 md:px-6 py-4">
+            <div 
+              ref={scrollContainerRef}
+              className="flex-1 overflow-y-auto px-3 md:px-6 py-4"
+            >
               <div className="max-w-4xl mx-auto">
                 {activeMessages.map((msg) => (
                   <Message
@@ -536,7 +551,7 @@ export default function ChatLayout({
                 {isTyping && <TypingIndicator userName="Someone" />}
                 <div ref={messagesEndRef} />
               </div>
-            </ScrollArea>
+            </div>
 
             <div className="flex-shrink-0">
               <MessageInput
