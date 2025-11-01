@@ -81,6 +81,7 @@ Preferred communication style: Simple, everyday language.
     - **Validation**: Title requirement, assignee existence verification, reminder frequency whitelist with safe defaults
   - **Backend Implementation**: All 5 task retrieval methods in `server/storage.ts` (getTaskById, getTasksByCreator, getTasksByAssignee, getAllTasksForUser, getAllTasks) include `completionPercentage`, `statusUpdateReason`, `reminderFrequency`, and `lastReminderSent` fields in their SELECT statements to ensure complete data delivery to API consumers.
 - **Professional UI Design**: Clean, responsive interface with a professional blue palette, solid colors, and enhanced visual hierarchy across all components (sidebar, conversation list, search, mobile).
+- **Quick Join Meetings**: "Quick Join" section in chat sidebar displays upcoming meetings (next 24 hours) with one-click join buttons. Shows up to 3 upcoming meetings with time labels (Today/Tomorrow), reducing clicks from 3+ to just 1 for joining meetings.
 - **Smart Chat Scrolling**: Intelligent auto-scroll system that allows users to read chat history without interruption. Features conversation-aware scrolling that:
   - Automatically scrolls to bottom when opening or switching conversations (shows latest messages)
   - Preserves scroll position when user scrolls up to read history (no forced auto-scroll)

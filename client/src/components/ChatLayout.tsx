@@ -14,6 +14,7 @@ import UserMenu from './UserMenu';
 import AdminPanel from './AdminPanel';
 import Calendar from './Calendar';
 import Tasks from './Tasks';
+import { UpcomingMeetings } from './UpcomingMeetings';
 import logoImage from '@assets/image_1761659890673.png';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -389,6 +390,8 @@ export default function ChatLayout({
                 New Conversation
               </Button>
             </div>
+
+            <UpcomingMeetings />
 
             <ScrollArea className="flex-1">
               <div className="p-2 space-y-1">
