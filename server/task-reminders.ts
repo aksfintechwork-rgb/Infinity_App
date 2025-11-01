@@ -9,10 +9,18 @@ interface TaskForReminder {
   assignedTo: number | null;
   assigneeName: string | null;
   status: string;
+  reminderFrequency: string;
   lastReminderSent: Date | null;
 }
 
-const REMINDER_COOLDOWN_HOURS = 24;
+const FREQUENCY_HOURS: Record<string, number> = {
+  'none': 0,
+  'hourly': 1,
+  'every_3_hours': 3,
+  'every_6_hours': 6,
+  'daily': 24,
+  'every_2_days': 48,
+};
 
 export class TaskReminderService {
   private systemUserId: number | null = null;
@@ -25,7 +33,7 @@ export class TaskReminderService {
 
   private async ensureSystemUser(): Promise<number> {
     const existingUser = await db.query.users.findFirst({
-      where: eq(users.loginId, 'system')
+      where: eq(users.loginId, 'atul-reminder')
     });
 
     if (existingUser) {
@@ -33,9 +41,9 @@ export class TaskReminderService {
     }
 
     const [systemUser] = await db.insert(users).values({
-      name: 'System',
-      loginId: 'system',
-      email: 'system@supremo.internal',
+      name: 'Atul',
+      loginId: 'atul-reminder',
+      email: 'atul@supremo.internal',
       password: 'disabled',
       role: 'admin'
     }).returning();
@@ -69,9 +77,8 @@ export class TaskReminderService {
       console.log('[TaskReminder] Checking for tasks needing reminders...');
       
       const now = new Date();
-      const cooldownTime = new Date(now.getTime() - REMINDER_COOLDOWN_HOURS * 60 * 60 * 1000);
 
-      const tasksNeedingReminder = await db
+      const allActiveTasks = await db
         .select({
           id: tasks.id,
           title: tasks.title,
@@ -79,6 +86,7 @@ export class TaskReminderService {
           assignedTo: tasks.assignedTo,
           assigneeName: users.name,
           status: tasks.status,
+          reminderFrequency: tasks.reminderFrequency,
           lastReminderSent: tasks.lastReminderSent,
         })
         .from(tasks)
@@ -86,22 +94,26 @@ export class TaskReminderService {
         .where(
           and(
             isNotNull(tasks.assignedTo),
-            isNotNull(tasks.targetDate),
             sql`${tasks.status} != 'completed'`,
             sql`${tasks.status} != 'cancelled'`,
-            or(
-              lte(tasks.targetDate, sql`NOW()`),
-              and(
-                gte(tasks.targetDate, sql`NOW()`),
-                lte(tasks.targetDate, sql`NOW() + INTERVAL '24 hours'`)
-              )
-            ),
-            or(
-              sql`${tasks.lastReminderSent} IS NULL`,
-              lte(tasks.lastReminderSent, cooldownTime)
-            )
+            sql`${tasks.reminderFrequency} != 'none'`
           )
         );
+
+      const tasksNeedingReminder = allActiveTasks.filter(task => {
+        if (!task.reminderFrequency || task.reminderFrequency === 'none') {
+          return false;
+        }
+
+        const frequencyHours = FREQUENCY_HOURS[task.reminderFrequency] || 24;
+        
+        if (!task.lastReminderSent) {
+          return true;
+        }
+
+        const hoursSinceLastReminder = (now.getTime() - task.lastReminderSent.getTime()) / (1000 * 60 * 60);
+        return hoursSinceLastReminder >= frequencyHours;
+      });
 
       console.log(`[TaskReminder] Found ${tasksNeedingReminder.length} tasks needing reminders`);
 
