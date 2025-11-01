@@ -31,6 +31,8 @@ interface TaskWithDetails {
   startDate?: string;
   targetDate?: string;
   status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  completionPercentage?: number;
+  statusUpdateReason?: string;
   remark?: string;
   createdBy: number;
   assignedTo?: number;
@@ -39,6 +41,7 @@ interface TaskWithDetails {
   updatedAt: string;
   creatorName: string;
   assigneeName?: string;
+  updatedBy?: string;
 }
 
 interface TasksProps {
@@ -70,6 +73,14 @@ const editTaskFormSchema = z.object({
 
 type EditTaskFormValues = z.infer<typeof editTaskFormSchema>;
 
+const statusUpdateFormSchema = z.object({
+  status: z.string(),
+  completionPercentage: z.string(),
+  statusUpdateReason: z.string().optional(),
+});
+
+type StatusUpdateFormValues = z.infer<typeof statusUpdateFormSchema>;
+
 const statusConfig = {
   pending: { label: 'Pending', icon: Circle, color: 'bg-purple-500/20 text-purple-700 dark:text-purple-300' },
   in_progress: { label: 'In Progress', icon: Clock, color: 'bg-blue-500/20 text-blue-700 dark:text-blue-300' },
@@ -80,6 +91,7 @@ const statusConfig = {
 export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: TasksProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isStatusUpdateDialogOpen, setIsStatusUpdateDialogOpen] = useState(false);
   const [filterView, setFilterView] = useState<'all' | 'created' | 'assigned'>('all');
   const [filterUserId, setFilterUserId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -116,12 +128,34 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
       }
     });
 
+    const unsubscribeStatusUpdated = ws.on('task_status_updated', (taskData) => {
+      // Invalidate all task queries to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+      
+      // Show notification to admin when team member updates task status
+      if (isAdmin && taskData.updatedBy) {
+        // Browser notification
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification(`Task Status Updated`, {
+            body: `${taskData.updatedBy} updated "${taskData.title}" to ${taskData.completionPercentage}% complete`,
+            icon: '/favicon.ico',
+          });
+        }
+      }
+      
+      // Update selected task if it's the one being updated
+      if (selectedTask && taskData.id === selectedTask.id) {
+        setSelectedTask(taskData);
+      }
+    });
+
     return () => {
       unsubscribeCreated();
       unsubscribeUpdated();
       unsubscribeDeleted();
+      unsubscribeStatusUpdated();
     };
-  }, [ws, selectedTask]);
+  }, [ws, selectedTask, isAdmin]);
 
   const { data: tasks = [], isLoading } = useQuery<TaskWithDetails[]>({
     queryKey: ['/api/tasks', filterView, filterUserId],
@@ -209,6 +243,30 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
     },
   });
 
+  const statusUpdateForm = useForm<StatusUpdateFormValues>({
+    resolver: zodResolver(statusUpdateFormSchema),
+    defaultValues: {
+      status: 'pending',
+      completionPercentage: '0',
+      statusUpdateReason: '',
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: StatusUpdateFormValues }) => {
+      return apiRequest('PATCH', `/api/tasks/${id}`, {
+        status: data.status,
+        completionPercentage: parseInt(data.completionPercentage),
+        statusUpdateReason: data.statusUpdateReason || '',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+      setIsStatusUpdateDialogOpen(false);
+      setSelectedTask(null);
+    },
+  });
+
   const onSubmit = (data: TaskFormValues) => {
     createTaskMutation.mutate(data);
   };
@@ -216,6 +274,12 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
   const onEditSubmit = (data: EditTaskFormValues) => {
     if (selectedTask) {
       updateTaskMutation.mutate({ id: selectedTask.id, data });
+    }
+  };
+
+  const onStatusUpdateSubmit = (data: StatusUpdateFormValues) => {
+    if (selectedTask) {
+      updateStatusMutation.mutate({ id: selectedTask.id, data });
     }
   };
 
@@ -228,6 +292,17 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
       });
     }
   }, [selectedTask, isEditDialogOpen]);
+
+  // Effect to populate status update form when selectedTask changes
+  useEffect(() => {
+    if (selectedTask && isStatusUpdateDialogOpen) {
+      statusUpdateForm.reset({
+        status: selectedTask.status,
+        completionPercentage: (selectedTask.completionPercentage || 0).toString(),
+        statusUpdateReason: selectedTask.statusUpdateReason || '',
+      });
+    }
+  }, [selectedTask, isStatusUpdateDialogOpen]);
 
   // Calculate statistics
   const statistics = {
@@ -805,6 +880,28 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
                 </div>
               )}
 
+              <div>
+                <h4 className="font-semibold mb-2 text-sm">Completion Status</h4>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                    <div 
+                      className="bg-blue-500 h-3 rounded-full transition-all duration-300" 
+                      style={{ width: `${selectedTask.completionPercentage || 0}%` }}
+                    />
+                  </div>
+                  <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 min-w-[3rem]">
+                    {selectedTask.completionPercentage || 0}%
+                  </span>
+                </div>
+              </div>
+
+              {selectedTask.statusUpdateReason && (
+                <div>
+                  <h4 className="font-semibold mb-2 text-sm">Status Update Reason</h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedTask.statusUpdateReason}</p>
+                </div>
+              )}
+
               {selectedTask.remark && (
                 <div>
                   <h4 className="font-semibold mb-2 text-sm">Remarks</h4>
@@ -833,27 +930,25 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
                 </div>
               )}
 
-              {(selectedTask.createdBy === currentUser.id || selectedTask.assignedTo === currentUser.id) && (
+              {(selectedTask.createdBy === currentUser.id || selectedTask.assignedTo === currentUser.id || isAdmin) && (
                 <div className="pt-4 border-t">
-                  <h4 className="font-semibold mb-3 text-sm">Update Status</h4>
-                  <div className="grid grid-cols-2 sm:flex gap-2">
-                    {Object.entries(statusConfig).map(([status, config]) => {
-                      const Icon = config.icon;
-                      return (
-                        <Button
-                          key={status}
-                          size="sm"
-                          variant={selectedTask.status === status ? 'default' : 'outline'}
-                          onClick={() => updateTaskStatusMutation.mutate({ id: selectedTask.id, status })}
-                          disabled={updateTaskStatusMutation.isPending}
-                          data-testid={`button-status-${status}`}
-                        >
-                          <Icon className="w-3 h-3 mr-1" />
-                          {config.label}
-                        </Button>
-                      );
-                    })}
-                  </div>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => {
+                      setIsStatusUpdateDialogOpen(true);
+                      statusUpdateForm.reset({
+                        status: selectedTask.status,
+                        completionPercentage: (selectedTask.completionPercentage || 0).toString(),
+                        statusUpdateReason: selectedTask.statusUpdateReason || '',
+                      });
+                    }}
+                    className="w-full sm:w-auto"
+                    data-testid="button-update-status"
+                  >
+                    <Target className="w-3 h-3 mr-1" />
+                    Update Status & Progress
+                  </Button>
                 </div>
               )}
             </div>
@@ -931,6 +1026,107 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
                     data-testid="button-submit-edit"
                   >
                     {updateTaskMutation.isPending ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Status Update Dialog */}
+      {selectedTask && (
+        <Dialog open={isStatusUpdateDialogOpen} onOpenChange={setIsStatusUpdateDialogOpen}>
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Update Task Status & Progress</DialogTitle>
+              <DialogDescription>
+                Update the completion percentage, status, and provide a reason for the update.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...statusUpdateForm}>
+              <form onSubmit={statusUpdateForm.handleSubmit(onStatusUpdateSubmit)} className="space-y-4">
+                <FormField
+                  control={statusUpdateForm.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-status">
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.entries(statusConfig).map(([status, config]) => (
+                            <SelectItem key={status} value={status}>
+                              {config.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={statusUpdateForm.control}
+                  name="completionPercentage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Completion Percentage</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-completion-percentage">
+                            <SelectValue placeholder="Select percentage" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="0">0% - Not Started</SelectItem>
+                          <SelectItem value="25">25% - Just Started</SelectItem>
+                          <SelectItem value="50">50% - Half Way</SelectItem>
+                          <SelectItem value="75">75% - Almost Done</SelectItem>
+                          <SelectItem value="100">100% - Completed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={statusUpdateForm.control}
+                  name="statusUpdateReason"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status Update Reason (Optional)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Explain why you're updating the status or what progress has been made..." 
+                          {...field}
+                          className="min-h-[100px]"
+                          data-testid="input-status-reason"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsStatusUpdateDialogOpen(false)}
+                    data-testid="button-cancel-status-update"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={updateStatusMutation.isPending}
+                    data-testid="button-submit-status-update"
+                  >
+                    {updateStatusMutation.isPending ? 'Updating...' : 'Update Status'}
                   </Button>
                 </div>
               </form>
