@@ -38,5 +38,5 @@ If you see "Invalid credentials":
 - ✅ File attachments (images & documents)
 - ✅ Desktop notifications with sound
 - ✅ Meeting calendar
-- ✅ Video conferencing (Jitsi Meet)
+- ✅ Video conferencing
 - ✅ Admin panel (for admin users only)

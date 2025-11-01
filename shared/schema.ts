@@ -167,10 +167,7 @@ const _baseMeetingSchema = createInsertSchema(meetings, {
   recurrenceEndDate: z.string().optional().nullable().refine((val) => !val || !isNaN(Date.parse(val)), {
     message: "Recurrence end date must be a valid date string",
   }).transform((val) => val ? new Date(val) : null),
-  meetingLink: z.string().optional().refine(
-    (link) => !link || link.startsWith('https://meet.jit.si/'),
-    { message: 'Meeting link must be a Jitsi Meet URL (https://meet.jit.si/...)' }
-  ),
+  meetingLink: z.string().optional(),
 });
 
 export const insertMeetingSchema = _baseMeetingSchema.omit({

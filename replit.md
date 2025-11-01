@@ -36,9 +36,9 @@ Preferred communication style: Simple, everyday language.
 ### Key Features
 - **Group Conversations**: Group naming, member management, and optional message history access.
 - **Admin Tools**: User deletion, real-time user list updates, and task oversight.
-- **Meeting Calendar**: Integrated Jitsi Meet video conferencing, participant tracking, recurring meeting schedules, and AI-powered summarization.
+- **Meeting Calendar**: Integrated video conferencing, participant tracking, recurring meeting schedules, and AI-powered summarization.
 - **AI Meeting Summaries**: GPT-4o (via Replit AI Integrations) generates structured, multi-language summaries with objectives, topics, outcomes, and participant guidance.
-- **Instant Video/Audio Calling**: Jitsi Meet integration for direct and group calls with screen sharing, unlimited duration, and deterministic room naming.
+- **Instant Video/Audio Calling**: Video call integration for direct and group calls with screen sharing and unlimited duration.
 - **Task Management**: Start/target dates, status tracking with completion percentage (0%, 25%, 50%, 75%, 100%), visual progress bars, status update reasons, task assignment, real-time WebSocket updates, automated reminders, and a professional UI. Admins can view and filter all tasks. All users can update task status, completion percentage, and remarks for collaborative workflow.
   - **Backend Implementation**: All 5 task retrieval methods in `server/storage.ts` (getTaskById, getTasksByCreator, getTasksByAssignee, getAllTasksForUser, getAllTasks) include `completionPercentage` and `statusUpdateReason` fields in their SELECT statements to ensure complete data delivery to API consumers.
 - **Professional UI Design**: Clean, responsive interface with a professional blue palette, solid colors, and enhanced visual hierarchy across all components (sidebar, conversation list, search, mobile).
@@ -58,6 +58,6 @@ Preferred communication style: Simple, everyday language.
 -   **Neon Database**: Serverless PostgreSQL hosting.
 -   **OpenAI via Replit AI Integrations**: GPT-4o for AI meeting summarization.
 -   **Google Fonts**: Inter font family.
--   **Jitsi Meet**: Integrated for video conferencing.
+-   **Video Conferencing**: Integrated for team meetings and calls.
 -   **File Storage**: Local filesystem (`uploads/` directory) with Multer.
 -   **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`.
