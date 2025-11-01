@@ -13,7 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repeat, Sparkles, Copy, Languages, Pencil, Zap, Menu, ChevronLeft, ChevronRight, MoreVertical, Edit2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, parseISO, addDays, addWeeks, addMonths as addMonthsToDate, isBefore, isAfter } from 'date-fns';
 import { toZonedTime, fromZonedTime, formatInTimeZone } from 'date-fns-tz';
 
 const IST_TIMEZONE = 'Asia/Kolkata';
@@ -497,9 +497,73 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
   const calendarEnd = endOfWeek(monthEnd);
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
+  // Generate recurring meeting instances
+  const generateRecurringInstances = (meeting: Meeting) => {
+    const instances: Array<Meeting & { isRecurringInstance?: boolean; originalMeetingId?: number }> = [];
+    
+    // Always include the original meeting
+    instances.push(meeting);
+    
+    // If no recurrence, return just the original
+    if (!meeting.recurrencePattern || meeting.recurrencePattern === 'none' || !meeting.recurrenceEndDate) {
+      return instances;
+    }
+    
+    const startDate = toZonedTime(parseISO(meeting.startTime), IST_TIMEZONE);
+    const endDate = toZonedTime(parseISO(meeting.recurrenceEndDate), IST_TIMEZONE);
+    const frequency = meeting.recurrenceFrequency || 1;
+    
+    let currentDate = startDate;
+    
+    // Generate recurring instances
+    while (true) {
+      // Calculate next occurrence based on pattern
+      if (meeting.recurrencePattern === 'daily') {
+        currentDate = addDays(currentDate, frequency);
+      } else if (meeting.recurrencePattern === 'weekly') {
+        currentDate = addWeeks(currentDate, frequency);
+      } else if (meeting.recurrencePattern === 'monthly') {
+        currentDate = addMonthsToDate(currentDate, frequency);
+      }
+      
+      // Stop if we've passed the end date
+      if (isAfter(currentDate, endDate)) {
+        break;
+      }
+      
+      // Calculate the duration of the original meeting
+      const originalStart = toZonedTime(parseISO(meeting.startTime), IST_TIMEZONE);
+      const originalEnd = toZonedTime(parseISO(meeting.endTime), IST_TIMEZONE);
+      const duration = originalEnd.getTime() - originalStart.getTime();
+      
+      // Create instance with same time of day
+      const instanceStart = currentDate;
+      const instanceEnd = new Date(instanceStart.getTime() + duration);
+      
+      // Create a recurring instance
+      instances.push({
+        ...meeting,
+        startTime: fromZonedTime(instanceStart, IST_TIMEZONE).toISOString(),
+        endTime: fromZonedTime(instanceEnd, IST_TIMEZONE).toISOString(),
+        isRecurringInstance: true,
+        originalMeetingId: meeting.id,
+      });
+      
+      // Safety check to prevent infinite loops
+      if (instances.length > 1000) {
+        break;
+      }
+    }
+    
+    return instances;
+  };
+
+  // Expand all meetings to include recurring instances
+  const expandedMeetings = meetings.flatMap(meeting => generateRecurringInstances(meeting));
+
   // Get meetings for a specific day
   const getMeetingsForDay = (day: Date) => {
-    return meetings.filter(meeting => {
+    return expandedMeetings.filter(meeting => {
       const meetingDateInIST = toZonedTime(parseISO(meeting.startTime), IST_TIMEZONE);
       return isSameDay(meetingDateInIST, day);
     });
