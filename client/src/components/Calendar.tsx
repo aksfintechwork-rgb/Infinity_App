@@ -14,6 +14,9 @@ import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repe
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, parseISO } from 'date-fns';
+import { toZonedTime, fromZonedTime, formatInTimeZone } from 'date-fns-tz';
+
+const IST_TIMEZONE = 'Asia/Kolkata';
 
 const LANGUAGES = [
   { code: 'en', name: 'English' },
@@ -332,11 +335,15 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
       return;
     }
 
+    // Convert IST times to UTC for storage
+    const startTimeUTC = fromZonedTime(startTime, IST_TIMEZONE).toISOString();
+    const endTimeUTC = fromZonedTime(endTime, IST_TIMEZONE).toISOString();
+
     createMeeting.mutate({
       title,
       description,
-      startTime,
-      endTime,
+      startTime: startTimeUTC,
+      endTime: endTimeUTC,
       meetingLink: meetingLink || undefined,
       participantIds: selectedParticipants.length > 0 ? selectedParticipants : undefined,
       recurrencePattern: recurrencePattern || 'none',
@@ -405,8 +412,13 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
     setEditingMeetingId(meeting.id);
     setTitle(meeting.title);
     setDescription(meeting.description || '');
-    setStartTime(meeting.startTime.slice(0, 16));
-    setEndTime(meeting.endTime.slice(0, 16));
+    
+    // Convert UTC times to IST for display in form
+    const startTimeIST = toZonedTime(parseISO(meeting.startTime), IST_TIMEZONE);
+    const endTimeIST = toZonedTime(parseISO(meeting.endTime), IST_TIMEZONE);
+    setStartTime(format(startTimeIST, "yyyy-MM-dd'T'HH:mm"));
+    setEndTime(format(endTimeIST, "yyyy-MM-dd'T'HH:mm"));
+    
     setMeetingLink(meeting.meetingLink || '');
     setSelectedParticipants(meeting.participants?.map(p => p.id) || []);
     setRecurrencePattern(meeting.recurrencePattern || 'none');
@@ -437,12 +449,16 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
       return;
     }
 
+    // Convert IST times to UTC for storage
+    const startTimeUTC = fromZonedTime(startTime, IST_TIMEZONE).toISOString();
+    const endTimeUTC = fromZonedTime(endTime, IST_TIMEZONE).toISOString();
+
     updateMeeting.mutate({
       id: editingMeetingId,
       title,
       description,
-      startTime,
-      endTime,
+      startTime: startTimeUTC,
+      endTime: endTimeUTC,
       meetingLink: meetingLink || undefined,
       participantIds: selectedParticipants.length > 0 ? selectedParticipants : undefined,
       recurrencePattern: recurrencePattern || 'none',
@@ -483,20 +499,22 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
 
   // Get meetings for a specific day
   const getMeetingsForDay = (day: Date) => {
-    return meetings.filter(meeting => 
-      isSameDay(parseISO(meeting.startTime), day)
-    );
+    return meetings.filter(meeting => {
+      const meetingDateInIST = toZonedTime(parseISO(meeting.startTime), IST_TIMEZONE);
+      return isSameDay(meetingDateInIST, day);
+    });
   };
 
   // Handle clicking on a day in the calendar
   const handleDayClick = (day: Date) => {
     setSelectedDate(day);
-    // Pre-fill the meeting start time with the selected day at 9 AM
+    // Pre-fill the meeting start time with the selected day at 9 AM IST
     const defaultStartTime = new Date(day);
     defaultStartTime.setHours(9, 0, 0, 0);
     const defaultEndTime = new Date(day);
     defaultEndTime.setHours(10, 0, 0, 0);
     
+    // Format times for datetime-local input (which uses local browser time)
     setStartTime(format(defaultStartTime, "yyyy-MM-dd'T'HH:mm"));
     setEndTime(format(defaultEndTime, "yyyy-MM-dd'T'HH:mm"));
     setIsCreateOpen(true);
@@ -567,29 +585,32 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                     data-testid="input-meeting-description"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="startTime">Start Time *</Label>
-                    <Input
-                      id="startTime"
-                      type="datetime-local"
-                      value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                      data-testid="input-meeting-start"
-                      required
-                    />
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="startTime">Start Time (IST) *</Label>
+                      <Input
+                        id="startTime"
+                        type="datetime-local"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        data-testid="input-meeting-start"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="endTime">End Time (IST) *</Label>
+                      <Input
+                        id="endTime"
+                        type="datetime-local"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        data-testid="input-meeting-end"
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="endTime">End Time *</Label>
-                    <Input
-                      id="endTime"
-                      type="datetime-local"
-                      value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                      data-testid="input-meeting-end"
-                      required
-                    />
-                  </div>
+                  <p className="text-xs text-muted-foreground">All times are in Indian Standard Time (IST)</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="meetingLink">Video Meeting Link (Optional)</Label>
@@ -754,29 +775,32 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                     data-testid="input-edit-meeting-description"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-startTime">Start Time *</Label>
-                    <Input
-                      id="edit-startTime"
-                      type="datetime-local"
-                      value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                      data-testid="input-edit-meeting-start"
-                      required
-                    />
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-startTime">Start Time (IST) *</Label>
+                      <Input
+                        id="edit-startTime"
+                        type="datetime-local"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        data-testid="input-edit-meeting-start"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-endTime">End Time (IST) *</Label>
+                      <Input
+                        id="edit-endTime"
+                        type="datetime-local"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        data-testid="input-edit-meeting-end"
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-endTime">End Time *</Label>
-                    <Input
-                      id="edit-endTime"
-                      type="datetime-local"
-                      value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                      data-testid="input-edit-meeting-end"
-                      required
-                    />
-                  </div>
+                  <p className="text-xs text-muted-foreground">All times are in Indian Standard Time (IST)</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-meetingLink">Video Meeting Link</Label>
@@ -973,7 +997,7 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                             data-testid={`meeting-indicator-${meeting.id}`}
                           >
                             <span className="truncate">
-                              {format(parseISO(meeting.startTime), 'HH:mm')} {meeting.title}
+                              {formatInTimeZone(parseISO(meeting.startTime), IST_TIMEZONE, 'HH:mm')} {meeting.title}
                             </span>
                             <MoreVertical className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-1" />
                           </button>
