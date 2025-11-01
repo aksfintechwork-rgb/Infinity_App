@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,12 +9,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Calendar, User, CheckCircle2, Circle, Clock, XCircle, Search, Filter, TrendingUp, AlertCircle, Target, Zap, ArrowUpDown, Edit, Menu } from 'lucide-react';
+import { Plus, Calendar, User, CheckCircle2, Circle, Clock, XCircle, Search, Filter, TrendingUp, AlertCircle, Target, Zap, ArrowUpDown, Edit, Menu, Download, Upload } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
+import { useToast } from '@/hooks/use-toast';
 
 interface User {
   id: number;
@@ -102,6 +104,8 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'dueDate' | 'status'>('recent');
   
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
   const isAdmin = currentUser.role === 'admin';
 
   // Listen for WebSocket task updates
@@ -305,6 +309,157 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
     }
   };
 
+  // Excel Export Function
+  const handleExportToExcel = () => {
+    try {
+      // Get all tasks from the current view
+      const tasksToExport = filteredTasks.map(task => ({
+        'Task ID': task.id,
+        'Title': task.title,
+        'Description': task.description || '',
+        'Start Date': task.startDate ? format(new Date(task.startDate), 'yyyy-MM-dd') : '',
+        'Target Date': task.targetDate ? format(new Date(task.targetDate), 'yyyy-MM-dd') : '',
+        'Status': task.status,
+        'Completion %': task.completionPercentage || 0,
+        'Created By': task.creatorName,
+        'Assigned To': task.assigneeName || '',
+        'Reminder Frequency': task.reminderFrequency || 'none',
+        'Remarks': task.remark || '',
+        'Status Update Reason': task.statusUpdateReason || '',
+        'Created At': format(new Date(task.createdAt), 'yyyy-MM-dd HH:mm'),
+        'Updated At': format(new Date(task.updatedAt), 'yyyy-MM-dd HH:mm'),
+      }));
+
+      // Create worksheet
+      const worksheet = XLSX.utils.json_to_sheet(tasksToExport);
+      
+      // Create workbook
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Tasks');
+      
+      // Generate filename with timestamp
+      const filename = `tasks_export_${format(new Date(), 'yyyy-MM-dd_HHmmss')}.xlsx`;
+      
+      // Download file
+      XLSX.writeFile(workbook, filename);
+      
+      toast({
+        title: "Export Successful",
+        description: `${tasksToExport.length} tasks exported to ${filename}`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export tasks to Excel",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Excel Import Function
+  const handleImportFromExcel = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          
+          // Get first sheet
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          
+          // Convert to JSON
+          const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
+          
+          if (jsonData.length === 0) {
+            toast({
+              title: "Import Failed",
+              description: "The Excel file is empty",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          let successCount = 0;
+          let errorCount = 0;
+
+          // Import each task
+          for (const row of jsonData) {
+            try {
+              const taskData = {
+                title: row['Title'] || row['title'],
+                description: row['Description'] || row['description'] || '',
+                startDate: row['Start Date'] || row['start_date'] || '',
+                targetDate: row['Target Date'] || row['target_date'] || '',
+                reminderFrequency: row['Reminder Frequency'] || row['reminder_frequency'] || 'none',
+                remark: row['Remarks'] || row['remarks'] || '',
+                assignedTo: undefined as number | undefined,
+              };
+
+              // Try to find assignee by name
+              const assigneeName = row['Assigned To'] || row['assigned_to'];
+              if (assigneeName) {
+                const assignee = allUsers.find(u => 
+                  u.name.toLowerCase() === assigneeName.toLowerCase()
+                );
+                if (assignee) {
+                  taskData.assignedTo = assignee.id;
+                }
+              }
+
+              // Validate required fields
+              if (!taskData.title) {
+                errorCount++;
+                continue;
+              }
+
+              await apiRequest('POST', '/api/tasks', taskData);
+              successCount++;
+            } catch (error) {
+              console.error('Error importing task:', error);
+              errorCount++;
+            }
+          }
+
+          // Refresh task list
+          queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+
+          toast({
+            title: "Import Complete",
+            description: `Successfully imported ${successCount} tasks${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+          });
+        } catch (error) {
+          console.error('Import error:', error);
+          toast({
+            title: "Import Failed",
+            description: "Failed to parse Excel file",
+            variant: "destructive",
+          });
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error('File read error:', error);
+      toast({
+        title: "Import Failed",
+        description: "Failed to read Excel file",
+        variant: "destructive",
+      });
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   // Effect to populate edit form when selectedTask changes
   useEffect(() => {
     if (selectedTask && isEditDialogOpen) {
@@ -410,16 +565,49 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
             </h1>
           </div>
           
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                size="sm" 
-                data-testid="button-create-task"
-              >
-                <Plus className="w-4 h-4 md:mr-1" />
-                <span className="hidden md:inline">New Task</span>
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleExportToExcel}
+                  data-testid="button-export-excel"
+                  title="Download tasks as Excel file"
+                >
+                  <Download className="w-4 h-4 md:mr-1" />
+                  <span className="hidden md:inline">Export</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  data-testid="button-import-excel"
+                  title="Import tasks from Excel file"
+                >
+                  <Upload className="w-4 h-4 md:mr-1" />
+                  <span className="hidden md:inline">Import</span>
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleImportFromExcel}
+                  style={{ display: 'none' }}
+                  data-testid="input-file-excel"
+                />
+              </>
+            )}
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  size="sm" 
+                  data-testid="button-create-task"
+                >
+                  <Plus className="w-4 h-4 md:mr-1" />
+                  <span className="hidden md:inline">New Task</span>
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Task</DialogTitle>
@@ -571,7 +759,8 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
                 </form>
               </Form>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </div>
 
         {/* Statistics Cards */}
