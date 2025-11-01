@@ -92,6 +92,15 @@ Preferred communication style: Simple, everyday language.
 - **Password Management**: Self-service password change feature with validation and security checks.
 - **User Profile & Settings**: View profile information and manage app preferences (dark mode, notifications, sound alerts) with persistence via localStorage.
 - **Task Assignment & Remarks**: Users can create tasks and edit assignments/remarks for their own tasks; admins can edit any task.
+- **Daily Work Log**: Comprehensive daily planning and activity tracking system for all users:
+  - **Daily To-Do List**: Add tasks with priority levels (Low, Medium, High, Urgent), check off completed items, and organize daily work
+  - **Priority-Based Planning**: Visual priority badges with color coding for quick task identification
+  - **Hourly Activity Tracking**: Log work activities for each hour from 8 AM to 6 PM to track productivity
+  - **Save & Submit**: Save work-in-progress logs throughout the day, submit final worksheet when complete
+  - **Status Tracking**: Submitted worksheets are locked to prevent editing, ensuring data integrity
+  - **Auto-Refresh**: Worksheet data refreshes every 30 seconds to stay current
+  - **Date Display**: Shows current date (e.g., "Friday, November 1, 2024") for easy reference
+  - **Admin View** (coming soon): Admins will be able to view all team members' daily worksheets to track team productivity
 
 ## External Dependencies
 

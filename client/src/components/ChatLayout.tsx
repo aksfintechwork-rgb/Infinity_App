@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
@@ -14,6 +14,7 @@ import UserMenu from './UserMenu';
 import AdminPanel from './AdminPanel';
 import Calendar from './Calendar';
 import Tasks from './Tasks';
+import DailyWorksheet from './DailyWorksheet';
 import { UpcomingMeetings } from './UpcomingMeetings';
 import logoImage from '@assets/image_1761659890673.png';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -92,7 +93,7 @@ export default function ChatLayout({
   const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar' | 'tasks'>('chat');
+  const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar' | 'tasks' | 'worksheet'>('chat');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -321,7 +322,7 @@ export default function ChatLayout({
         </div>
 
         <div className="p-3 border-b border-border flex-shrink-0 bg-background">
-          <div className={`grid ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} gap-1 p-1 bg-muted rounded-lg`}>
+          <div className={`grid ${isAdmin ? 'grid-cols-5' : 'grid-cols-4'} gap-1 p-1 bg-muted rounded-lg`}>
             <Button
               size="sm"
               variant={currentView === 'chat' ? 'default' : 'ghost'}
@@ -351,6 +352,16 @@ export default function ChatLayout({
             >
               <CalendarIcon className="w-4 h-4 mr-1.5" />
               <span className="text-xs">Calendar</span>
+            </Button>
+            <Button
+              size="sm"
+              variant={currentView === 'worksheet' ? 'default' : 'ghost'}
+              onClick={() => setCurrentView('worksheet')}
+              data-testid="button-view-worksheet"
+              className="font-medium"
+            >
+              <FileText className="w-4 h-4 mr-1.5" />
+              <span className="text-xs">Work Log</span>
             </Button>
             {isAdmin && (
               <Button
@@ -462,6 +473,8 @@ export default function ChatLayout({
           <Calendar currentUser={currentUser} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
         ) : currentView === 'tasks' ? (
           <Tasks currentUser={currentUser} allUsers={allUsers} ws={ws} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
+        ) : currentView === 'worksheet' ? (
+          <DailyWorksheet currentUser={currentUser} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
         ) : activeConversation ? (
           <>
             <div className="min-h-[64px] md:h-16 border-b border-border flex items-center justify-between px-3 md:px-6 flex-shrink-0">
@@ -738,7 +751,7 @@ export default function ChatLayout({
             </div>
 
             <div className="p-3 border-b border-border">
-              <div className={`grid ${isAdmin ? 'grid-cols-2' : 'grid-cols-3'} gap-2 p-1.5 bg-muted rounded-lg`}>
+              <div className="grid grid-cols-2 gap-2 p-1.5 bg-muted rounded-lg">
                 <Button
                   variant={currentView === 'chat' ? 'default' : 'ghost'}
                   onClick={() => { setCurrentView('chat'); setIsMobileMenuOpen(false); }}
@@ -757,38 +770,34 @@ export default function ChatLayout({
                   <CheckCircle2 className="w-4 h-4 mr-1.5" />
                   Tasks
                 </Button>
-                {!isAdmin && (
-                  <Button
-                    variant={currentView === 'calendar' ? 'default' : 'ghost'}
-                    onClick={() => { setCurrentView('calendar'); setIsMobileMenuOpen(false); }}
-                    data-testid="button-view-calendar-mobile"
-                    className="h-11 text-sm font-medium"
-                  >
-                    <CalendarIcon className="w-4 h-4 mr-1.5" />
-                    Calendar
-                  </Button>
-                )}
+                <Button
+                  variant={currentView === 'calendar' ? 'default' : 'ghost'}
+                  onClick={() => { setCurrentView('calendar'); setIsMobileMenuOpen(false); }}
+                  data-testid="button-view-calendar-mobile"
+                  className="h-11 text-sm font-medium"
+                >
+                  <CalendarIcon className="w-4 h-4 mr-1.5" />
+                  Calendar
+                </Button>
+                <Button
+                  variant={currentView === 'worksheet' ? 'default' : 'ghost'}
+                  onClick={() => { setCurrentView('worksheet'); setIsMobileMenuOpen(false); }}
+                  data-testid="button-view-worksheet-mobile"
+                  className="h-11 text-sm font-medium"
+                >
+                  <FileText className="w-4 h-4 mr-1.5" />
+                  Work Log
+                </Button>
                 {isAdmin && (
-                  <>
-                    <Button
-                      variant={currentView === 'calendar' ? 'default' : 'ghost'}
-                      onClick={() => { setCurrentView('calendar'); setIsMobileMenuOpen(false); }}
-                      data-testid="button-view-calendar-mobile"
-                      className="h-11 text-sm font-medium"
-                    >
-                      <CalendarIcon className="w-4 h-4 mr-1.5" />
-                      Calendar
-                    </Button>
-                    <Button
-                      variant={currentView === 'admin' ? 'default' : 'ghost'}
-                      onClick={() => { setCurrentView('admin'); setIsMobileMenuOpen(false); }}
-                      data-testid="button-view-admin-mobile"
-                      className="h-11 text-sm font-medium"
-                    >
-                      <Shield className="w-4 h-4 mr-1.5" />
-                      Admin
-                    </Button>
-                  </>
+                  <Button
+                    variant={currentView === 'admin' ? 'default' : 'ghost'}
+                    onClick={() => { setCurrentView('admin'); setIsMobileMenuOpen(false); }}
+                    data-testid="button-view-admin-mobile"
+                    className="h-11 text-sm font-medium col-span-2"
+                  >
+                    <Shield className="w-4 h-4 mr-1.5" />
+                    Admin Panel
+                  </Button>
                 )}
               </div>
             </div>

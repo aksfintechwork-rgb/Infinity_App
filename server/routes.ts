@@ -1136,6 +1136,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Daily Worksheets
+  app.get("/api/worksheets/today", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const today = new Date();
+      const worksheet = await storage.getDailyWorksheet(req.userId, today);
+      res.json(worksheet || null);
+    } catch (error) {
+      console.error("Get today's worksheet error:", error);
+      res.status(500).json({ error: "Failed to fetch today's worksheet" });
+    }
+  });
+
+  app.post("/api/worksheets", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Check if worksheet already exists for today
+      const today = new Date();
+      const existing = await storage.getDailyWorksheet(req.userId, today);
+      
+      if (existing) {
+        // Update existing worksheet instead of creating duplicate
+        const updated = await storage.updateDailyWorksheet(existing.id, {
+          todos: req.body.todos || existing.todos,
+          hourlyLogs: req.body.hourlyLogs || existing.hourlyLogs,
+        });
+        return res.json(updated);
+      }
+
+      // Create new worksheet only if none exists
+      const worksheet = await storage.createDailyWorksheet({
+        userId: req.userId,
+        date: new Date().toISOString(),
+        todos: req.body.todos || '[]',
+        hourlyLogs: req.body.hourlyLogs || '[]',
+        status: 'in_progress',
+      });
+
+      res.status(201).json(worksheet);
+    } catch (error) {
+      console.error("Create worksheet error:", error);
+      res.status(500).json({ error: "Failed to create worksheet" });
+    }
+  });
+
+  app.patch("/api/worksheets/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const worksheetId = parseInt(req.params.id);
+      const updates: any = {};
+
+      if (req.body.todos !== undefined) {
+        updates.todos = req.body.todos;
+      }
+      if (req.body.hourlyLogs !== undefined) {
+        updates.hourlyLogs = req.body.hourlyLogs;
+      }
+
+      const worksheet = await storage.updateDailyWorksheet(worksheetId, updates);
+      res.json(worksheet);
+    } catch (error) {
+      console.error("Update worksheet error:", error);
+      res.status(500).json({ error: "Failed to update worksheet" });
+    }
+  });
+
+  app.post("/api/worksheets/:id/submit", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const worksheetId = parseInt(req.params.id);
+      const worksheet = await storage.submitDailyWorksheet(worksheetId);
+      res.json(worksheet);
+    } catch (error) {
+      console.error("Submit worksheet error:", error);
+      res.status(500).json({ error: "Failed to submit worksheet" });
+    }
+  });
+
+  app.get("/api/worksheets/all", authMiddleware, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const date = req.query.date ? new Date(req.query.date as string) : undefined;
+      const worksheets = await storage.getAllDailyWorksheets(date);
+      res.json(worksheets);
+    } catch (error) {
+      console.error("Get all worksheets error:", error);
+      res.status(500).json({ error: "Failed to fetch worksheets" });
+    }
+  });
+
+  app.get("/api/worksheets/user/:userId", authMiddleware, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const worksheets = await storage.getUserDailyWorksheets(userId);
+      res.json(worksheets);
+    } catch (error) {
+      console.error("Get user worksheets error:", error);
+      res.status(500).json({ error: "Failed to fetch user worksheets" });
+    }
+  });
+
   app.post("/api/upload", authMiddleware, upload.single('file'), async (req: AuthRequest, res) => {
     try {
       if (!req.file) {
