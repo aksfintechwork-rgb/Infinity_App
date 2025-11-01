@@ -793,6 +793,23 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
                           {task.description}
                         </p>
                       )}
+                      
+                      {/* Completion Progress */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground font-medium">Progress</span>
+                          <span className="font-semibold text-blue-600 dark:text-blue-400">
+                            {task.completionPercentage || 0}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                          <div 
+                            className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+                            style={{ width: `${task.completionPercentage || 0}%` }}
+                          />
+                        </div>
+                      </div>
+
                       <div className="space-y-2">
                         {task.targetDate && (
                           <div className={`flex items-center gap-2 text-sm p-2 rounded-md ${
