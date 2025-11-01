@@ -37,6 +37,8 @@ interface TaskWithDetails {
   createdBy: number;
   assignedTo?: number;
   conversationId?: number;
+  reminderFrequency?: string;
+  lastReminderSent?: string;
   createdAt: string;
   updatedAt: string;
   creatorName: string;
@@ -61,6 +63,7 @@ const taskFormSchema = z.object({
   startDate: z.string().optional(),
   targetDate: z.string().optional(),
   assignedTo: z.string().optional(),
+  reminderFrequency: z.string().optional(),
   remark: z.string().optional(),
 });
 
@@ -240,6 +243,7 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
       startDate: '',
       targetDate: '',
       assignedTo: '',
+      reminderFrequency: 'none',
       remark: '',
     },
   });
@@ -499,6 +503,31 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
                                 {user.name}
                               </SelectItem>
                             ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="reminderFrequency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Reminder Frequency</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-reminder-frequency">
+                              <SelectValue placeholder="Select reminder frequency" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">No reminders</SelectItem>
+                            <SelectItem value="hourly">Every hour</SelectItem>
+                            <SelectItem value="every_3_hours">Every 3 hours</SelectItem>
+                            <SelectItem value="every_6_hours">Every 6 hours</SelectItem>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="every_2_days">Every 2 days</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
