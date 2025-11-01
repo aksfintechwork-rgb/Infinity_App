@@ -143,6 +143,15 @@ export default function ChatLayout({
     },
   });
 
+  const markAsReadMutation = useMutation({
+    mutationFn: async (conversationId: number) => {
+      return await apiRequest('POST', `/api/conversations/${conversationId}/mark-read`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+    },
+  });
+
   const handlePinToggle = (conversationId: number) => {
     if (pinnedConversationIds.includes(conversationId)) {
       unpinMutation.mutate(conversationId);
@@ -160,6 +169,13 @@ export default function ChatLayout({
     }
   }, [activeConversationId, onConversationSelect]);
 
+  // Mark conversation as read when opened
+  useEffect(() => {
+    if (activeConversationId) {
+      markAsReadMutation.mutate(activeConversationId);
+    }
+  }, [activeConversationId]);
+
   const filteredConversations = conversations
     .filter(
       (conv) =>
@@ -167,11 +183,16 @@ export default function ChatLayout({
         conv.members.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => {
+      // First sort by pinned status
       const aIsPinned = pinnedConversationIds.includes(a.id);
       const bIsPinned = pinnedConversationIds.includes(b.id);
       if (aIsPinned && !bIsPinned) return -1;
       if (!aIsPinned && bIsPinned) return 1;
-      return 0;
+      
+      // Then sort by most recent message (newest first)
+      const aTime = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
+      const bTime = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
+      return bTime - aTime;
     });
 
   // Helper function to check if a conversation's other user is online
