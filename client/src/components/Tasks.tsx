@@ -165,22 +165,25 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
   }, [ws, selectedTask, isAdmin]);
 
   const { data: tasks = [], isLoading } = useQuery<TaskWithDetails[]>({
-    queryKey: ['/api/tasks', filterView, filterUserId],
+    queryKey: isAdmin ? ['/api/tasks', filterView, filterUserId] : ['/api/tasks'],
     queryFn: async () => {
       let queryParams = '';
       
-      // Admin filtering by specific user (ensure filterUserId is a valid number, not "all")
-      if (isAdmin && filterUserId && filterUserId !== "all" && !isNaN(Number(filterUserId))) {
-        queryParams = `?userId=${filterUserId}`;
+      if (isAdmin) {
+        // Admin filtering by specific user (ensure filterUserId is a valid number, not "all")
+        if (filterUserId && filterUserId !== "all" && !isNaN(Number(filterUserId))) {
+          queryParams = `?userId=${filterUserId}`;
+        }
+        // For admins, pass 'all' filter to get all tasks from everyone
+        else if (filterView === 'all') {
+          queryParams = '?filter=all';
+        }
+        // Regular filter views
+        else if (filterView !== 'all') {
+          queryParams = `?filter=${filterView}`;
+        }
       }
-      // For admins, pass 'all' filter to get all tasks from everyone
-      else if (filterView === 'all' && isAdmin) {
-        queryParams = '?filter=all';
-      }
-      // Regular filter views
-      else if (filterView !== 'all') {
-        queryParams = `?filter=${filterView}`;
-      }
+      // Regular users: no query params needed, backend returns only assigned tasks
       
       const response = await fetch(`/api/tasks${queryParams}`, {
         headers: {
@@ -924,47 +927,49 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
               data-testid="input-search-tasks"
             />
           </div>
-          <div className="flex gap-1.5 sm:gap-2">
-            <Button
-              size="sm"
-              variant={filterView === 'all' && !filterUserId ? 'default' : 'outline'}
-              onClick={() => {
-                setFilterView('all');
-                setFilterUserId('');
-              }}
-              className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
-              data-testid="button-filter-all"
-            >
-              <span className="hidden sm:inline">{isAdmin ? 'All Tasks' : 'My Tasks'}</span>
-              <span className="sm:hidden">{isAdmin ? 'All' : 'Mine'}</span>
-            </Button>
-            <Button
-              size="sm"
-              variant={filterView === 'created' ? 'default' : 'outline'}
-              onClick={() => {
-                setFilterView('created');
-                setFilterUserId('');
-              }}
-              className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
-              data-testid="button-filter-created"
-            >
-              <span className="hidden sm:inline">Created by Me</span>
-              <span className="sm:hidden">Created</span>
-            </Button>
-            <Button
-              size="sm"
-              variant={filterView === 'assigned' ? 'default' : 'outline'}
-              onClick={() => {
-                setFilterView('assigned');
-                setFilterUserId('');
-              }}
-              className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
-              data-testid="button-filter-assigned"
-            >
-              <span className="hidden sm:inline">Assigned to Me</span>
-              <span className="sm:hidden">Assigned</span>
-            </Button>
-          </div>
+          {isAdmin && (
+            <div className="flex gap-1.5 sm:gap-2">
+              <Button
+                size="sm"
+                variant={filterView === 'all' && !filterUserId ? 'default' : 'outline'}
+                onClick={() => {
+                  setFilterView('all');
+                  setFilterUserId('');
+                }}
+                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
+                data-testid="button-filter-all"
+              >
+                <span className="hidden sm:inline">All Tasks</span>
+                <span className="sm:hidden">All</span>
+              </Button>
+              <Button
+                size="sm"
+                variant={filterView === 'created' ? 'default' : 'outline'}
+                onClick={() => {
+                  setFilterView('created');
+                  setFilterUserId('');
+                }}
+                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
+                data-testid="button-filter-created"
+              >
+                <span className="hidden sm:inline">Created by Me</span>
+                <span className="sm:hidden">Created</span>
+              </Button>
+              <Button
+                size="sm"
+                variant={filterView === 'assigned' ? 'default' : 'outline'}
+                onClick={() => {
+                  setFilterView('assigned');
+                  setFilterUserId('');
+                }}
+                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
+                data-testid="button-filter-assigned"
+              >
+                <span className="hidden sm:inline">Assigned to Me</span>
+                <span className="sm:hidden">Assigned</span>
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Status Filter and Sort Controls */}
