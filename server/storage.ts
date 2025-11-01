@@ -51,6 +51,7 @@ export interface IStorage {
   createConversation(conversation: InsertConversation): Promise<Conversation>;
   getConversationById(id: number): Promise<Conversation | undefined>;
   getConversationsByUserId(userId: number): Promise<Conversation[]>;
+  findDirectConversationBetweenUsers(userId1: number, userId2: number): Promise<Conversation | undefined>;
   
   addConversationMember(member: InsertConversationMember): Promise<ConversationMember>;
   addConversationMemberWithHistory(member: { conversationId: number; userId: number; canViewHistory: boolean }): Promise<ConversationMember>;
@@ -172,6 +173,38 @@ export class PostgresStorage implements IStorage {
       .from(conversations)
       .where(inArray(conversations.id, userConvIds))
       .orderBy(desc(conversations.createdAt));
+  }
+
+  async findDirectConversationBetweenUsers(userId1: number, userId2: number): Promise<Conversation | undefined> {
+    // Get all conversation IDs for both users
+    const user1ConvIds = await this.getUserConversationIds(userId1);
+    const user2ConvIds = await this.getUserConversationIds(userId2);
+    
+    // Find common conversation IDs
+    const commonConvIds = user1ConvIds.filter(id => user2ConvIds.includes(id));
+    
+    if (commonConvIds.length === 0) return undefined;
+    
+    // Get conversations that are direct (not group) and have exactly 2 members
+    for (const convId of commonConvIds) {
+      const conv = await this.getConversationById(convId);
+      if (!conv || conv.isGroup) continue;
+      
+      const members = await db
+        .select()
+        .from(conversationMembers)
+        .where(eq(conversationMembers.conversationId, convId));
+      
+      // Check if it's a direct conversation (exactly 2 members)
+      if (members.length === 2) {
+        const memberIds = members.map(m => m.userId);
+        if (memberIds.includes(userId1) && memberIds.includes(userId2)) {
+          return conv;
+        }
+      }
+    }
+    
+    return undefined;
   }
 
   async addConversationMember(member: InsertConversationMember): Promise<ConversationMember> {

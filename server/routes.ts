@@ -342,6 +342,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allMemberIds = Array.from(new Set([req.userId, ...memberIds]));
       const isGroup = allMemberIds.length > 2;
 
+      // For direct messages (1-on-1), check if conversation already exists
+      if (!isGroup && allMemberIds.length === 2) {
+        const [userId1, userId2] = allMemberIds;
+        const existingConversation = await storage.findDirectConversationBetweenUsers(userId1, userId2);
+        
+        if (existingConversation) {
+          // Return existing conversation instead of creating a duplicate
+          const members = await storage.getConversationMembers(existingConversation.id);
+          const otherMembers = members.filter(m => m.id !== req.userId);
+          const memberNames = otherMembers.map(m => m.name.split(' ')[0]).join(', ');
+
+          return res.status(200).json({
+            ...existingConversation,
+            members: memberNames,
+            memberCount: members.length,
+          });
+        }
+      }
+
       const conversation = await storage.createConversation({
         title: isGroup ? title : undefined,
         isGroup,
