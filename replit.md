@@ -35,6 +35,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Key Features
 - **Group Conversations**: Group naming, member management, and optional message history access.
+- **File & Image Sharing**: Enhanced media display with larger, clearer image previews (448px max-width, 400px max-height), clickable images that open full-size in new tabs, hover effects for interactivity, and one-click file downloads. Supports images (JPG, PNG, GIF, WebP), PDFs, and documents.
 - **Admin Tools**: User deletion, real-time user list updates, and task oversight.
 - **Meeting Calendar**: Full monthly grid view with clickable days, month navigation, and interactive meeting badges:
   - **Start Meeting Now**: Instantly opens a video meeting in a new window without creating a calendar entry

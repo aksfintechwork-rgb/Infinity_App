@@ -61,23 +61,38 @@ export default function Message({
         {attachmentUrl && (
           <div className="mt-2">
             {isImage ? (
-              <img
-                src={attachmentUrl}
-                alt="Attachment"
-                className="max-w-sm rounded-lg border border-border"
-                data-testid="img-attachment"
-              />
+              <a 
+                href={attachmentUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block"
+                data-testid="link-image-attachment"
+              >
+                <img
+                  src={attachmentUrl}
+                  alt="Attachment"
+                  className="max-w-md w-auto h-auto rounded-lg border border-border hover-elevate cursor-pointer"
+                  style={{ maxHeight: '400px' }}
+                  data-testid="img-attachment"
+                  loading="lazy"
+                />
+              </a>
             ) : (
-              <div className="flex items-center gap-3 p-3 bg-card border border-card-border rounded-lg max-w-sm hover-elevate">
-                <FileText className="w-8 h-8 text-muted-foreground flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{fileName}</p>
-                  <p className="text-xs text-muted-foreground">Document</p>
+              <a 
+                href={attachmentUrl} 
+                download
+                className="block max-w-sm"
+                data-testid="link-file-attachment"
+              >
+                <div className="flex items-center gap-3 p-3 bg-card border border-card-border rounded-lg hover-elevate active-elevate-2 cursor-pointer">
+                  <FileText className="w-8 h-8 text-muted-foreground flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{fileName}</p>
+                    <p className="text-xs text-muted-foreground">Click to download</p>
+                  </div>
+                  <Download className="w-4 h-4 text-muted-foreground" />
                 </div>
-                <Button size="icon" variant="ghost" data-testid="button-download">
-                  <Download className="w-4 h-4" />
-                </Button>
-              </div>
+              </a>
             )}
           </div>
         )}
