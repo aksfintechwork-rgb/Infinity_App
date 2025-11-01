@@ -71,10 +71,17 @@ export default function Message({
                 <img
                   src={attachmentUrl}
                   alt="Attachment"
-                  className="max-w-md w-auto h-auto rounded-lg border border-border hover-elevate cursor-pointer"
-                  style={{ maxHeight: '400px' }}
+                  className="rounded-lg border border-border hover-elevate cursor-pointer"
+                  style={{ 
+                    maxWidth: '500px',
+                    width: 'auto',
+                    height: 'auto',
+                    maxHeight: '450px',
+                    minWidth: '200px',
+                    display: 'block'
+                  }}
                   data-testid="img-attachment"
-                  loading="lazy"
+                  loading="eager"
                 />
               </a>
             ) : (
