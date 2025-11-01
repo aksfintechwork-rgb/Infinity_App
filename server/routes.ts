@@ -985,6 +985,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (req.body.status !== undefined) {
           updateData.status = req.body.status;
         }
+        if (req.body.completionPercentage !== undefined) {
+          const percentage = parseInt(req.body.completionPercentage);
+          if ([0, 25, 50, 75, 100].includes(percentage)) {
+            updateData.completionPercentage = percentage;
+          }
+        }
+        if (req.body.statusUpdateReason !== undefined) {
+          updateData.statusUpdateReason = req.body.statusUpdateReason;
+        }
         if (req.body.title !== undefined) {
           updateData.title = req.body.title;
         }
@@ -1012,7 +1021,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         authorizedUserIds.push(taskDetails.assignedTo);
       }
       
-      broadcastTaskUpdate('task_updated', taskDetails, authorizedUserIds);
+      // If status or completion percentage was updated by a team member, notify all admins
+      if ((req.body.status !== undefined || req.body.completionPercentage !== undefined) && !isAdmin) {
+        const allAdmins = await storage.getAllAdmins();
+        const adminIds = allAdmins.map(admin => admin.id);
+        
+        // Broadcast to both authorized users and admins
+        const allRecipients = [...new Set([...authorizedUserIds, ...adminIds])];
+        broadcastTaskUpdate('task_status_updated', {
+          ...taskDetails,
+          updatedBy: user?.name || 'Unknown',
+        }, allRecipients);
+      } else {
+        broadcastTaskUpdate('task_updated', taskDetails, authorizedUserIds);
+      }
       
       res.json(taskDetails);
     } catch (error) {
