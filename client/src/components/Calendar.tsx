@@ -9,7 +9,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repeat, Sparkles, Copy, Languages, Pencil, Zap, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repeat, Sparkles, Copy, Languages, Pencil, Zap, Menu, ChevronLeft, ChevronRight, MoreVertical, Edit2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, parseISO } from 'date-fns';
@@ -382,7 +383,16 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
     }
     
     // Open in new window
-    window.open(videoUrl, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
+    const newWindow = window.open(videoUrl, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
+    
+    // Check if popup was blocked
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      toast({
+        title: 'Popup blocked',
+        description: 'Please allow popups for this site to join video meetings in a new window.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleGenerateMeetingLink = () => {
@@ -944,14 +954,45 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                   </div>
                   <div className="w-full space-y-1">
                     {dayMeetings.slice(0, 3).map(meeting => (
-                      <div
-                        key={meeting.id}
-                        className="text-xs px-1.5 py-0.5 rounded bg-primary/20 text-primary truncate w-full"
-                        title={meeting.title}
-                        data-testid={`meeting-indicator-${meeting.id}`}
-                      >
-                        {format(parseISO(meeting.startTime), 'HH:mm')} {meeting.title}
-                      </div>
+                      <DropdownMenu key={meeting.id}>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <button
+                            className="text-xs px-1.5 py-0.5 rounded bg-primary/20 text-primary truncate w-full text-left hover:bg-primary/30 transition-colors flex items-center justify-between group"
+                            title={meeting.title}
+                            data-testid={`meeting-indicator-${meeting.id}`}
+                          >
+                            <span className="truncate">
+                              {format(parseISO(meeting.startTime), 'HH:mm')} {meeting.title}
+                            </span>
+                            <MoreVertical className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-1" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenuItem 
+                            onSelect={(e) => { e.preventDefault(); handleQuickStartMeeting(meeting); }}
+                            data-testid="menu-item-join-meeting"
+                          >
+                            <Video className="w-4 h-4 mr-2" />
+                            Join Meeting
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onSelect={(e) => { e.preventDefault(); handleEditMeeting(meeting); }}
+                            data-testid="menu-item-edit-meeting"
+                          >
+                            <Edit2 className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onSelect={(e) => { e.preventDefault(); deleteMeeting.mutate(meeting.id); }}
+                            className="text-destructive"
+                            data-testid="menu-item-delete-meeting"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     ))}
                     {dayMeetings.length > 3 && (
                       <div className="text-xs text-muted-foreground px-1.5">
