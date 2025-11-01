@@ -324,71 +324,65 @@ export default function ChatLayout({
           </div>
         </div>
 
-        <div className="px-4 py-4 border-b border-border flex-shrink-0 bg-background space-y-3">
+        <div className="px-3 py-3 border-b border-border flex-shrink-0 bg-background">
           <div className="grid grid-cols-2 gap-2">
             <Button
-              size="sm"
               variant={currentView === 'chat' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('chat')}
               data-testid="button-view-chat"
-              className="font-semibold rounded-lg shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
+              className="h-11 justify-start font-medium text-sm"
             >
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Chat
+              <MessageSquare className="w-4 h-4 mr-2 flex-shrink-0" />
+              <span className="truncate">Chat</span>
             </Button>
             <Button
-              size="sm"
               variant={currentView === 'tasks' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('tasks')}
               data-testid="button-view-tasks"
-              className="font-semibold rounded-lg shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
+              className="h-11 justify-start font-medium text-sm"
             >
-              <CheckCircle2 className="w-4 h-4 mr-2" />
-              Tasks
+              <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
+              <span className="truncate">Tasks</span>
             </Button>
             <Button
-              size="sm"
               variant={currentView === 'calendar' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('calendar')}
               data-testid="button-view-calendar"
-              className="font-semibold rounded-lg shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
+              className="h-11 justify-start font-medium text-sm"
             >
-              <CalendarIcon className="w-4 h-4 mr-2" />
-              Calendar
+              <CalendarIcon className="w-4 h-4 mr-2 flex-shrink-0" />
+              <span className="truncate">Calendar</span>
             </Button>
             <Button
-              size="sm"
               variant={currentView === 'worksheet' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('worksheet')}
               data-testid="button-view-worksheet"
-              className="font-semibold rounded-lg shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
+              className="h-11 justify-start font-medium text-sm"
             >
-              <FileText className="w-4 h-4 mr-2" />
-              Work Log
+              <FileText className="w-4 h-4 mr-2 flex-shrink-0" />
+              <span className="truncate">Work Log</span>
             </Button>
             {isAdmin && (
-              <Button
-                size="sm"
-                variant={currentView === 'admin' ? 'default' : 'ghost'}
-                onClick={() => setCurrentView('admin')}
-                data-testid="button-view-admin"
-                className="font-semibold rounded-lg shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                Admin
-              </Button>
-            )}
-            {isAdmin && (
-              <Button
-                size="sm"
-                variant={currentView === 'admin-worksheets' ? 'default' : 'ghost'}
-                onClick={() => setCurrentView('admin-worksheets')}
-                data-testid="button-view-admin-worksheets"
-                className="font-semibold rounded-lg shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Team Logs
-              </Button>
+              <>
+                <Button
+                  variant={currentView === 'admin' ? 'default' : 'ghost'}
+                  onClick={() => setCurrentView('admin')}
+                  data-testid="button-view-admin"
+                  className="h-11 justify-start font-medium text-sm"
+                >
+                  <Shield className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">Admin</span>
+                </Button>
+                <Button
+                  variant={currentView === 'admin-worksheets' ? 'default' : 'ghost'}
+                  onClick={() => setCurrentView('admin-worksheets')}
+                  data-testid="button-view-admin-worksheets"
+                  className="h-11 justify-start font-medium text-sm"
+                >
+                  <FileText className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">Team Logs</span>
+                </Button>
+              </>
             )}
           </div>
         </div>
