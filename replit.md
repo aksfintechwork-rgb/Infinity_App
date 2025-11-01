@@ -100,7 +100,14 @@ Preferred communication style: Simple, everyday language.
   - **Status Tracking**: Submitted worksheets are locked to prevent editing, ensuring data integrity
   - **Auto-Refresh**: Worksheet data refreshes every 30 seconds to stay current
   - **Date Display**: Shows current date (e.g., "Friday, November 1, 2024") for easy reference
-  - **Admin View** (coming soon): Admins will be able to view all team members' daily worksheets to track team productivity
+  - **Duplicate Prevention**: Backend enforces one worksheet per user per day with automatic update-if-exists logic
+  - **Admin Team View**: Admins can view all submitted team worksheets with date and user filters:
+    - Filter by specific date to see daily submissions
+    - Filter by specific user or view all users
+    - See completion statistics (completed todos / total todos)
+    - View all hourly activity logs with timestamps
+    - Submitted time display for accountability
+    - One-click access via "Team Work Logs" button in admin navigation
 
 ## External Dependencies
 

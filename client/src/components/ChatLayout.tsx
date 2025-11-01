@@ -15,6 +15,7 @@ import AdminPanel from './AdminPanel';
 import Calendar from './Calendar';
 import Tasks from './Tasks';
 import DailyWorksheet from './DailyWorksheet';
+import AdminWorksheets from './AdminWorksheets';
 import { UpcomingMeetings } from './UpcomingMeetings';
 import logoImage from '@assets/image_1761659890673.png';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -93,7 +94,7 @@ export default function ChatLayout({
   const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar' | 'tasks' | 'worksheet'>('chat');
+  const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar' | 'tasks' | 'worksheet' | 'admin-worksheets'>('chat');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -321,7 +322,7 @@ export default function ChatLayout({
           </div>
         </div>
 
-        <div className="p-3 border-b border-border flex-shrink-0 bg-background">
+        <div className="p-3 border-b border-border flex-shrink-0 bg-background space-y-2">
           <div className={`grid ${isAdmin ? 'grid-cols-5' : 'grid-cols-4'} gap-1 p-1 bg-muted rounded-lg`}>
             <Button
               size="sm"
@@ -376,6 +377,18 @@ export default function ChatLayout({
               </Button>
             )}
           </div>
+          {isAdmin && (
+            <Button
+              size="sm"
+              variant={currentView === 'admin-worksheets' ? 'default' : 'outline'}
+              onClick={() => setCurrentView('admin-worksheets')}
+              data-testid="button-view-admin-worksheets"
+              className="w-full font-medium"
+            >
+              <FileText className="w-4 h-4 mr-1.5" />
+              Team Work Logs
+            </Button>
+          )}
         </div>
 
         {currentView === 'chat' ? (
@@ -475,6 +488,8 @@ export default function ChatLayout({
           <Tasks currentUser={currentUser} allUsers={allUsers} ws={ws} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
         ) : currentView === 'worksheet' ? (
           <DailyWorksheet currentUser={currentUser} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
+        ) : currentView === 'admin-worksheets' ? (
+          <AdminWorksheets allUsers={allUsers} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
         ) : activeConversation ? (
           <>
             <div className="min-h-[64px] md:h-16 border-b border-border flex items-center justify-between px-3 md:px-6 flex-shrink-0">
@@ -789,15 +804,26 @@ export default function ChatLayout({
                   Work Log
                 </Button>
                 {isAdmin && (
-                  <Button
-                    variant={currentView === 'admin' ? 'default' : 'ghost'}
-                    onClick={() => { setCurrentView('admin'); setIsMobileMenuOpen(false); }}
-                    data-testid="button-view-admin-mobile"
-                    className="h-11 text-sm font-medium col-span-2"
-                  >
-                    <Shield className="w-4 h-4 mr-1.5" />
-                    Admin Panel
-                  </Button>
+                  <>
+                    <Button
+                      variant={currentView === 'admin' ? 'default' : 'ghost'}
+                      onClick={() => { setCurrentView('admin'); setIsMobileMenuOpen(false); }}
+                      data-testid="button-view-admin-mobile"
+                      className="h-11 text-sm font-medium col-span-2"
+                    >
+                      <Shield className="w-4 h-4 mr-1.5" />
+                      Admin Panel
+                    </Button>
+                    <Button
+                      variant={currentView === 'admin-worksheets' ? 'default' : 'outline'}
+                      onClick={() => { setCurrentView('admin-worksheets'); setIsMobileMenuOpen(false); }}
+                      data-testid="button-view-admin-worksheets-mobile"
+                      className="h-11 text-sm font-medium col-span-2"
+                    >
+                      <FileText className="w-4 h-4 mr-1.5" />
+                      Team Work Logs
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
