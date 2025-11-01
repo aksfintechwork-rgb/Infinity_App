@@ -1,0 +1,39 @@
+Goal: Build a Microsoft-Teams-grade interface that is extremely clear, crisp, professional, and ultra-responsive with real-time updates.
+Tech stack: React + TypeScript, TailwindCSS, shadcn/ui components, lucide-react icons, Zustand (state), TanStack Query (data), WebSocket/SSE for live updates, Framer Motion (subtle), Vite.
+Design language: Neutral, modern, enterprise. Ample whitespace, 8pt spacing grid, 2xl rounded corners, soft shadows, 14–16px base text, 600/700 headings, 0/2/4 elevation system.
+Color system:
+Background: #0b1220 (dark) / #f8fafc (light)
+Surface: #111827 / #ffffff
+Primary: #0ea5e9 (hover slightly darker)
+Accent: #f59e0b
+Muted text: #6b7280
+Success #22c55e, Warning #f59e0b, Danger #ef4444
+Typography: Inter/Manrope; headings semibold; body regular; line-height 1.5; truncate long labels; 80–120 char max content width.
+Layout:
+AppShell: left sidebar (72px rail + 240px panel), top bar (56px), content area fluid with max-width clamps.
+Mobile: collapsible sidebar/drawer; sticky header actions; bottom tab bar optional.
+Grid: sm/md/lg/xl/2xl breakpoints; never overflow on sm.
+Components: AppShell, Sidebar (sections + badges), TopBar (search, presence, quick actions), Chat thread, Message composer with attachments, Meetings list & tiles, Participants drawer, Notifications/Toasts, DataTable with virtual scroll, Settings modal.
+Real-time UX: Presence, typing, unread counters, delivery/read receipts, meeting status, and notifications update via WebSocket/SSE. Use optimistic UI and rollback on error.
+State & Data:
+TanStack Query for server data (query keys per entity).
+WebSocket channel per team/workspace; usePresence() and useLiveList() hooks.
+Idempotent server calls; ETag/If-None-Match where possible.
+Accessibility: Full keyboard nav (Tab/Shift+Tab), focus rings, ARIA roles for lists/dialogs, prefers-reduced-motion support, WCAG AA contrast.
+Performance: Code-split routes, lazy-load modals, virtualize big lists, image loading="lazy", skeletons + shimmer, keep critical CSS small.
+Empty/Loading/Error: Provide skeletons, gentle placeholders with CTA, retry buttons.
+Micro-interactions: Subtle motion (100–150ms) on hover/press; no flashy animations.
+Theming: Light/Dark toggle persisted; tokens in CSS vars.
+Deliverables:
+AppShell with sidebar + topbar + responsive content.
+Chat screen (thread, composer, file attach, emoji, reactions, read receipts).
+Meetings screen (list, join button, status chips).
+Team/Channel list with unread badges and live presence.
+Global notifications/toaster.
+Settings modal (profile, theme, notifications).
+Reusable hooks: usePresence, useTyping, useLiveQuery, useOptimisticMutation.
+Unit examples for mobile (sm) and desktop (xl).
+Style rules (Tailwind): spacing p-3 p-4 p-6, rounded rounded-xl/2xl, shadows shadow-sm/md, borders border border-slate-200/800, text text-slate-900/100, muted text-slate-500/400. Use container mx-auto max-w-[1400px].
+Do: Keep UI minimal, crisp, and enterprise-ready.
+Don’t: Overuse color, gradients, or heavy motion.
+Output: Production-ready React components + pages with the prop contracts below, TypeScript types, and example stories.
