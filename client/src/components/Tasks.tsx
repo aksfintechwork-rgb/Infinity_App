@@ -211,15 +211,24 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
 
   const updateTaskMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: EditTaskFormValues }) => {
-      return apiRequest('PATCH', `/api/tasks/${id}`, {
+      const response = await apiRequest('PATCH', `/api/tasks/${id}`, {
         assignedTo: data.assignedTo && data.assignedTo !== 'unassigned' ? parseInt(data.assignedTo) : null,
         remark: data.remark || '',
       });
+      return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+    onSuccess: (updatedTask: TaskWithDetails) => {
+      // Update all possible cache entries for tasks with different filter combinations
+      queryClient.setQueriesData(
+        { queryKey: ['/api/tasks'] },
+        (oldTasks: TaskWithDetails[] | undefined) => {
+          if (!oldTasks) return oldTasks;
+          return oldTasks.map(task => task.id === updatedTask.id ? updatedTask : task);
+        }
+      );
+      // Update the selected task with the fresh data
+      setSelectedTask(updatedTask);
       setIsEditDialogOpen(false);
-      setSelectedTask(null);
     },
   });
 
@@ -254,16 +263,25 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: StatusUpdateFormValues }) => {
-      return apiRequest('PATCH', `/api/tasks/${id}`, {
+      const response = await apiRequest('PATCH', `/api/tasks/${id}`, {
         status: data.status,
         completionPercentage: parseInt(data.completionPercentage),
         statusUpdateReason: data.statusUpdateReason || '',
       });
+      return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+    onSuccess: (updatedTask: TaskWithDetails) => {
+      // Update all possible cache entries for tasks with different filter combinations
+      queryClient.setQueriesData(
+        { queryKey: ['/api/tasks'] },
+        (oldTasks: TaskWithDetails[] | undefined) => {
+          if (!oldTasks) return oldTasks;
+          return oldTasks.map(task => task.id === updatedTask.id ? updatedTask : task);
+        }
+      );
+      // Update the selected task with the fresh data
+      setSelectedTask(updatedTask);
       setIsStatusUpdateDialogOpen(false);
-      setSelectedTask(null);
     },
   });
 

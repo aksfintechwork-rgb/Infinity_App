@@ -39,7 +39,8 @@ Preferred communication style: Simple, everyday language.
 - **Meeting Calendar**: Integrated Jitsi Meet video conferencing, participant tracking, recurring meeting schedules, and AI-powered summarization.
 - **AI Meeting Summaries**: GPT-4o (via Replit AI Integrations) generates structured, multi-language summaries with objectives, topics, outcomes, and participant guidance.
 - **Instant Video/Audio Calling**: Jitsi Meet integration for direct and group calls with screen sharing, unlimited duration, and deterministic room naming.
-- **Task Management**: Start/target dates, status tracking, priority levels, task assignment, real-time WebSocket updates, automated reminders, and a professional UI. Admins can view and filter all tasks.
+- **Task Management**: Start/target dates, status tracking with completion percentage (0%, 25%, 50%, 75%, 100%), visual progress bars, status update reasons, task assignment, real-time WebSocket updates, automated reminders, and a professional UI. Admins can view and filter all tasks. All users can update task status, completion percentage, and remarks for collaborative workflow.
+  - **Backend Implementation**: All 5 task retrieval methods in `server/storage.ts` (getTaskById, getTasksByCreator, getTasksByAssignee, getAllTasksForUser, getAllTasks) include `completionPercentage` and `statusUpdateReason` fields in their SELECT statements to ensure complete data delivery to API consumers.
 - **Professional UI Design**: Clean, responsive interface with a professional blue palette, solid colors, and enhanced visual hierarchy across all components (sidebar, conversation list, search, mobile).
 - **Smart Chat Scrolling**: Intelligent auto-scroll system that allows users to read chat history without interruption. Features conversation-aware scrolling that:
   - Automatically scrolls to bottom when opening or switching conversations (shows latest messages)
