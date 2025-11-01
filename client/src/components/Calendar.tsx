@@ -676,29 +676,7 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                   </div>
                   <p className="text-xs text-muted-foreground">All times are in Indian Standard Time (IST)</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="meetingLink">Video Meeting Link (Optional)</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="meetingLink"
-                      placeholder="https://meet.jit.si/your-room"
-                      value={meetingLink}
-                      onChange={(e) => setMeetingLink(e.target.value)}
-                      data-testid="input-meeting-link"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleGenerateMeetingLink}
-                      data-testid="button-generate-link"
-                    >
-                      Generate
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Generate a link or enter your own video conference URL
-                  </p>
-                </div>
+                {/* Meeting link is auto-generated when joining - hidden from UI for cleaner experience */}
                 
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
@@ -866,26 +844,7 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                   </div>
                   <p className="text-xs text-muted-foreground">All times are in Indian Standard Time (IST)</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-meetingLink">Video Meeting Link</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="edit-meetingLink"
-                      placeholder="https://your-video-conference-url"
-                      value={meetingLink}
-                      onChange={(e) => setMeetingLink(e.target.value)}
-                      data-testid="input-edit-meeting-link"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleGenerateMeetingLink}
-                      data-testid="button-edit-generate-link"
-                    >
-                      Generate
-                    </Button>
-                  </div>
-                </div>
+                {/* Meeting link is auto-generated when joining - hidden from UI for cleaner experience */}
                 <div className="space-y-2">
                   <Label>Participants</Label>
                   <ScrollArea className="h-32 border rounded-md p-2">
