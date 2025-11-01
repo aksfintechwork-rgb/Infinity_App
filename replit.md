@@ -95,8 +95,13 @@ Preferred communication style: Simple, everyday language.
 - **Daily Work Log**: Comprehensive daily planning and activity tracking system for all users:
   - **Daily To-Do List**: Add tasks with priority levels (Low, Medium, High, Urgent), check off completed items, and organize daily work
   - **Priority-Based Planning**: Visual priority badges with color coding for quick task identification
-  - **Hourly Activity Tracking**: Log work activities for each hour from 8 AM to 6 PM to track productivity
+  - **Customizable Working Hours**: Users can set their own work hours (e.g., 8 AM - 6 PM, 9 AM - 5 PM) via settings button
+    - Hourly activity log dynamically adjusts to selected hours
+    - Settings saved to localStorage and persist across sessions
+    - Validation ensures end hour is after start hour
+  - **Hourly Activity Tracking**: Log work activities for each hour within custom work hours range
   - **Save & Submit**: Save work-in-progress logs throughout the day, submit final worksheet when complete
+  - **Auto-Save on Submit**: Click Submit directly - worksheet auto-saves first if needed, then submits seamlessly
   - **Status Tracking**: Submitted worksheets are locked to prevent editing, ensuring data integrity
   - **Auto-Refresh**: Worksheet data refreshes every 30 seconds to stay current
   - **Date Display**: Shows current date (e.g., "Friday, November 1, 2024") for easy reference

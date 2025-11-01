@@ -6,10 +6,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Save, Send, Menu, Calendar, Clock } from 'lucide-react';
+import { Plus, Trash2, Save, Send, Menu, Calendar, Clock, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface User {
@@ -45,8 +46,10 @@ interface DailyWorksheetProps {
   onOpenMobileMenu?: () => void;
 }
 
-const WORK_HOURS = [
-  '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
+const ALL_HOURS = [
+  '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', 
+  '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', 
+  '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
 ];
 
 const PRIORITY_COLORS = {
@@ -56,14 +59,50 @@ const PRIORITY_COLORS = {
   urgent: 'bg-red-500/10 text-red-700 dark:text-red-400',
 };
 
+const generateWorkHours = (startHour: number, endHour: number): string[] => {
+  const hours: string[] = [];
+  for (let i = startHour; i <= endHour; i++) {
+    hours.push(`${i.toString().padStart(2, '0')}:00`);
+  }
+  return hours;
+};
+
 export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyWorksheetProps) {
+  const [workStartHour, setWorkStartHour] = useState<number>(8);
+  const [workEndHour, setWorkEndHour] = useState<number>(18);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [tempStartHour, setTempStartHour] = useState<number>(8);
+  const [tempEndHour, setTempEndHour] = useState<number>(18);
+  
   const [todos, setTodos] = useState<Todo[]>([]);
-  const [hourlyLogs, setHourlyLogs] = useState<HourlyLog[]>(
-    WORK_HOURS.map(hour => ({ hour, activity: '' }))
-  );
+  const [hourlyLogs, setHourlyLogs] = useState<HourlyLog[]>([]);
   const [newTodoText, setNewTodoText] = useState('');
   const [newTodoPriority, setNewTodoPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const { toast } = useToast();
+
+  // Load work hours from localStorage on mount
+  useEffect(() => {
+    const savedStartHour = localStorage.getItem('workStartHour');
+    const savedEndHour = localStorage.getItem('workEndHour');
+    
+    if (savedStartHour) setWorkStartHour(parseInt(savedStartHour));
+    if (savedEndHour) setWorkEndHour(parseInt(savedEndHour));
+  }, []);
+
+  // Generate hourly logs when work hours change, preserving existing entries
+  useEffect(() => {
+    const workHours = generateWorkHours(workStartHour, workEndHour);
+    setHourlyLogs(prevLogs => {
+      // Create a map of existing entries for quick lookup
+      const existingMap = new Map(prevLogs.map(log => [log.hour, log.activity]));
+      
+      // Generate new logs, preserving activities for overlapping hours
+      return workHours.map(hour => ({
+        hour,
+        activity: existingMap.get(hour) || ''
+      }));
+    });
+  }, [workStartHour, workEndHour]);
 
   const { data: worksheet, isLoading } = useQuery<Worksheet | null>({
     queryKey: ['/api/worksheets/today'],
@@ -76,14 +115,26 @@ export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyW
         const parsedTodos = JSON.parse(worksheet.todos || '[]');
         const parsedLogs = JSON.parse(worksheet.hourlyLogs || '[]');
         setTodos(parsedTodos);
+        
+        // Merge saved logs with current work hours template AND current in-memory state
         if (parsedLogs.length > 0) {
-          setHourlyLogs(parsedLogs);
+          setHourlyLogs(prevLogs => {
+            const workHours = generateWorkHours(workStartHour, workEndHour);
+            const savedMap = new Map(parsedLogs.map((log: HourlyLog) => [log.hour, log.activity]));
+            const currentMap = new Map(prevLogs.map(log => [log.hour, log.activity]));
+            
+            // For each hour in the new range, prioritize: current unsaved > saved > empty
+            return workHours.map(hour => ({
+              hour,
+              activity: currentMap.get(hour) || savedMap.get(hour) || ''
+            }));
+          });
         }
       } catch (error) {
         console.error('Failed to parse worksheet data:', error);
       }
     }
-  }, [worksheet]);
+  }, [worksheet, workStartHour, workEndHour]);
 
   const createWorksheetMutation = useMutation({
     mutationFn: async () => {
@@ -165,6 +216,34 @@ export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyW
     ));
   };
 
+  const handleOpenSettings = () => {
+    setTempStartHour(workStartHour);
+    setTempEndHour(workEndHour);
+    setIsSettingsOpen(true);
+  };
+
+  const handleSaveSettings = () => {
+    if (tempStartHour >= tempEndHour) {
+      toast({
+        title: 'Invalid hours',
+        description: 'Start hour must be before end hour',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setWorkStartHour(tempStartHour);
+    setWorkEndHour(tempEndHour);
+    localStorage.setItem('workStartHour', tempStartHour.toString());
+    localStorage.setItem('workEndHour', tempEndHour.toString());
+    setIsSettingsOpen(false);
+    
+    toast({
+      title: 'Settings saved',
+      description: `Work hours set to ${tempStartHour}:00 - ${tempEndHour}:00`,
+    });
+  };
+
   const handleSave = () => {
     // Prevent multiple saves while mutation is in progress
     if (createWorksheetMutation.isPending || updateWorksheetMutation.isPending) {
@@ -237,6 +316,76 @@ export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyW
               Submitted
             </Badge>
           )}
+          <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <DialogTrigger asChild>
+              <Button
+                onClick={handleOpenSettings}
+                size="sm"
+                variant="outline"
+                data-testid="button-worksheet-settings"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Working Hours Settings</DialogTitle>
+                <DialogDescription>
+                  Choose your daily working hours. This will update the hourly activity log section.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Start Hour</label>
+                  <Select
+                    value={tempStartHour.toString()}
+                    onValueChange={(value) => setTempStartHour(parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <SelectItem key={i} value={i.toString()}>
+                          {i.toString().padStart(2, '0')}:00
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">End Hour</label>
+                  <Select
+                    value={tempEndHour.toString()}
+                    onValueChange={(value) => setTempEndHour(parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <SelectItem key={i} value={i.toString()}>
+                          {i.toString().padStart(2, '0')}:00
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                  <Clock className="h-4 w-4" />
+                  <span>Current: {workStartHour}:00 - {workEndHour}:00 ({workEndHour - workStartHour + 1} hours)</span>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveSettings}>
+                  Save Settings
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <Button
             onClick={handleSave}
             disabled={isSubmitted || isSaving}
