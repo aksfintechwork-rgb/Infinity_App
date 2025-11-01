@@ -209,6 +209,8 @@ export const tasks = pgTable("tasks", {
   startDate: timestamp("start_date"),
   targetDate: timestamp("target_date"),
   status: text("status").notNull().default("pending"),
+  completionPercentage: integer("completion_percentage").notNull().default(0),
+  statusUpdateReason: text("status_update_reason"),
   remark: text("remark"),
   createdBy: integer("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
   assignedTo: integer("assigned_to").references(() => users.id, { onDelete: "set null" }),
