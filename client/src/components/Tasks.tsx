@@ -357,6 +357,26 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
     }
   };
 
+  // Helper function to convert Excel date serial to ISO date string
+  const excelDateToISO = (serial: any): string => {
+    if (!serial) return '';
+    
+    // If already a string, return as-is
+    if (typeof serial === 'string') return serial;
+    
+    // If it's a number (Excel serial date)
+    if (typeof serial === 'number') {
+      // Excel serial date starts from 1900-01-01, but Excel incorrectly treats 1900 as leap year
+      // so we need to account for that
+      const excelEpoch = new Date(1900, 0, 1);
+      const daysOffset = serial > 59 ? serial - 2 : serial - 1; // Account for Excel's leap year bug
+      const date = new Date(excelEpoch.getTime() + daysOffset * 24 * 60 * 60 * 1000);
+      return format(date, 'yyyy-MM-dd');
+    }
+    
+    return '';
+  };
+
   // Excel Import Function
   const handleImportFromExcel = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -368,14 +388,14 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
       reader.onload = async (e) => {
         try {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
+          const workbook = XLSX.read(data, { type: 'array', cellDates: true });
           
           // Get first sheet
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
           
-          // Convert to JSON
-          const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
+          // Convert to JSON with raw data to handle dates properly
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: false, dateNF: 'yyyy-mm-dd' }) as any[];
           
           if (jsonData.length === 0) {
             toast({
@@ -387,58 +407,103 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
           }
 
           let successCount = 0;
-          let errorCount = 0;
+          const failedRows: { row: number; title: string; reason: string }[] = [];
 
           // Import each task
-          for (const row of jsonData) {
+          for (let i = 0; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            const rowNumber = i + 2; // +2 because Excel rows start at 1 and we have a header row
+            
             try {
+              const title = row['Title'] || row['title'];
+              
+              // Validate required fields first
+              if (!title || title.trim() === '') {
+                failedRows.push({
+                  row: rowNumber,
+                  title: '(no title)',
+                  reason: 'Missing title'
+                });
+                continue;
+              }
+
+              // Convert Excel dates to ISO format
+              const startDateRaw = row['Start Date'] || row['start_date'] || '';
+              const targetDateRaw = row['Target Date'] || row['target_date'] || '';
+              
               const taskData = {
-                title: row['Title'] || row['title'],
-                description: row['Description'] || row['description'] || '',
-                startDate: row['Start Date'] || row['start_date'] || '',
-                targetDate: row['Target Date'] || row['target_date'] || '',
-                reminderFrequency: row['Reminder Frequency'] || row['reminder_frequency'] || 'none',
-                remark: row['Remarks'] || row['remarks'] || '',
+                title: title.trim(),
+                description: (row['Description'] || row['description'] || '').toString().trim(),
+                startDate: excelDateToISO(startDateRaw),
+                targetDate: excelDateToISO(targetDateRaw),
+                reminderFrequency: (row['Reminder Frequency'] || row['reminder_frequency'] || 'none').toLowerCase(),
+                remark: (row['Remarks'] || row['remarks'] || '').toString().trim(),
                 assignedTo: undefined as number | undefined,
               };
 
               // Try to find assignee by name
               const assigneeName = row['Assigned To'] || row['assigned_to'];
-              if (assigneeName) {
+              if (assigneeName && typeof assigneeName === 'string') {
                 const assignee = allUsers.find(u => 
-                  u.name.toLowerCase() === assigneeName.toLowerCase()
+                  u.name.toLowerCase() === assigneeName.trim().toLowerCase()
                 );
                 if (assignee) {
                   taskData.assignedTo = assignee.id;
+                } else {
+                  failedRows.push({
+                    row: rowNumber,
+                    title: title,
+                    reason: `Assignee "${assigneeName}" not found`
+                  });
+                  continue;
                 }
               }
 
-              // Validate required fields
-              if (!taskData.title) {
-                errorCount++;
-                continue;
+              // Validate reminder frequency
+              const validFrequencies = ['none', 'hourly', 'every_3_hours', 'every_6_hours', 'daily', 'every_2_days'];
+              if (!validFrequencies.includes(taskData.reminderFrequency)) {
+                taskData.reminderFrequency = 'none';
               }
 
               await apiRequest('POST', '/api/tasks', taskData);
               successCount++;
             } catch (error) {
               console.error('Error importing task:', error);
-              errorCount++;
+              failedRows.push({
+                row: rowNumber,
+                title: row['Title'] || row['title'] || '(no title)',
+                reason: error instanceof Error ? error.message : 'Unknown error'
+              });
             }
           }
 
           // Refresh task list
           queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
 
-          toast({
-            title: "Import Complete",
-            description: `Successfully imported ${successCount} tasks${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
-          });
+          // Show detailed results
+          if (failedRows.length === 0) {
+            toast({
+              title: "Import Successful",
+              description: `Successfully imported all ${successCount} tasks`,
+            });
+          } else {
+            const failureDetails = failedRows.slice(0, 5).map(f => 
+              `Row ${f.row} (${f.title}): ${f.reason}`
+            ).join('\n');
+            
+            const moreFailures = failedRows.length > 5 ? `\n...and ${failedRows.length - 5} more` : '';
+            
+            toast({
+              title: "Import Completed with Errors",
+              description: `Imported ${successCount} tasks, ${failedRows.length} failed:\n${failureDetails}${moreFailures}`,
+              variant: failedRows.length > successCount ? "destructive" : "default",
+            });
+          }
         } catch (error) {
           console.error('Import error:', error);
           toast({
             title: "Import Failed",
-            description: "Failed to parse Excel file",
+            description: "Failed to parse Excel file. Please ensure it's a valid .xlsx or .xls file.",
             variant: "destructive",
           });
         }
@@ -759,7 +824,7 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
                 </form>
               </Form>
             </DialogContent>
-            </Dialog>
+          </Dialog>
           </div>
         </div>
 
