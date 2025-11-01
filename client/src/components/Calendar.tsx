@@ -978,8 +978,18 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
           {/* Day Headers */}
           <div className="grid grid-cols-7 gap-2 mb-3">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center text-base font-bold text-foreground py-3">
+              <div 
+                key={day} 
+                className={`text-center text-base font-bold py-3 ${
+                  day === 'Sun' 
+                    ? 'text-destructive' 
+                    : 'text-foreground'
+                }`}
+              >
                 {day}
+                {day === 'Sun' && (
+                  <div className="text-xs font-normal text-muted-foreground">Weekly Off</div>
+                )}
               </div>
             ))}
           </div>
@@ -990,6 +1000,7 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
               const dayMeetings = getMeetingsForDay(day);
               const isCurrentMonth = isSameMonth(day, currentMonth);
               const isCurrentDay = isToday(day);
+              const isSunday = day.getDay() === 0;
 
               return (
                 <button
@@ -997,18 +1008,24 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                   onClick={() => handleDayClick(day)}
                   className={`
                     min-h-[120px] p-3 rounded-lg border-2 transition-colors
-                    ${isCurrentDay ? 'bg-primary/10 border-primary' : 'border-border'}
+                    ${isCurrentDay ? 'bg-primary/10 border-primary' : isSunday ? 'bg-destructive/5 border-destructive/30' : 'border-border'}
                     ${!isCurrentMonth ? 'opacity-40' : 'opacity-100'}
-                    ${isCurrentMonth ? 'hover:bg-accent' : ''}
+                    ${isCurrentMonth && !isSunday ? 'hover:bg-accent' : ''}
+                    ${isCurrentMonth && isSunday ? 'hover:bg-destructive/10' : ''}
                     flex flex-col items-start
                   `}
                   data-testid={`calendar-day-${format(day, 'yyyy-MM-dd')}`}
                 >
-                  <div className={`
-                    text-lg font-bold mb-2
-                    ${isCurrentDay ? 'bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center' : 'text-foreground'}
-                  `}>
-                    {format(day, 'd')}
+                  <div className="flex items-center justify-between w-full mb-2">
+                    <div className={`
+                      text-lg font-bold
+                      ${isCurrentDay ? 'bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center' : 'text-foreground'}
+                    `}>
+                      {format(day, 'd')}
+                    </div>
+                    {isSunday && isCurrentMonth && (
+                      <span className="text-xs text-destructive font-medium">OFF</span>
+                    )}
                   </div>
                   <div className="w-full space-y-1.5">
                     {dayMeetings.slice(0, 3).map(meeting => (

@@ -54,10 +54,15 @@ Preferred communication style: Simple, everyday language.
 - **Meeting Calendar**: Full monthly grid view with clickable days, month navigation, and interactive meeting badges:
   - **Start Meeting Now**: Instantly opens a video meeting in a new window without creating a calendar entry
   - **Schedule Meeting**: Create calendar entries with custom date/time selection using native datetime-local inputs
+  - **Weekly Off Display**: Sundays are visually marked as weekly off with red header text, "Weekly Off" label, subtle red background, and "OFF" indicator in each Sunday cell
   - **Meeting Badge Dropdown**: Click any meeting to access:
     - **Join Meeting**: Opens video conference in a new window (keeps main calendar accessible)
     - **Edit**: Opens edit dialog with pre-filled meeting details for quick time and participant updates
     - **Delete**: Removes the meeting with confirmation
+  - **Auto-Generated Meeting Links**: Jitsi video links created automatically when joining - no technical room names visible to users
+  - **Meeting Capacity**: Supports up to 35 participants (recommended) or 75 maximum with unlimited duration
+  - **Recurring Meetings**: Daily, weekly, or monthly patterns with automatic display across all scheduled occurrence dates
+  - **Indian Standard Time (IST)**: All times displayed and managed in IST with automatic UTC conversion for database storage
   - Popup blocker detection with user-friendly toast notifications
   - Keyboard-accessible dropdown navigation using onSelect handlers
   - Flexible time scheduling - set meetings at any custom time via intuitive datetime inputs
