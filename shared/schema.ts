@@ -100,6 +100,26 @@ export const insertPinnedConversationSchema = _basePinnedConversationSchema.omit
 export type InsertPinnedConversation = z.infer<typeof insertPinnedConversationSchema>;
 export type PinnedConversation = typeof pinnedConversations.$inferSelect;
 
+export const conversationReadStatus = pgTable("conversation_read_status", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  conversationId: integer("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+  lastReadMessageId: integer("last_read_message_id"),
+  lastReadAt: timestamp("last_read_at").notNull().defaultNow(),
+});
+
+const _baseConversationReadStatusSchema = createInsertSchema(conversationReadStatus, {});
+
+export const insertConversationReadStatusSchema = _baseConversationReadStatusSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  lastReadAt: true,
+});
+
+export type InsertConversationReadStatus = z.infer<typeof insertConversationReadStatusSchema>;
+export type ConversationReadStatus = typeof conversationReadStatus.$inferSelect;
+
 export const messages = pgTable("messages", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   conversationId: integer("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
