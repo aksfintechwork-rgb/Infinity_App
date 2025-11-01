@@ -61,6 +61,7 @@ interface ChatLayoutProps {
   onFileUpload: (file: File) => Promise<string>;
   onLogout: () => void;
   onConversationSelect?: (conversationId: number) => void;
+  onMarkConversationAsRead?: (conversationId: number) => void;
   ws?: {
     isConnected: boolean;
     send: (message: any) => void;
@@ -79,6 +80,7 @@ export default function ChatLayout({
   onFileUpload,
   onLogout,
   onConversationSelect,
+  onMarkConversationAsRead,
   ws,
 }: ChatLayoutProps) {
   const [activeConversationId, setActiveConversationId] = useState<number | null>(
@@ -145,10 +147,15 @@ export default function ChatLayout({
 
   const markAsReadMutation = useMutation({
     mutationFn: async (conversationId: number) => {
+      // Optimistic update: immediately clear unread badge in UI
+      if (onMarkConversationAsRead) {
+        onMarkConversationAsRead(conversationId);
+      }
       return await apiRequest('POST', `/api/conversations/${conversationId}/mark-read`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/conversations'] });
     },
   });
 

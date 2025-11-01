@@ -338,22 +338,28 @@ export class PostgresStorage implements IStorage {
     const readStatus = await this.getReadStatus(userId, conversationId);
     
     if (!readStatus || !readStatus.lastReadMessageId) {
-      // Count all messages in the conversation
+      // Count all messages NOT sent by the user
       const result = await db
         .select({ count: sql<number>`count(*)` })
         .from(messages)
-        .where(eq(messages.conversationId, conversationId));
+        .where(
+          and(
+            eq(messages.conversationId, conversationId),
+            sql`${messages.senderId} != ${userId}`
+          )
+        );
       return Number(result[0]?.count || 0);
     }
 
-    // Count messages after the last read message
+    // Count messages after the last read message, NOT sent by the user
     const result = await db
       .select({ count: sql<number>`count(*)` })
       .from(messages)
       .where(
         and(
           eq(messages.conversationId, conversationId),
-          sql`${messages.id} > ${readStatus.lastReadMessageId}`
+          sql`${messages.id} > ${readStatus.lastReadMessageId}`,
+          sql`${messages.senderId} != ${userId}`
         )
       );
     return Number(result[0]?.count || 0);

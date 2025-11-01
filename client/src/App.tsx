@@ -89,6 +89,10 @@ function App() {
                 ...conv,
                 lastMessage: message.body || 'Sent an attachment',
                 lastMessageTime: message.createdAt,
+                // Increment unread count if message is from someone else and conversation is not active
+                unreadCount: message.senderId !== currentUser.id && message.conversationId !== activeConversationId
+                  ? (conv.unreadCount || 0) + 1
+                  : conv.unreadCount || 0,
               }
             : conv
         )
@@ -262,6 +266,16 @@ function App() {
     }
   };
 
+  const handleMarkConversationAsRead = (conversationId: number) => {
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.id === conversationId
+          ? { ...conv, unreadCount: 0 }
+          : conv
+      )
+    );
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
     setToken(null);
@@ -299,6 +313,7 @@ function App() {
             onFileUpload={handleFileUpload}
             onLogout={handleLogout}
             onConversationSelect={loadConversationMessages}
+            onMarkConversationAsRead={handleMarkConversationAsRead}
             ws={ws}
           />
         )}
