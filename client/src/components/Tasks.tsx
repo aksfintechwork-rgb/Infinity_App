@@ -909,48 +909,41 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
                 </div>
               )}
 
-              {(isAdmin || selectedTask.createdBy === currentUser.id) && (
-                <div className="pt-4 border-t">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setIsEditDialogOpen(true);
-                      editForm.reset({
-                        assignedTo: selectedTask.assignedTo?.toString() || '',
-                        remark: selectedTask.remark || '',
-                      });
-                    }}
-                    className="w-full sm:w-auto"
-                    data-testid="button-edit-task"
-                  >
-                    <Edit className="w-3 h-3 mr-1" />
-                    Edit Task Assignment & Remarks
-                  </Button>
-                </div>
-              )}
-
-              {(selectedTask.createdBy === currentUser.id || selectedTask.assignedTo === currentUser.id || isAdmin) && (
-                <div className="pt-4 border-t">
-                  <Button
-                    size="sm"
-                    variant="default"
-                    onClick={() => {
-                      setIsStatusUpdateDialogOpen(true);
-                      statusUpdateForm.reset({
-                        status: selectedTask.status,
-                        completionPercentage: (selectedTask.completionPercentage || 0).toString(),
-                        statusUpdateReason: selectedTask.statusUpdateReason || '',
-                      });
-                    }}
-                    className="w-full sm:w-auto"
-                    data-testid="button-update-status"
-                  >
-                    <Target className="w-3 h-3 mr-1" />
-                    Update Status & Progress
-                  </Button>
-                </div>
-              )}
+              <div className="pt-4 border-t flex flex-col sm:flex-row gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditDialogOpen(true);
+                    editForm.reset({
+                      assignedTo: selectedTask.assignedTo?.toString() || '',
+                      remark: selectedTask.remark || '',
+                    });
+                  }}
+                  className="w-full sm:w-auto"
+                  data-testid="button-edit-task"
+                >
+                  <Edit className="w-3 h-3 mr-1" />
+                  Edit Assignment & Remarks
+                </Button>
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={() => {
+                    setIsStatusUpdateDialogOpen(true);
+                    statusUpdateForm.reset({
+                      status: selectedTask.status,
+                      completionPercentage: (selectedTask.completionPercentage || 0).toString(),
+                      statusUpdateReason: selectedTask.statusUpdateReason || '',
+                    });
+                  }}
+                  className="w-full sm:w-auto"
+                  data-testid="button-update-status"
+                >
+                  <Target className="w-3 h-3 mr-1" />
+                  Update Status & Progress
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
