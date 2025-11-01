@@ -315,15 +315,6 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
       return;
     }
 
-    // Validate meeting link is a Jitsi URL if provided
-    if (meetingLink && !meetingLink.startsWith('https://meet.jit.si/')) {
-      toast({
-        title: 'Invalid meeting link',
-        description: 'Meeting link must be a Jitsi Meet URL (https://meet.jit.si/...)',
-        variant: 'destructive',
-      });
-      return;
-    }
 
     // Validate recurring end date if pattern is selected
     if (recurrencePattern !== 'none' && !recurrenceEndDate) {
@@ -348,8 +339,8 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
     });
   };
 
-  // Helper function to add branding-hiding config to Jitsi URL
-  const addJitsiConfig = (url: string) => {
+  // Helper function to add branding-hiding config to video call URL
+  const addVideoConfig = (url: string) => {
     const config = [
       'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
@@ -376,28 +367,19 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
 
   const handleJoinMeeting = (link?: string) => {
     if (link) {
-      // Validate it's a Jitsi link before joining
-      if (!link.startsWith('https://meet.jit.si/')) {
-        toast({
-          title: 'Invalid meeting link',
-          description: 'Only Jitsi Meet links are supported',
-          variant: 'destructive',
-        });
-        return;
-      }
-      setActiveVideoMeeting(addJitsiConfig(link));
+      setActiveVideoMeeting(addVideoConfig(link));
     } else {
-      // Generate a random Jitsi room
+      // Generate a random room
       const roomName = `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      const jitsiLink = `https://meet.jit.si/${roomName}`;
-      setActiveVideoMeeting(addJitsiConfig(jitsiLink));
+      const videoLink = `https://meet.jit.si/${roomName}`;
+      setActiveVideoMeeting(addVideoConfig(videoLink));
     }
   };
 
   const handleGenerateMeetingLink = () => {
     const roomName = `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const baseLink = `https://meet.jit.si/${roomName}`;
-    setMeetingLink(addJitsiConfig(baseLink));
+    setMeetingLink(addVideoConfig(baseLink));
   };
 
   const handleEditMeeting = (meeting: Meeting) => {
@@ -426,14 +408,6 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
       return;
     }
 
-    if (meetingLink && !meetingLink.startsWith('https://meet.jit.si/')) {
-      toast({
-        title: 'Invalid meeting link',
-        description: 'Meeting link must be a Jitsi Meet URL',
-        variant: 'destructive',
-      });
-      return;
-    }
 
     if (recurrencePattern !== 'none' && !recurrenceEndDate) {
       toast({
@@ -463,8 +437,8 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
       handleJoinMeeting(meeting.meetingLink);
     } else {
       const roomName = `supremo-meeting-${meeting.id}`;
-      const jitsiLink = `https://meet.jit.si/${roomName}`;
-      handleJoinMeeting(jitsiLink);
+      const videoLink = `https://meet.jit.si/${roomName}`;
+      handleJoinMeeting(videoLink);
     }
   };
 
@@ -605,7 +579,7 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Only Jitsi Meet URLs are allowed (https://meet.jit.si/...)
+                    Generate a link or enter your own video conference URL
                   </p>
                 </div>
                 
@@ -772,11 +746,11 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-meetingLink">Jitsi Meeting Link</Label>
+                  <Label htmlFor="edit-meetingLink">Video Meeting Link</Label>
                   <div className="flex gap-2">
                     <Input
                       id="edit-meetingLink"
-                      placeholder="https://meet.jit.si/your-room-name"
+                      placeholder="https://your-video-conference-url"
                       value={meetingLink}
                       onChange={(e) => setMeetingLink(e.target.value)}
                       data-testid="input-edit-meeting-link"
