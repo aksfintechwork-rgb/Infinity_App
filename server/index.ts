@@ -5,6 +5,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./seed";
 import { taskReminderService } from "./task-reminders";
+import { meetingReminderService } from "./meeting-reminders";
 
 const app = express();
 
@@ -113,5 +114,10 @@ app.use((req, res, next) => {
     taskReminderService.start(60)
       .then(() => log('Task reminder service started'))
       .catch((err) => log(`Task reminder service error: ${err.message}`));
+    
+    // Start meeting reminder service (checks every 1 minute) (non-blocking)
+    meetingReminderService.start(1)
+      .then(() => log('Meeting reminder service started'))
+      .catch((err) => log(`Meeting reminder service error: ${err.message}`));
   });
 })();

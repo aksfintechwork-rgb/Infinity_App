@@ -62,6 +62,7 @@ Preferred communication style: Simple, everyday language.
   - **Auto-Generated Meeting Links**: Jitsi video links created automatically when joining - no technical room names visible to users
   - **Meeting Capacity**: Supports up to 35 participants (recommended) or 75 maximum with unlimited duration
   - **Recurring Meetings**: Daily, weekly, or monthly patterns with automatic display across all scheduled occurrence dates
+  - **Meeting Reminders**: Automated reminder system sends chat notifications to all participants at 15 minutes and 5 minutes before each meeting. Reminders sent via system user "Atul" with service checking every minute for upcoming meetings.
   - **Indian Standard Time (IST)**: All times displayed and managed in IST with automatic UTC conversion for database storage
   - Popup blocker detection with user-friendly toast notifications
   - Keyboard-accessible dropdown navigation using onSelect handlers

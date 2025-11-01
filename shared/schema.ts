@@ -160,6 +160,8 @@ export const meetings = pgTable("meetings", {
   summary: text("summary"),
   summaryLanguage: text("summary_language").default("en"),
   createdBy: integer("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  reminderSent15Min: boolean("reminder_sent_15_min").notNull().default(false),
+  reminderSent5Min: boolean("reminder_sent_5_min").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
