@@ -9,10 +9,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repeat, Sparkles, Copy, Languages, Pencil, Zap, Menu } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repeat, Sparkles, Copy, Languages, Pencil, Zap, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 
 const LANGUAGES = [
   { code: 'en', name: 'English' },
@@ -161,6 +161,8 @@ interface CalendarProps {
 }
 
 export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProps) {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingMeetingId, setEditingMeetingId] = useState<number | null>(null);
@@ -174,10 +176,11 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
   const [recurrenceFrequency, setRecurrenceFrequency] = useState<number>(1);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [activeVideoMeeting, setActiveVideoMeeting] = useState<string | null>(null);
-  const { toast } = useToast();
+  const { toast} = useToast();
 
   useEffect(() => {
-    if (isCreateOpen) {
+    if (isCreateOpen && !selectedDate) {
+      // Only clear fields if we're not opening from a day click
       setTitle('');
       setDescription('');
       setStartTime('');
@@ -187,8 +190,11 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
       setRecurrencePattern('none');
       setRecurrenceFrequency(1);
       setRecurrenceEndDate('');
+    } else if (!isCreateOpen) {
+      // Clear selectedDate when dialog closes
+      setSelectedDate(null);
     }
-  }, [isCreateOpen]);
+  }, [isCreateOpen, selectedDate]);
 
   const { data: meetings = [], isLoading } = useQuery<Meeting[]>({
     queryKey: ['/api/meetings'],
@@ -213,12 +219,12 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
       return apiRequest('POST', '/api/meetings', data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
-      setIsCreateOpen(false);
       toast({
         title: 'Meeting created',
         description: 'Your meeting has been scheduled successfully.',
       });
+      setIsCreateOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
     },
     onError: (error: any) => {
       toast({
@@ -442,15 +448,46 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
     }
   };
 
-  // Sort meetings by start time
-  const sortedMeetings = [...meetings].sort((a, b) => 
-    new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-  );
+  // Calendar navigation functions
+  const handlePreviousMonth = () => {
+    setCurrentMonth(subMonths(currentMonth, 1));
+  };
 
-  // Separate upcoming and past meetings
-  const now = new Date();
-  const upcomingMeetings = sortedMeetings.filter(m => new Date(m.startTime) > now);
-  const pastMeetings = sortedMeetings.filter(m => new Date(m.startTime) <= now);
+  const handleNextMonth = () => {
+    setCurrentMonth(addMonths(currentMonth, 1));
+  };
+
+  const handleTodayClick = () => {
+    setCurrentMonth(new Date());
+  };
+
+  // Generate calendar days for the current month
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const calendarStart = startOfWeek(monthStart);
+  const calendarEnd = endOfWeek(monthEnd);
+  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+
+  // Get meetings for a specific day
+  const getMeetingsForDay = (day: Date) => {
+    return meetings.filter(meeting => 
+      isSameDay(parseISO(meeting.startTime), day)
+    );
+  };
+
+  // Handle clicking on a day in the calendar
+  const handleDayClick = (day: Date) => {
+    setSelectedDate(day);
+    // Pre-fill the meeting start time with the selected day at 9 AM
+    const defaultStartTime = new Date(day);
+    defaultStartTime.setHours(9, 0, 0, 0);
+    const defaultEndTime = new Date(day);
+    defaultEndTime.setHours(10, 0, 0, 0);
+    
+    setStartTime(format(defaultStartTime, "yyyy-MM-dd'T'HH:mm"));
+    setEndTime(format(defaultEndTime, "yyyy-MM-dd'T'HH:mm"));
+    setIsCreateOpen(true);
+  };
 
   if (activeVideoMeeting) {
     return (
@@ -857,255 +894,101 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
         </Dialog>
       </div>
 
-      <ScrollArea className="flex-1">
-        <div className="p-4 space-y-6">
-          {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Loading meetings...
-            </div>
-          ) : (
-            <>
-              {upcomingMeetings.length > 0 && (
-                <div>
-                  <h3 className="font-semibold mb-3">Upcoming Meetings</h3>
-                  <div className="space-y-3">
-                    {upcomingMeetings.map((meeting) => (
-                      <Card key={meeting.id} data-testid={`card-meeting-${meeting.id}`}>
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <CardTitle className="text-base">{meeting.title}</CardTitle>
-                              {meeting.description && (
-                                <CardDescription className="mt-1">
-                                  {meeting.description}
-                                </CardDescription>
-                              )}
-                            </div>
-                            {(meeting.createdBy === currentUser.id || currentUser.role === 'admin') && (
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => handleEditMeeting(meeting)}
-                                  data-testid={`button-edit-${meeting.id}`}
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => deleteMeeting.mutate(meeting.id)}
-                                  data-testid={`button-delete-${meeting.id}`}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pb-3">
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Clock className="w-4 h-4" />
-                              <span>
-                                {format(new Date(meeting.startTime), 'PPp')} -{' '}
-                                {format(new Date(meeting.endTime), 'p')}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <User className="w-4 h-4" />
-                              <span>Organized by {meeting.creatorName}</span>
-                            </div>
-                            {meeting.participants && meeting.participants.length > 0 && (
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <Users className="w-4 h-4" />
-                                <span data-testid={`text-participants-${meeting.id}`}>
-                                  {meeting.participants.map(p => p.name).join(', ')}
-                                </span>
-                              </div>
-                            )}
-                            {meeting.recurrencePattern && meeting.recurrencePattern !== 'none' && (
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <Repeat className="w-4 h-4" />
-                                <span data-testid={`text-recurrence-${meeting.id}`}>
-                                  Repeats {meeting.recurrencePattern}
-                                  {meeting.recurrenceFrequency && meeting.recurrenceFrequency > 1 
-                                    ? ` (every ${meeting.recurrenceFrequency} ${meeting.recurrencePattern === 'daily' ? 'days' : meeting.recurrencePattern === 'weekly' ? 'weeks' : 'months'})`
-                                    : ''
-                                  }
-                                  {meeting.recurrenceEndDate && ` until ${format(new Date(meeting.recurrenceEndDate), 'PP')}`}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                        <CardFooter className="flex flex-col gap-2">
-                          {meeting.summary && (
-                            <div className="w-full p-3 bg-primary/5 dark:bg-primary/10 rounded-md border border-primary/20">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Sparkles className="w-4 h-4 text-primary" />
-                                <span className="text-xs font-medium text-foreground">
-                                  AI Summary ({meeting.summaryLanguage?.toUpperCase() || 'EN'})
-                                </span>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="ml-auto h-6 w-6"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(meeting.summary || '');
-                                    toast({ title: 'Copied', description: 'Summary copied to clipboard' });
-                                  }}
-                                  data-testid={`button-copy-summary-${meeting.id}`}
-                                >
-                                  <Copy className="w-3 h-3" />
-                                </Button>
-                              </div>
-                              <p className="text-sm text-foreground/90" data-testid={`text-summary-${meeting.id}`}>
-                                {meeting.summary}
-                              </p>
-                            </div>
-                          )}
-                          <div className="flex flex-col gap-2 w-full">
-                            <Button
-                              className="w-full"
-                              onClick={() => handleQuickStartMeeting(meeting)}
-                              data-testid={`button-quick-start-${meeting.id}`}
-                            >
-                              <Zap className="w-4 h-4 mr-2" />
-                              Start Meeting Now
-                            </Button>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
-                              <SummaryGenerator
-                                meetingId={meeting.id}
-                                hasSummary={!!meeting.summary}
-                                onGenerate={generateSummary}
-                                isGenerating={generateSummary.isPending}
-                              />
-                              {meeting.meetingLink && (
-                                <Button
-                                  variant="outline"
-                                  className="w-full"
-                                  onClick={() => handleJoinMeeting(meeting.meetingLink)}
-                                  data-testid={`button-join-${meeting.id}`}
-                                >
-                                  <Video className="w-4 h-4 mr-2" />
-                                  Join Meeting
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </CardFooter>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {pastMeetings.length > 0 && (
-                <div>
-                  <h3 className="font-semibold mb-3 text-muted-foreground">Past Meetings</h3>
-                  <div className="space-y-3">
-                    {pastMeetings.map((meeting) => (
-                      <Card key={meeting.id} className="opacity-60" data-testid={`card-meeting-${meeting.id}`}>
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <CardTitle className="text-base">{meeting.title}</CardTitle>
-                              {meeting.description && (
-                                <CardDescription className="mt-1">
-                                  {meeting.description}
-                                </CardDescription>
-                              )}
-                            </div>
-                            {(meeting.createdBy === currentUser.id || currentUser.role === 'admin') && (
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => handleEditMeeting(meeting)}
-                                  data-testid={`button-edit-${meeting.id}`}
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => deleteMeeting.mutate(meeting.id)}
-                                  data-testid={`button-delete-${meeting.id}`}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Clock className="w-4 h-4" />
-                              <span>
-                                {format(new Date(meeting.startTime), 'PPp')} -{' '}
-                                {format(new Date(meeting.endTime), 'p')}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <User className="w-4 h-4" />
-                              <span>Organized by {meeting.creatorName}</span>
-                            </div>
-                            {meeting.participants && meeting.participants.length > 0 && (
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <Users className="w-4 h-4" />
-                                <span data-testid={`text-participants-${meeting.id}`}>
-                                  {meeting.participants.map(p => p.name).join(', ')}
-                                </span>
-                              </div>
-                            )}
-                            {meeting.recurrencePattern && meeting.recurrencePattern !== 'none' && (
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <Repeat className="w-4 h-4" />
-                                <span data-testid={`text-recurrence-${meeting.id}`}>
-                                  Repeats {meeting.recurrencePattern}
-                                  {meeting.recurrenceFrequency && meeting.recurrenceFrequency > 1 
-                                    ? ` (every ${meeting.recurrenceFrequency} ${meeting.recurrencePattern === 'daily' ? 'days' : meeting.recurrencePattern === 'weekly' ? 'weeks' : 'months'})`
-                                    : ''
-                                  }
-                                  {meeting.recurrenceEndDate && ` until ${format(new Date(meeting.recurrenceEndDate), 'PP')}`}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {meetings.length === 0 && (
-                <div className="text-center py-12">
-                  <CalendarIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                  <p className="text-muted-foreground mb-4">No meetings scheduled yet</p>
-                  <Button onClick={() => setIsCreateOpen(true)} data-testid="button-create-first-meeting">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Schedule Your First Meeting
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
+      <div className="flex-1 flex flex-col p-4">
+        {/* Month Navigation Header */}
+        <div className="flex items-center justify-between mb-4 pb-4 border-b">
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl font-bold">
+              {format(currentMonth, 'MMMM yyyy')}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTodayClick}
+              data-testid="button-today"
+            >
+              Today
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handlePreviousMonth}
+              data-testid="button-prev-month"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleNextMonth}
+              data-testid="button-next-month"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
-      </ScrollArea>
 
-      <div className="p-4 border-t">
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => handleJoinMeeting()}
-          data-testid="button-instant-meeting"
-        >
-          <Video className="w-4 h-4 mr-2" />
-          Start Instant Meeting
-        </Button>
+        {/* Calendar Grid */}
+        <div className="flex-1 flex flex-col">
+          {/* Day Headers */}
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="text-center text-sm font-semibold text-muted-foreground py-2">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Calendar Days Grid */}
+          <div className="grid grid-cols-7 gap-1 flex-1">
+            {calendarDays.map((day, index) => {
+              const dayMeetings = getMeetingsForDay(day);
+              const isCurrentMonth = isSameMonth(day, currentMonth);
+              const isCurrentDay = isToday(day);
+
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleDayClick(day)}
+                  className={`
+                    min-h-[100px] p-2 rounded-lg border transition-colors
+                    ${isCurrentDay ? 'bg-primary/10 border-primary' : 'border-border'}
+                    ${!isCurrentMonth ? 'opacity-40' : 'opacity-100'}
+                    ${isCurrentMonth ? 'hover:bg-accent' : ''}
+                    flex flex-col items-start
+                  `}
+                  data-testid={`calendar-day-${format(day, 'yyyy-MM-dd')}`}
+                >
+                  <div className={`
+                    text-sm font-medium mb-1
+                    ${isCurrentDay ? 'bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center' : ''}
+                  `}>
+                    {format(day, 'd')}
+                  </div>
+                  <div className="w-full space-y-1">
+                    {dayMeetings.slice(0, 3).map(meeting => (
+                      <div
+                        key={meeting.id}
+                        className="text-xs px-1.5 py-0.5 rounded bg-primary/20 text-primary truncate w-full"
+                        title={meeting.title}
+                        data-testid={`meeting-indicator-${meeting.id}`}
+                      >
+                        {format(parseISO(meeting.startTime), 'HH:mm')} {meeting.title}
+                      </div>
+                    ))}
+                    {dayMeetings.length > 3 && (
+                      <div className="text-xs text-muted-foreground px-1.5">
+                        +{dayMeetings.length - 3} more
+                      </div>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
