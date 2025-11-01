@@ -9,6 +9,8 @@ import {
   type InsertConversationMember,
   type PinnedConversation,
   type InsertPinnedConversation,
+  type ConversationReadStatus,
+  type InsertConversationReadStatus,
   type Meeting,
   type InsertMeeting,
   type MeetingParticipant,
@@ -23,6 +25,7 @@ import {
   messages,
   conversationMembers,
   pinnedConversations,
+  conversationReadStatus,
   meetings,
   meetingParticipants,
   tasks,
@@ -59,6 +62,10 @@ export interface IStorage {
   createMessage(message: InsertMessage): Promise<Message>;
   getMessagesByConversationId(conversationId: number): Promise<Message[]>;
   getLastMessageByConversationId(conversationId: number): Promise<Message | undefined>;
+  
+  markConversationAsRead(userId: number, conversationId: number, lastMessageId: number | null): Promise<void>;
+  getUnreadCount(userId: number, conversationId: number): Promise<number>;
+  getReadStatus(userId: number, conversationId: number): Promise<ConversationReadStatus | undefined>;
   
   createMeeting(meeting: InsertMeeting): Promise<Meeting>;
   getAllMeetings(): Promise<Meeting[]>;
@@ -288,6 +295,80 @@ export class PostgresStorage implements IStorage {
       .from(messages)
       .where(eq(messages.conversationId, conversationId))
       .orderBy(desc(messages.createdAt))
+      .limit(1);
+    
+    return result[0];
+  }
+
+  async markConversationAsRead(userId: number, conversationId: number, lastMessageId: number | null): Promise<void> {
+    const existing = await db
+      .select()
+      .from(conversationReadStatus)
+      .where(
+        and(
+          eq(conversationReadStatus.userId, userId),
+          eq(conversationReadStatus.conversationId, conversationId)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(conversationReadStatus)
+        .set({
+          lastReadMessageId: lastMessageId,
+          lastReadAt: new Date(),
+        })
+        .where(
+          and(
+            eq(conversationReadStatus.userId, userId),
+            eq(conversationReadStatus.conversationId, conversationId)
+          )
+        );
+    } else {
+      await db.insert(conversationReadStatus).values({
+        userId,
+        conversationId,
+        lastReadMessageId: lastMessageId,
+      });
+    }
+  }
+
+  async getUnreadCount(userId: number, conversationId: number): Promise<number> {
+    const readStatus = await this.getReadStatus(userId, conversationId);
+    
+    if (!readStatus || !readStatus.lastReadMessageId) {
+      // Count all messages in the conversation
+      const result = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(messages)
+        .where(eq(messages.conversationId, conversationId));
+      return Number(result[0]?.count || 0);
+    }
+
+    // Count messages after the last read message
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(
+        and(
+          eq(messages.conversationId, conversationId),
+          sql`${messages.id} > ${readStatus.lastReadMessageId}`
+        )
+      );
+    return Number(result[0]?.count || 0);
+  }
+
+  async getReadStatus(userId: number, conversationId: number): Promise<ConversationReadStatus | undefined> {
+    const result = await db
+      .select()
+      .from(conversationReadStatus)
+      .where(
+        and(
+          eq(conversationReadStatus.userId, userId),
+          eq(conversationReadStatus.conversationId, conversationId)
+        )
+      )
       .limit(1);
     
     return result[0];

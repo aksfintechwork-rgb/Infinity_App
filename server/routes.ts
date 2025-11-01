@@ -303,6 +303,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         conversations.map(async (conv) => {
           const members = await storage.getConversationMembers(conv.id);
           const lastMessage = await storage.getLastMessageByConversationId(conv.id);
+          const unreadCount = await storage.getUnreadCount(req.userId!, conv.id);
           
           const otherMembers = members.filter(m => m.id !== req.userId);
           const memberNames = otherMembers.map(m => m.name.split(' ')[0]).join(', ');
@@ -314,6 +315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             memberCount: members.length,
             lastMessage: lastMessage?.body || undefined,
             lastMessageTime: lastMessage?.createdAt || undefined,
+            unreadCount,
           };
         })
       );
@@ -491,6 +493,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Unpin conversation error:", error);
       res.status(500).json({ error: "Failed to unpin conversation" });
+    }
+  });
+
+  app.post("/api/conversations/:id/mark-read", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const conversationId = parseInt(req.params.id);
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ error: "Invalid conversation ID" });
+      }
+
+      const userConvIds = await storage.getUserConversationIds(req.userId);
+      if (!userConvIds.includes(conversationId)) {
+        return res.status(403).json({ error: "Access denied - you are not a member of this conversation" });
+      }
+
+      const lastMessage = await storage.getLastMessageByConversationId(conversationId);
+      await storage.markConversationAsRead(req.userId, conversationId, lastMessage?.id || null);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Mark conversation as read error:", error);
+      res.status(500).json({ error: "Failed to mark conversation as read" });
     }
   });
 
