@@ -520,13 +520,23 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
           <CalendarIcon className="w-5 h-5" />
           <h2 className="font-semibold">Meeting Calendar</h2>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" data-testid="button-create-meeting">
-              <Plus className="w-4 h-4 mr-2" />
-              New Meeting
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Button 
+            size="sm" 
+            variant="default"
+            onClick={() => handleJoinMeeting()}
+            data-testid="button-start-meeting-now"
+          >
+            <Video className="w-4 h-4 mr-2" />
+            Start Meeting Now
+          </Button>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline" data-testid="button-create-meeting">
+                <Plus className="w-4 h-4 mr-2" />
+                Schedule Meeting
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Schedule New Meeting</DialogTitle>
@@ -711,6 +721,7 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
             </form>
           </DialogContent>
         </Dialog>
+        </div>
 
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
           <DialogContent>
