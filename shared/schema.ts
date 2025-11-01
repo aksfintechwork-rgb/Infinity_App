@@ -9,6 +9,9 @@ export type UserRole = z.infer<typeof userRoleEnum>;
 export const taskStatusEnum = z.enum(["pending", "in_progress", "completed", "cancelled"]);
 export type TaskStatus = z.infer<typeof taskStatusEnum>;
 
+export const reminderFrequencyEnum = z.enum(["none", "hourly", "every_3_hours", "every_6_hours", "daily", "every_2_days"]);
+export type ReminderFrequency = z.infer<typeof reminderFrequencyEnum>;
+
 export const users = pgTable("users", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: text("name").notNull(),
