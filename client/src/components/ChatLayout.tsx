@@ -274,11 +274,11 @@ export default function ChatLayout({
   const handleStartCall = () => {
     if (!activeConversation) return;
     
-    // Generate a deterministic Jitsi room name so all participants join the same room
-    // Using conversation ID ensures everyone in the same conversation joins the same call
+    // Generate a deterministic room name so all participants join the same call
+    // Using conversation ID ensures everyone in the same conversation joins the same room
     const roomName = `supremo-chat-conv-${activeConversation.id}`;
     
-    // Configure Jitsi to hide branding and customize interface
+    // Configure video call to hide branding and customize interface
     const config = [
       'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
@@ -295,10 +295,10 @@ export default function ChatLayout({
       'interfaceConfig.NATIVE_APP_NAME="SUPREMO TRADERS"'
     ].join('&');
     
-    const jitsiLink = `https://meet.jit.si/${roomName}#${config}`;
+    const meetingLink = `https://meet.jit.si/${roomName}#${config}`;
     
-    // Open in new window for unlimited duration (embedded has 5-minute limit)
-    window.open(jitsiLink, '_blank', 'noopener,noreferrer');
+    // Open in new window for unlimited duration
+    window.open(meetingLink, '_blank', 'noopener,noreferrer');
     
     toast({
       title: 'Meeting started',
