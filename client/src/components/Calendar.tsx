@@ -1086,7 +1086,7 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                             data-testid={`meeting-indicator-${meeting.id}`}
                           >
                             <span className="truncate">
-                              {formatInTimeZone(parseISO(meeting.startTime), IST_TIMEZONE, 'HH:mm')} {meeting.title}
+                              {formatInTimeZone(parseISO(meeting.startTime), IST_TIMEZONE, 'h:mm a')} {meeting.title}
                             </span>
                             <MoreVertical className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-1" />
                           </button>
