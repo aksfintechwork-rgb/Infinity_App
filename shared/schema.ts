@@ -271,3 +271,52 @@ export const insertSupportRequestSchema = _baseSupportRequestSchema.omit({
 
 export type InsertSupportRequest = z.infer<typeof insertSupportRequestSchema>;
 export type SupportRequest = typeof taskSupportRequests.$inferSelect;
+
+export const worksheetPriorityEnum = z.enum(["low", "medium", "high", "urgent"]);
+export type WorksheetPriority = z.infer<typeof worksheetPriorityEnum>;
+
+export const dailyWorksheets = pgTable("daily_worksheets", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  date: timestamp("date").notNull(),
+  todos: text("todos").notNull().default("[]"),
+  hourlyLogs: text("hourly_logs").notNull().default("[]"),
+  status: text("status").notNull().default("in_progress"),
+  submittedAt: timestamp("submitted_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+const _baseDailyWorksheetSchema = createInsertSchema(dailyWorksheets, {
+  date: z.string().transform((val) => new Date(val)),
+});
+
+export const insertDailyWorksheetSchema = _baseDailyWorksheetSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  createdAt: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  updatedAt: true,
+});
+
+export type InsertDailyWorksheet = z.infer<typeof insertDailyWorksheetSchema>;
+export type DailyWorksheet = typeof dailyWorksheets.$inferSelect;
+
+export interface WorksheetTodo {
+  id: string;
+  text: string;
+  priority: WorksheetPriority;
+  completed: boolean;
+}
+
+export interface HourlyLog {
+  hour: number;
+  activity: string;
+}
+
+export interface DailyWorksheetWithDetails extends DailyWorksheet {
+  userName: string;
+  parsedTodos: WorksheetTodo[];
+  parsedHourlyLogs: HourlyLog[];
+}

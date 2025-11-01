@@ -20,6 +20,9 @@ import {
   type TaskWithDetails,
   type SupportRequest,
   type InsertSupportRequest,
+  type DailyWorksheet,
+  type InsertDailyWorksheet,
+  type DailyWorksheetWithDetails,
   users,
   conversations,
   messages,
@@ -30,9 +33,10 @@ import {
   meetingParticipants,
   tasks,
   taskSupportRequests,
+  dailyWorksheets,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, inArray, sql } from "drizzle-orm";
+import { eq, and, desc, inArray, sql, gte, lte } from "drizzle-orm";
 
 export interface IStorage {
   getUserById(id: number): Promise<User | undefined>;
@@ -91,6 +95,13 @@ export interface IStorage {
   createSupportRequest(request: InsertSupportRequest): Promise<SupportRequest>;
   getSupportRequestsByTask(taskId: number): Promise<SupportRequest[]>;
   updateSupportRequestStatus(id: number, status: string): Promise<void>;
+  
+  createDailyWorksheet(worksheet: InsertDailyWorksheet): Promise<DailyWorksheet>;
+  getDailyWorksheet(userId: number, date: Date): Promise<DailyWorksheet | undefined>;
+  updateDailyWorksheet(id: number, updates: Partial<InsertDailyWorksheet>): Promise<DailyWorksheet | undefined>;
+  submitDailyWorksheet(id: number): Promise<DailyWorksheet | undefined>;
+  getAllDailyWorksheets(date?: Date): Promise<DailyWorksheetWithDetails[]>;
+  getUserDailyWorksheets(userId: number, limit?: number): Promise<DailyWorksheetWithDetails[]>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -643,6 +654,121 @@ export class PostgresStorage implements IStorage {
       .update(taskSupportRequests)
       .set({ status })
       .where(eq(taskSupportRequests.id, id));
+  }
+
+  async createDailyWorksheet(worksheet: InsertDailyWorksheet): Promise<DailyWorksheet> {
+    const result = await db.insert(dailyWorksheets).values(worksheet).returning();
+    return result[0];
+  }
+
+  async getDailyWorksheet(userId: number, date: Date): Promise<DailyWorksheet | undefined> {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const result = await db
+      .select()
+      .from(dailyWorksheets)
+      .where(
+        and(
+          eq(dailyWorksheets.userId, userId),
+          gte(dailyWorksheets.date, startOfDay),
+          lte(dailyWorksheets.date, endOfDay)
+        )
+      )
+      .limit(1);
+    
+    return result[0];
+  }
+
+  async updateDailyWorksheet(id: number, updates: Partial<InsertDailyWorksheet>): Promise<DailyWorksheet | undefined> {
+    const result = await db
+      .update(dailyWorksheets)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(dailyWorksheets.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async submitDailyWorksheet(id: number): Promise<DailyWorksheet | undefined> {
+    const result = await db
+      .update(dailyWorksheets)
+      .set({ 
+        status: 'submitted',
+        submittedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(dailyWorksheets.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async getAllDailyWorksheets(date?: Date): Promise<DailyWorksheetWithDetails[]> {
+    let query = db
+      .select({
+        id: dailyWorksheets.id,
+        userId: dailyWorksheets.userId,
+        date: dailyWorksheets.date,
+        todos: dailyWorksheets.todos,
+        hourlyLogs: dailyWorksheets.hourlyLogs,
+        status: dailyWorksheets.status,
+        submittedAt: dailyWorksheets.submittedAt,
+        createdAt: dailyWorksheets.createdAt,
+        updatedAt: dailyWorksheets.updatedAt,
+        userName: users.name,
+      })
+      .from(dailyWorksheets)
+      .innerJoin(users, eq(dailyWorksheets.userId, users.id));
+
+    if (date) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      query = query.where(
+        and(
+          gte(dailyWorksheets.date, startOfDay),
+          lte(dailyWorksheets.date, endOfDay)
+        )
+      ) as typeof query;
+    }
+
+    const result = await query.orderBy(desc(dailyWorksheets.date));
+    
+    return result.map(row => ({
+      ...row,
+      parsedTodos: JSON.parse(row.todos || '[]'),
+      parsedHourlyLogs: JSON.parse(row.hourlyLogs || '[]'),
+    }));
+  }
+
+  async getUserDailyWorksheets(userId: number, limit: number = 30): Promise<DailyWorksheetWithDetails[]> {
+    const result = await db
+      .select({
+        id: dailyWorksheets.id,
+        userId: dailyWorksheets.userId,
+        date: dailyWorksheets.date,
+        todos: dailyWorksheets.todos,
+        hourlyLogs: dailyWorksheets.hourlyLogs,
+        status: dailyWorksheets.status,
+        submittedAt: dailyWorksheets.submittedAt,
+        createdAt: dailyWorksheets.createdAt,
+        updatedAt: dailyWorksheets.updatedAt,
+        userName: users.name,
+      })
+      .from(dailyWorksheets)
+      .innerJoin(users, eq(dailyWorksheets.userId, users.id))
+      .where(eq(dailyWorksheets.userId, userId))
+      .orderBy(desc(dailyWorksheets.date))
+      .limit(limit);
+    
+    return result.map(row => ({
+      ...row,
+      parsedTodos: JSON.parse(row.todos || '[]'),
+      parsedHourlyLogs: JSON.parse(row.hourlyLogs || '[]'),
+    }));
   }
 }
 
