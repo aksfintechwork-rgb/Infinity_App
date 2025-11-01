@@ -175,7 +175,6 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
   const [recurrencePattern, setRecurrencePattern] = useState<string>('none');
   const [recurrenceFrequency, setRecurrenceFrequency] = useState<number>(1);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
-  const [activeVideoMeeting, setActiveVideoMeeting] = useState<string | null>(null);
   const { toast} = useToast();
 
   useEffect(() => {
@@ -372,14 +371,18 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
   };
 
   const handleJoinMeeting = (link?: string) => {
+    let videoUrl: string;
     if (link) {
-      setActiveVideoMeeting(addVideoConfig(link));
+      videoUrl = addVideoConfig(link);
     } else {
       // Generate a random room
       const roomName = `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
       const videoLink = `https://meet.jit.si/${roomName}`;
-      setActiveVideoMeeting(addVideoConfig(videoLink));
+      videoUrl = addVideoConfig(videoLink);
     }
+    
+    // Open in new window
+    window.open(videoUrl, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
   };
 
   const handleGenerateMeetingLink = () => {
@@ -488,34 +491,6 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
     setEndTime(format(defaultEndTime, "yyyy-MM-dd'T'HH:mm"));
     setIsCreateOpen(true);
   };
-
-  if (activeVideoMeeting) {
-    return (
-      <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex items-center gap-2">
-            <Video className="w-5 h-5" />
-            <h2 className="font-semibold">Video Meeting</h2>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => setActiveVideoMeeting(null)}
-            data-testid="button-leave-meeting"
-          >
-            Leave Meeting
-          </Button>
-        </div>
-        <div className="flex-1">
-          <iframe
-            src={activeVideoMeeting}
-            allow="camera; microphone; fullscreen; display-capture; autoplay"
-            className="w-full h-full border-0"
-            title="Video Meeting"
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-full">
