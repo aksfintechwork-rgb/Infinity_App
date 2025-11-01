@@ -51,6 +51,12 @@ Preferred communication style: Simple, everyday language.
 - **Instant Video/Audio Calling**: Video call integration for direct and group calls with screen sharing and unlimited duration. Video meetings open in separate windows to maintain access to chat, tasks, and calendar during calls.
 - **Task Management**: Start/target dates, status tracking with completion percentage (0%, 25%, 50%, 75%, 100%), visual progress bars, status update reasons, task assignment, real-time WebSocket updates, customizable automated reminders, and a professional UI. Admins can view and filter all tasks. All users can update task status, completion percentage, and remarks for collaborative workflow.
   - **Custom Task Reminders**: Per-task reminder frequency with options: hourly, every 3 hours, every 6 hours, daily, every 2 days, or none. Reminders sent via chat messages from system user "Atul" with toast notifications for immediate visibility.
+  - **Excel Import/Export** (Admin-only): Bulk task management via Excel spreadsheets with comprehensive error handling:
+    - **Export**: Downloads all currently visible tasks (respecting filters) as .xlsx file with complete task data including ID, title, description, dates, status, completion percentage, assignees, reminders, and remarks
+    - **Import**: Bulk upload tasks from Excel files with intelligent date conversion (handles Excel serial dates), assignee name matching, and validation
+    - **Error Reporting**: Detailed feedback showing row numbers and specific failure reasons (missing title, unknown assignee, invalid data) for up to 5 failed rows with summary count
+    - **Date Handling**: Automatic conversion of Excel serial dates to ISO format, accounting for Excel's 1900 leap year bug
+    - **Validation**: Title requirement, assignee existence verification, reminder frequency whitelist with safe defaults
   - **Backend Implementation**: All 5 task retrieval methods in `server/storage.ts` (getTaskById, getTasksByCreator, getTasksByAssignee, getAllTasksForUser, getAllTasks) include `completionPercentage`, `statusUpdateReason`, `reminderFrequency`, and `lastReminderSent` fields in their SELECT statements to ensure complete data delivery to API consumers.
 - **Professional UI Design**: Clean, responsive interface with a professional blue palette, solid colors, and enhanced visual hierarchy across all components (sidebar, conversation list, search, mobile).
 - **Smart Chat Scrolling**: Intelligent auto-scroll system that allows users to read chat history without interruption. Features conversation-aware scrolling that:
@@ -71,4 +77,4 @@ Preferred communication style: Simple, everyday language.
 -   **Google Fonts**: Inter font family.
 -   **Video Conferencing**: Integrated for team meetings and calls.
 -   **File Storage**: Local filesystem (`uploads/` directory) with Multer.
--   **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`.
+-   **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`, `xlsx` (for Excel file handling).
