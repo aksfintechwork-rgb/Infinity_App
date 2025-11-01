@@ -92,7 +92,8 @@ export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyW
         hourlyLogs: JSON.stringify(hourlyLogs),
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      queryClient.setQueryData(['/api/worksheets/today'], data);
       queryClient.invalidateQueries({ queryKey: ['/api/worksheets/today'] });
       toast({
         title: 'Worksheet created',
@@ -109,7 +110,8 @@ export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyW
         hourlyLogs: JSON.stringify(hourlyLogs),
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      queryClient.setQueryData(['/api/worksheets/today'], data);
       queryClient.invalidateQueries({ queryKey: ['/api/worksheets/today'] });
       toast({
         title: 'Worksheet updated',
@@ -178,15 +180,31 @@ export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyW
 
   const isSaving = createWorksheetMutation.isPending || updateWorksheetMutation.isPending;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // If there's no worksheet yet, save it first
     if (!worksheet) {
-      toast({
-        title: 'Save first',
-        description: 'Please save your worksheet before submitting',
-        variant: 'destructive',
-      });
+      try {
+        const newWorksheet = await createWorksheetMutation.mutateAsync();
+        // Now submit the newly created worksheet
+        if (newWorksheet && newWorksheet.id) {
+          await apiRequest('POST', `/api/worksheets/${newWorksheet.id}/submit`, {});
+          queryClient.invalidateQueries({ queryKey: ['/api/worksheets/today'] });
+          toast({
+            title: 'Worksheet submitted',
+            description: 'Your daily worksheet has been submitted',
+          });
+        }
+      } catch (error) {
+        toast({
+          title: 'Failed to submit',
+          description: 'Please try saving and submitting again',
+          variant: 'destructive',
+        });
+      }
       return;
     }
+    
+    // If worksheet exists, just submit it
     submitWorksheetMutation.mutate();
   };
 

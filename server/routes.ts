@@ -1174,10 +1174,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create new worksheet only if none exists
       const worksheet = await storage.createDailyWorksheet({
         userId: req.userId,
-        date: new Date().toISOString(),
+        date: new Date(),
         todos: req.body.todos || '[]',
         hourlyLogs: req.body.hourlyLogs || '[]',
-        status: 'in_progress',
+        status: 'draft',
       });
 
       res.status(201).json(worksheet);

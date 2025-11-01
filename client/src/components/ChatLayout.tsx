@@ -323,13 +323,13 @@ export default function ChatLayout({
         </div>
 
         <div className="p-3 border-b border-border flex-shrink-0 bg-background space-y-2">
-          <div className={`grid ${isAdmin ? 'grid-cols-5' : 'grid-cols-4'} gap-1 p-1 bg-muted rounded-lg`}>
+          <div className={`grid ${isAdmin ? 'grid-cols-5' : 'grid-cols-4'} gap-2 p-2 bg-muted/50 rounded-xl`}>
             <Button
               size="sm"
               variant={currentView === 'chat' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('chat')}
               data-testid="button-view-chat"
-              className="font-medium"
+              className="font-semibold rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
             >
               <MessageSquare className="w-4 h-4 mr-1.5" />
               <span className="text-xs">Chat</span>
@@ -339,7 +339,7 @@ export default function ChatLayout({
               variant={currentView === 'tasks' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('tasks')}
               data-testid="button-view-tasks"
-              className="font-medium"
+              className="font-semibold rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
             >
               <CheckCircle2 className="w-4 h-4 mr-1.5" />
               <span className="text-xs">Tasks</span>
@@ -349,7 +349,7 @@ export default function ChatLayout({
               variant={currentView === 'calendar' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('calendar')}
               data-testid="button-view-calendar"
-              className="font-medium"
+              className="font-semibold rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
             >
               <CalendarIcon className="w-4 h-4 mr-1.5" />
               <span className="text-xs">Calendar</span>
@@ -359,7 +359,7 @@ export default function ChatLayout({
               variant={currentView === 'worksheet' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('worksheet')}
               data-testid="button-view-worksheet"
-              className="font-medium"
+              className="font-semibold rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
             >
               <FileText className="w-4 h-4 mr-1.5" />
               <span className="text-xs">Work Log</span>
@@ -370,7 +370,7 @@ export default function ChatLayout({
                 variant={currentView === 'admin' ? 'default' : 'ghost'}
                 onClick={() => setCurrentView('admin')}
                 data-testid="button-view-admin"
-                className="font-medium"
+                className="font-semibold rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
               >
                 <Shield className="w-4 h-4 mr-1.5" />
                 <span className="text-xs">Admin</span>
@@ -383,7 +383,7 @@ export default function ChatLayout({
               variant={currentView === 'admin-worksheets' ? 'default' : 'outline'}
               onClick={() => setCurrentView('admin-worksheets')}
               data-testid="button-view-admin-worksheets"
-              className="w-full font-medium"
+              className="w-full font-semibold rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
             >
               <FileText className="w-4 h-4 mr-1.5" />
               Team Work Logs
@@ -766,12 +766,12 @@ export default function ChatLayout({
             </div>
 
             <div className="p-3 border-b border-border">
-              <div className="grid grid-cols-2 gap-2 p-1.5 bg-muted rounded-lg">
+              <div className="grid grid-cols-2 gap-2 p-2 bg-muted/50 rounded-xl">
                 <Button
                   variant={currentView === 'chat' ? 'default' : 'ghost'}
                   onClick={() => { setCurrentView('chat'); setIsMobileMenuOpen(false); }}
                   data-testid="button-view-chat-mobile"
-                  className="h-11 text-sm font-medium"
+                  className="h-11 text-sm font-semibold rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
                 >
                   <MessageSquare className="w-4 h-4 mr-1.5" />
                   Chat
@@ -780,7 +780,7 @@ export default function ChatLayout({
                   variant={currentView === 'tasks' ? 'default' : 'ghost'}
                   onClick={() => { setCurrentView('tasks'); setIsMobileMenuOpen(false); }}
                   data-testid="button-view-tasks-mobile"
-                  className="h-11 text-sm font-medium"
+                  className="h-11 text-sm font-semibold rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
                 >
                   <CheckCircle2 className="w-4 h-4 mr-1.5" />
                   Tasks
@@ -789,7 +789,7 @@ export default function ChatLayout({
                   variant={currentView === 'calendar' ? 'default' : 'ghost'}
                   onClick={() => { setCurrentView('calendar'); setIsMobileMenuOpen(false); }}
                   data-testid="button-view-calendar-mobile"
-                  className="h-11 text-sm font-medium"
+                  className="h-11 text-sm font-semibold rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
                 >
                   <CalendarIcon className="w-4 h-4 mr-1.5" />
                   Calendar
@@ -798,7 +798,7 @@ export default function ChatLayout({
                   variant={currentView === 'worksheet' ? 'default' : 'ghost'}
                   onClick={() => { setCurrentView('worksheet'); setIsMobileMenuOpen(false); }}
                   data-testid="button-view-worksheet-mobile"
-                  className="h-11 text-sm font-medium"
+                  className="h-11 text-sm font-semibold rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
                 >
                   <FileText className="w-4 h-4 mr-1.5" />
                   Work Log
@@ -809,7 +809,7 @@ export default function ChatLayout({
                       variant={currentView === 'admin' ? 'default' : 'ghost'}
                       onClick={() => { setCurrentView('admin'); setIsMobileMenuOpen(false); }}
                       data-testid="button-view-admin-mobile"
-                      className="h-11 text-sm font-medium col-span-2"
+                      className="h-11 text-sm font-semibold col-span-2 rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
                     >
                       <Shield className="w-4 h-4 mr-1.5" />
                       Admin Panel
@@ -818,7 +818,7 @@ export default function ChatLayout({
                       variant={currentView === 'admin-worksheets' ? 'default' : 'outline'}
                       onClick={() => { setCurrentView('admin-worksheets'); setIsMobileMenuOpen(false); }}
                       data-testid="button-view-admin-worksheets-mobile"
-                      className="h-11 text-sm font-medium col-span-2"
+                      className="h-11 text-sm font-semibold col-span-2 rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
                     >
                       <FileText className="w-4 h-4 mr-1.5" />
                       Team Work Logs
