@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { Toaster } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import LoginPage from './components/LoginPage';
 import ChatLayout from './components/ChatLayout';
@@ -50,6 +51,7 @@ function App() {
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
 
   const ws = useWebSocket(token);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (token) {
@@ -101,6 +103,15 @@ function App() {
       // Show notification if message is not from current user
       // and either user is on different conversation or window is not focused
       if (message.senderId !== currentUser.id) {
+        // Show toast notification for task reminders from Atul
+        if (message.senderName === 'Atul') {
+          toast({
+            title: "Task Reminder",
+            description: message.body || 'You have a task reminder',
+            duration: 8000,
+          });
+        }
+
         const shouldNotify = 
           message.conversationId !== activeConversationId || 
           !document.hasFocus();
