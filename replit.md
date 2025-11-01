@@ -36,9 +36,14 @@ Preferred communication style: Simple, everyday language.
 ### Key Features
 - **Group Conversations**: Group naming, member management, and optional message history access.
 - **Admin Tools**: User deletion, real-time user list updates, and task oversight.
-- **Meeting Calendar**: Integrated video conferencing, participant tracking, recurring meeting schedules, and AI-powered summarization.
+- **Meeting Calendar**: Full monthly grid view with clickable days, month navigation, and interactive meeting badges. Each meeting displays as a dropdown menu with three options:
+  - **Join Meeting**: Opens video conference in a new window (keeps main calendar accessible)
+  - **Edit**: Opens edit dialog with pre-filled meeting details for quick updates
+  - **Delete**: Removes the meeting with confirmation
+  - Popup blocker detection with user-friendly toast notifications
+  - Keyboard-accessible dropdown navigation using onSelect handlers
 - **AI Meeting Summaries**: GPT-4o (via Replit AI Integrations) generates structured, multi-language summaries with objectives, topics, outcomes, and participant guidance.
-- **Instant Video/Audio Calling**: Video call integration for direct and group calls with screen sharing and unlimited duration.
+- **Instant Video/Audio Calling**: Video call integration for direct and group calls with screen sharing and unlimited duration. Video meetings open in separate windows to maintain access to chat, tasks, and calendar during calls.
 - **Task Management**: Start/target dates, status tracking with completion percentage (0%, 25%, 50%, 75%, 100%), visual progress bars, status update reasons, task assignment, real-time WebSocket updates, automated reminders, and a professional UI. Admins can view and filter all tasks. All users can update task status, completion percentage, and remarks for collaborative workflow.
   - **Backend Implementation**: All 5 task retrieval methods in `server/storage.ts` (getTaskById, getTasksByCreator, getTasksByAssignee, getAllTasksForUser, getAllTasks) include `completionPercentage` and `statusUpdateReason` fields in their SELECT statements to ensure complete data delivery to API consumers.
 - **Professional UI Design**: Clean, responsive interface with a professional blue palette, solid colors, and enhanced visual hierarchy across all components (sidebar, conversation list, search, mobile).
