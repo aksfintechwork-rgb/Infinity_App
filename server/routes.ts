@@ -889,20 +889,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let tasks;
       
-      // Admins can filter by specific user
-      if (isAdmin && filterUserId) {
-        tasks = await storage.getAllTasksForUser(filterUserId);
-      }
-      // Admins can see all tasks
-      else if (isAdmin && filter === 'all') {
-        tasks = await storage.getAllTasks();
-      } else if (filter === 'created') {
-        tasks = await storage.getTasksByCreator(req.userId);
-      } else if (filter === 'assigned') {
-        tasks = await storage.getTasksByAssignee(req.userId);
+      if (isAdmin) {
+        // Admins can filter by specific user
+        if (filterUserId) {
+          tasks = await storage.getAllTasksForUser(filterUserId);
+        }
+        // Admins can see all tasks
+        else if (filter === 'all') {
+          tasks = await storage.getAllTasks();
+        }
+        // Admins can filter by created or assigned
+        else if (filter === 'created') {
+          tasks = await storage.getTasksByCreator(req.userId);
+        } else if (filter === 'assigned') {
+          tasks = await storage.getTasksByAssignee(req.userId);
+        } else {
+          // Default for admins: show all tasks
+          tasks = await storage.getAllTasks();
+        }
       } else {
-        // Default: show tasks user is involved in (creator or assignee)
-        tasks = await storage.getAllTasksForUser(req.userId);
+        // Regular users can ONLY see tasks assigned to them
+        tasks = await storage.getTasksByAssignee(req.userId);
       }
 
       res.json(tasks);
