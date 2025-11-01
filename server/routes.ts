@@ -751,9 +751,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (meetingData.meetingLink !== undefined) {
-        if (meetingData.meetingLink && !meetingData.meetingLink.startsWith('https://meet.jit.si/')) {
-          return res.status(400).json({ error: "Meeting link must be a Jitsi Meet URL" });
-        }
         updateData.meetingLink = meetingData.meetingLink;
       }
       
