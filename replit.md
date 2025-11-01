@@ -6,6 +6,20 @@ This project is an internal, real-time communication platform for SUPREMO TRADER
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## CRITICAL: Data Preservation Policy
+**MANDATORY RULE FOR ALL FUTURE UPDATES:**
+- ALL existing data MUST be preserved in every update - tasks, messages, meetings, conversations, user data, file attachments
+- NEVER delete or hide existing data when implementing new features
+- NEVER modify database schema in ways that lose data (e.g., changing column types, dropping columns)
+- Filter logic changes should ONLY affect what users SEE, not what data EXISTS in the database
+- UI updates should ONLY change visibility/presentation, never data deletion
+- When adding features: extend existing tables with new columns, don't replace or remove existing ones
+- Always use `npm run db:push --force` for schema changes to preserve existing data
+- **Data Integrity First**: Any update must ensure backward compatibility with all existing records
+- Excel import should ADD new tasks, not replace existing ones
+- Admin filters show/hide tasks from view, but all tasks remain in database
+- Regular user visibility restrictions are VIEW-LEVEL only - all their assigned tasks exist in database permanently
+
 ## System Architecture
 
 ### Frontend
