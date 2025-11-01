@@ -324,6 +324,16 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
       return;
     }
 
+    // Check if meeting is scheduled on Sunday (weekly off)
+    const meetingDate = new Date(startTime);
+    if (meetingDate.getDay() === 0) {
+      toast({
+        title: 'Weekly Off',
+        description: 'Meetings cannot be scheduled on Sundays. Please select a working day (Monday-Saturday).',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     // Validate recurring end date if pattern is selected
     if (recurrencePattern !== 'none' && !recurrenceEndDate) {
@@ -439,6 +449,16 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
       return;
     }
 
+    // Check if meeting is scheduled on Sunday (weekly off)
+    const meetingDate = new Date(startTime);
+    if (meetingDate.getDay() === 0) {
+      toast({
+        title: 'Weekly Off',
+        description: 'Meetings cannot be scheduled on Sundays. Please select a working day (Monday-Saturday).',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     if (recurrencePattern !== 'none' && !recurrenceEndDate) {
       toast({
@@ -501,8 +521,14 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
   const generateRecurringInstances = (meeting: Meeting) => {
     const instances: Array<Meeting & { isRecurringInstance?: boolean; originalMeetingId?: number }> = [];
     
-    // Always include the original meeting
-    instances.push(meeting);
+    // Check if original meeting is on Sunday - skip it if it is (weekly off)
+    const originalMeetingDate = toZonedTime(parseISO(meeting.startTime), IST_TIMEZONE);
+    const isOriginalMeetingSunday = originalMeetingDate.getDay() === 0;
+    
+    // Only include the original meeting if it's not on Sunday
+    if (!isOriginalMeetingSunday) {
+      instances.push(meeting);
+    }
     
     // If no recurrence, return just the original
     if (!meeting.recurrencePattern || meeting.recurrencePattern === 'none' || !meeting.recurrenceEndDate) {
@@ -529,6 +555,15 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
       // Stop if we've passed the end date
       if (isAfter(currentDate, endDate)) {
         break;
+      }
+      
+      // Skip Sundays (weekly off) - don't create recurring instances on Sundays
+      if (currentDate.getDay() === 0) {
+        // Safety check to prevent infinite loops
+        if (instances.length > 1000) {
+          break;
+        }
+        continue;
       }
       
       // Calculate the duration of the original meeting
@@ -563,6 +598,10 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
 
   // Get meetings for a specific day
   const getMeetingsForDay = (day: Date) => {
+    // Don't show meetings on Sundays (weekly off)
+    if (day.getDay() === 0) {
+      return [];
+    }
     return expandedMeetings.filter(meeting => {
       const meetingDateInIST = toZonedTime(parseISO(meeting.startTime), IST_TIMEZONE);
       return isSameDay(meetingDateInIST, day);
@@ -571,6 +610,16 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
 
   // Handle clicking on a day in the calendar
   const handleDayClick = (day: Date) => {
+    // Prevent scheduling meetings on Sundays (weekly off)
+    if (day.getDay() === 0) {
+      toast({
+        title: 'Weekly Off',
+        description: 'Meetings cannot be scheduled on Sundays. Please select a working day (Monday-Saturday).',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setSelectedDate(day);
     // Pre-fill the meeting start time with the selected day at 9 AM IST
     const defaultStartTime = new Date(day);
