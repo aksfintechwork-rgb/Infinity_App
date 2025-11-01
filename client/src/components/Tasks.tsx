@@ -229,9 +229,9 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
           return oldTasks.map(task => task.id === updatedTask.id ? updatedTask : task);
         }
       );
-      // Update the selected task with the fresh data
-      setSelectedTask(updatedTask);
+      // Close both the edit dialog and the task details dialog
       setIsEditDialogOpen(false);
+      setSelectedTask(null);
     },
   });
 
@@ -283,9 +283,9 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
           return oldTasks.map(task => task.id === updatedTask.id ? updatedTask : task);
         }
       );
-      // Update the selected task with the fresh data
-      setSelectedTask(updatedTask);
+      // Close both the status update dialog and the task details dialog
       setIsStatusUpdateDialogOpen(false);
+      setSelectedTask(null);
     },
   });
 
