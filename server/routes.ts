@@ -689,6 +689,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create Daily.co room dynamically
+  app.post("/api/daily/create-room", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { roomName } = req.body;
+      
+      if (!roomName) {
+        return res.status(400).json({ error: "Room name is required" });
+      }
+
+      const DAILY_API_KEY = process.env.DAILY_API_KEY;
+      if (!DAILY_API_KEY) {
+        return res.status(500).json({ error: "Daily.co API key not configured" });
+      }
+
+      // Create room via Daily.co API
+      const response = await fetch('https://api.daily.co/v1/rooms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${DAILY_API_KEY}`
+        },
+        body: JSON.stringify({
+          name: roomName,
+          privacy: 'public',
+          properties: {
+            enable_chat: true,
+            enable_screenshare: true,
+            start_video_off: false,
+            start_audio_off: false,
+            enable_prejoin_ui: false
+          }
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // If room already exists (409), that's okay - return success
+        if (response.status === 409) {
+          return res.json({ 
+            success: true, 
+            url: `https://supremotraders.daily.co/${roomName}`,
+            message: 'Room already exists'
+          });
+        }
+        console.error('Daily.co API error:', data);
+        return res.status(response.status).json({ error: data.error || 'Failed to create room' });
+      }
+
+      res.json({ 
+        success: true, 
+        url: data.url,
+        roomName: data.name
+      });
+    } catch (error) {
+      console.error("Create Daily.co room error:", error);
+      res.status(500).json({ error: "Failed to create room" });
+    }
+  });
+
   app.post("/api/meetings/:id/generate-summary", authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (!req.userId) {
