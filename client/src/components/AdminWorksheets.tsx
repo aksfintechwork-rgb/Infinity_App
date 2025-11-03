@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
-import { Menu, Clock } from 'lucide-react';
+import { Menu, Clock, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface User {
