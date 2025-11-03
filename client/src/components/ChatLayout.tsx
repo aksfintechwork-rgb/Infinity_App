@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
@@ -347,6 +347,41 @@ export default function ChatLayout({
     });
   };
 
+  const handleStartAudioCall = () => {
+    if (!activeConversation) return;
+    
+    // Generate a deterministic room name
+    const roomName = `supremo-audio-conv-${activeConversation.id}`;
+    
+    // Configure AUDIO-ONLY call with prejoin page
+    const config = [
+      'config.prejoinPageEnabled=true',
+      'config.startWithAudioMuted=false',
+      'config.startWithVideoMuted=true',
+      'interfaceConfig.SHOW_JITSI_WATERMARK=false',
+      'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
+      'interfaceConfig.SHOW_BRAND_WATERMARK=false',
+      'interfaceConfig.BRAND_WATERMARK_LINK=""',
+      'interfaceConfig.JITSI_WATERMARK_LINK=""',
+      'interfaceConfig.SHOW_POWERED_BY=false',
+      'interfaceConfig.DISPLAY_WELCOME_PAGE_CONTENT=false',
+      'interfaceConfig.DISPLAY_WELCOME_FOOTER=false',
+      'interfaceConfig.APP_NAME="SUPREMO TRADERS"',
+      'interfaceConfig.NATIVE_APP_NAME="SUPREMO TRADERS"',
+      'interfaceConfig.TOOLBAR_BUTTONS=["microphone", "hangup", "chat", "settings"]'
+    ].join('&');
+    
+    const meetingLink = `https://meet.jit.si/${roomName}#${config}`;
+    
+    // Open in new window
+    window.open(meetingLink, '_blank', 'noopener,noreferrer');
+    
+    toast({
+      title: 'Audio call started',
+      description: 'The audio call has been opened in a new window',
+    });
+  };
+
   return (
     <div className="flex h-screen bg-background">
       <div className="hidden md:flex w-80 border-r border-border flex-col bg-background">
@@ -577,24 +612,50 @@ export default function ChatLayout({
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {/* Audio Call Button - Desktop */}
                 <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleStartCall}
-                  className="hidden md:flex"
-                  data-testid="button-start-call"
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleStartAudioCall}
+                  className="hidden md:flex h-9 w-9"
+                  data-testid="button-audio-call"
+                  title="Start audio call"
                 >
-                  <Video className="w-4 h-4 mr-2" />
-                  {activeConversation.isGroup ? 'Start Group Call' : 'Start Call'}
+                  <Phone className="w-4 h-4" />
                 </Button>
+                
+                {/* Video Call Button - Desktop */}
                 <Button
-                  variant="default"
+                  variant="ghost"
                   size="icon"
                   onClick={handleStartCall}
-                  className="md:hidden h-11 w-11"
-                  data-testid="button-start-call-mobile"
+                  className="hidden md:flex h-9 w-9"
+                  data-testid="button-video-call"
+                  title="Start video call"
                 >
-                  <Video className="w-5 h-5" />
+                  <Video className="w-4 h-4" />
+                </Button>
+
+                {/* Mobile: Combined call buttons */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleStartAudioCall}
+                  className="md:hidden h-9 w-9"
+                  data-testid="button-audio-call-mobile"
+                  title="Audio call"
+                >
+                  <Phone className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleStartCall}
+                  className="md:hidden h-9 w-9"
+                  data-testid="button-video-call-mobile"
+                  title="Video call"
+                >
+                  <Video className="w-4 h-4" />
                 </Button>
                 {activeConversation.isGroup && (
                   <>

@@ -68,8 +68,13 @@ Preferred communication style: Simple, everyday language.
   - Keyboard-accessible dropdown navigation using onSelect handlers
   - Flexible time scheduling - set meetings at any custom time via intuitive datetime inputs
 - **AI Meeting Summaries**: GPT-4o (via Replit AI Integrations) generates structured, multi-language summaries with objectives, topics, outcomes, and participant guidance.
-- **Instant Video/Audio Calling**: Video call integration for direct and group calls with screen sharing and unlimited duration. Video meetings open in separate windows to maintain access to chat, tasks, and calendar during calls. Pre-join page enabled for camera/microphone access and device testing before joining meetings.
-  - **One-Click Audio Calls**: Quick phone call button appears on hover (desktop) or always visible (mobile) next to each individual user in the conversation list, enabling instant audio-only calls similar to Microsoft Teams. Audio calls start with video disabled and minimal toolbar for focused voice communication.
+- **Instant Video/Audio Calling**: Full calling functionality in chat header (Microsoft Teams-style) with separate phone and video icons.
+  - **Chat Header Buttons**: When chatting with anyone (individual or group), phone icon and video icon appear in the top-right header for instant calling
+  - **Audio Calls**: Click phone icon (📞) to start audio-only call with video disabled and minimal toolbar for focused voice communication
+  - **Video Calls**: Click video icon (🎥) to start full video call with camera and screen sharing
+  - **Pre-join Screen**: Both call types show pre-join page for camera/microphone testing before joining
+  - **New Window**: Calls open in separate windows to maintain access to chat, tasks, and calendar during calls
+  - **Unlimited Duration**: No time limits on any calls
 - **Task Management**: Start/target dates, status tracking with completion percentage (0%, 25%, 50%, 75%, 100%), visual progress bars, status update reasons, task assignment, real-time WebSocket updates, customizable automated reminders, and a professional UI. 
   - **Task Visibility**: Regular users see ALL tasks they're involved in (tasks they created OR tasks assigned to them). Admins can view and filter all tasks (all tasks, created by them, assigned to them, or by specific team member).
   - **Task Editing**: All users can update task status, completion percentage, and remarks for tasks assigned to them. Admins can edit any task.
