@@ -1077,7 +1077,7 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                     )}
                   </div>
                   <div className="w-full space-y-1.5">
-                    {dayMeetings.slice(0, 3).map(meeting => (
+                    {dayMeetings.map(meeting => (
                       <DropdownMenu key={meeting.id}>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                           <button
@@ -1118,11 +1118,6 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                         </DropdownMenuContent>
                       </DropdownMenu>
                     ))}
-                    {dayMeetings.length > 3 && (
-                      <div className="text-sm font-medium text-muted-foreground px-2">
-                        +{dayMeetings.length - 3} more
-                      </div>
-                    )}
                   </div>
                 </button>
               );
