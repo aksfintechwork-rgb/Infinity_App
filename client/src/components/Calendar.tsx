@@ -396,8 +396,9 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Open in new window - Daily.co instant join with NO lobby!
-      const newWindow = window.open(data.url, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
+      // Open in new window with user name - Daily.co instant join with NO lobby!
+      const meetingUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}`;
+      const newWindow = window.open(meetingUrl, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
       
       // Check if popup was blocked
       if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
@@ -518,8 +519,9 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Open in new window
-      const newWindow = window.open(data.url, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
+      // Open in new window with user name
+      const meetingUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}`;
+      const newWindow = window.open(meetingUrl, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
       
       if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
         toast({

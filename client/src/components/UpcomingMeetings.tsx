@@ -14,7 +14,16 @@ interface MeetingWithParticipants extends Meeting {
   participantNames: string[];
 }
 
-export function UpcomingMeetings() {
+interface UpcomingMeetingsProps {
+  currentUser: {
+    id: number;
+    name: string;
+    loginId: string;
+    role: string;
+  };
+}
+
+export function UpcomingMeetings({ currentUser }: UpcomingMeetingsProps) {
   const { toast } = useToast();
 
   const { data: meetings = [] } = useQuery<MeetingWithParticipants[]>({
@@ -65,8 +74,9 @@ export function UpcomingMeetings() {
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Daily.co - instant join with NO lobby!
-      const newWindow = window.open(data.url, '_blank', 'noopener,noreferrer');
+      // Daily.co - instant join with NO lobby and user name!
+      const meetingUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}`;
+      const newWindow = window.open(meetingUrl, '_blank', 'noopener,noreferrer');
       
       if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
         toast({

@@ -381,13 +381,15 @@ export default function ChatLayout({
       // Send incoming call notification to other members via WebSocket
       if (ws?.isConnected) {
         ws.send({
-          type: 'incoming-call',
-          conversationId: activeConversation.id,
-          roomName: roomName,
-          callType: 'video',
-          from: {
-            id: currentUser.id,
-            name: currentUser.name
+          type: 'incoming_call',
+          data: {
+            conversationId: activeConversation.id,
+            roomName: roomName,
+            callType: 'video',
+            from: {
+              id: currentUser.id,
+              name: currentUser.name
+            }
           }
         });
       }
@@ -431,13 +433,15 @@ export default function ChatLayout({
       // Send incoming call notification to other members via WebSocket
       if (ws?.isConnected) {
         ws.send({
-          type: 'incoming-call',
-          conversationId: conversationId,
-          roomName: roomName,
-          callType: 'audio',
-          from: {
-            id: currentUser.id,
-            name: currentUser.name
+          type: 'incoming_call',
+          data: {
+            conversationId: conversationId,
+            roomName: roomName,
+            callType: 'audio',
+            from: {
+              id: currentUser.id,
+              name: currentUser.name
+            }
           }
         });
       }
@@ -480,13 +484,15 @@ export default function ChatLayout({
       // Send incoming call notification to other members via WebSocket
       if (ws?.isConnected) {
         ws.send({
-          type: 'incoming-call',
-          conversationId: activeConversation.id,
-          roomName: roomName,
-          callType: 'audio',
-          from: {
-            id: currentUser.id,
-            name: currentUser.name
+          type: 'incoming_call',
+          data: {
+            conversationId: activeConversation.id,
+            roomName: roomName,
+            callType: 'audio',
+            from: {
+              id: currentUser.id,
+              name: currentUser.name
+            }
           }
         });
       }
@@ -607,7 +613,7 @@ export default function ChatLayout({
               </Button>
             </div>
 
-            <UpcomingMeetings />
+            <UpcomingMeetings currentUser={currentUser} />
 
             <ScrollArea className="flex-1">
               <div className="p-2 space-y-1">
