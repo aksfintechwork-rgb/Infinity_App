@@ -314,9 +314,8 @@ export default function ChatLayout({
   const handleAcceptCall = () => {
     if (!incomingCall) return;
 
-    // Configure call - FORCE skip ALL waiting screens with moderator privileges
-    const isAudioOnly = incomingCall.callType === 'audio';
-    const meetingLink = `https://meet.jit.si/${incomingCall.roomName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=${isAudioOnly}&userInfo.displayName="${currentUser.loginId}"&userInfo.moderator=true`;
+    // Daily.co room URL - instant join!
+    const meetingLink = `https://supremotraders.daily.co/${incomingCall.roomName}`;
 
     // Open in new window and join immediately
     window.open(meetingLink, '_blank', 'noopener,noreferrer');
@@ -346,12 +345,12 @@ export default function ChatLayout({
   const handleStartCall = () => {
     if (!activeConversation) return;
     
-    // Generate a deterministic room name so all participants join the same call
-    // Using conversation ID ensures everyone in the same conversation joins the same room
-    const roomName = `supremo-video-conv-${activeConversation.id}`;
+    // Generate a deterministic room name for Daily.co
+    // Using conversation ID ensures everyone joins the same room
+    const roomName = `supremo-video-${activeConversation.id}`;
     
-    // Configure video call - FORCE skip ALL waiting screens with moderator privileges
-    const meetingLink = `https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&userInfo.displayName="${currentUser.loginId}"&userInfo.moderator=true`;
+    // Daily.co room URL - NO lobby, NO prejoin, instant join!
+    const meetingLink = `https://supremotraders.daily.co/${roomName}`;
     
     // Open in new window - 1 CLICK JOIN!
     window.open(meetingLink, '_blank', 'noopener,noreferrer');
@@ -367,11 +366,11 @@ export default function ChatLayout({
     const conversation = conversations.find(c => c.id === conversationId);
     if (!conversation) return;
 
-    // Generate a deterministic room name
-    const roomName = `supremo-audio-conv-${conversationId}`;
+    // Generate a deterministic room name for Daily.co
+    const roomName = `supremo-audio-${conversationId}`;
     
-    // Configure AUDIO-ONLY call - FORCE skip ALL waiting screens with moderator privileges
-    const meetingLink = `https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=true&userInfo.displayName="${currentUser.loginId}"&userInfo.moderator=true`;
+    // Daily.co room URL - instant join!
+    const meetingLink = `https://supremotraders.daily.co/${roomName}`;
     
     // Open in new window
     window.open(meetingLink, '_blank', 'noopener,noreferrer');
@@ -386,11 +385,11 @@ export default function ChatLayout({
   const handleStartAudioCall = () => {
     if (!activeConversation) return;
     
-    // Generate a deterministic room name
-    const roomName = `supremo-audio-conv-${activeConversation.id}`;
+    // Generate a deterministic room name for Daily.co
+    const roomName = `supremo-audio-${activeConversation.id}`;
     
-    // Configure AUDIO-ONLY call - FORCE skip ALL waiting screens with moderator privileges
-    const meetingLink = `https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=true&userInfo.displayName="${currentUser.loginId}"&userInfo.moderator=true`;
+    // Daily.co room URL - instant join!
+    const meetingLink = `https://supremotraders.daily.co/${roomName}`;
     
     // Open in new window - 1 CLICK JOIN!
     window.open(meetingLink, '_blank', 'noopener,noreferrer');

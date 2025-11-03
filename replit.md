@@ -59,7 +59,7 @@ Preferred communication style: Simple, everyday language.
     - **Join Meeting**: Opens video conference in a new window (keeps main calendar accessible)
     - **Edit**: Opens edit dialog with pre-filled meeting details for quick time and participant updates
     - **Delete**: Removes the meeting with confirmation
-  - **Auto-Generated Meeting Links**: Jitsi video links created automatically when joining - no technical room names visible to users
+  - **Auto-Generated Meeting Links**: Daily.co video links created automatically when joining - no technical room names visible to users
   - **Meeting Capacity**: Supports up to 35 participants (recommended) or 75 maximum with unlimited duration
   - **Recurring Meetings**: Daily, weekly, or monthly patterns with automatic display across all scheduled occurrence dates
   - **Meeting Reminders**: Automated reminder system sends chat notifications to all participants at 15 minutes and 5 minutes before each meeting. Reminders sent via system user "Atul" with service checking every minute for upcoming meetings.
@@ -72,7 +72,7 @@ Preferred communication style: Simple, everyday language.
   - **Chat Header Buttons**: When chatting with anyone (individual or group), phone icon and video icon appear in the top-right header for instant calling
   - **Audio Calls**: Click phone icon (📞) to start audio-only call with video disabled and minimal toolbar for focused voice communication
   - **Video Calls**: Click video icon (🎥) to start full video call with camera and screen sharing
-  - **Direct Join**: Both call types open Jitsi meeting in new window and join immediately - NO pre-join screen, NO lobby, NO waiting - just 1 click!
+  - **Direct Join**: Both call types open Daily.co meeting in new window and join immediately - NO pre-join screen, NO lobby, NO waiting - just 1 click!
   - **New Window**: Calls open in separate windows to maintain access to chat, tasks, and calendar during calls
   - **Unlimited Duration**: No time limits on any calls
 - **Task Management**: Start/target dates, status tracking with completion percentage (0%, 25%, 50%, 75%, 100%), visual progress bars, status update reasons, task assignment, real-time WebSocket updates, customizable automated reminders, and a professional UI. 
@@ -126,7 +126,7 @@ Preferred communication style: Simple, everyday language.
 
 -   **Neon Database**: Serverless PostgreSQL hosting.
 -   **OpenAI via Replit AI Integrations**: GPT-4o for AI meeting summarization.
+-   **Daily.co**: Video conferencing platform for team meetings and instant audio/video calls with NO lobby screens.
 -   **Google Fonts**: Inter font family.
--   **Video Conferencing**: Integrated for team meetings and calls.
 -   **File Storage**: Local filesystem (`uploads/` directory) with Multer.
 -   **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`, `xlsx` (for Excel file handling).

@@ -362,44 +362,17 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
     });
   };
 
-  // Helper function to add branding-hiding config to video call URL
-  const addVideoConfig = (url: string) => {
-    const config = [
-      'config.prejoinPageEnabled=true',
-      'config.startWithAudioMuted=false',
-      'config.startWithVideoMuted=false',
-      'interfaceConfig.SHOW_JITSI_WATERMARK=false',
-      'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
-      'interfaceConfig.SHOW_BRAND_WATERMARK=false',
-      'interfaceConfig.BRAND_WATERMARK_LINK=""',
-      'interfaceConfig.JITSI_WATERMARK_LINK=""',
-      'interfaceConfig.SHOW_POWERED_BY=false',
-      'interfaceConfig.DISPLAY_WELCOME_PAGE_CONTENT=false',
-      'interfaceConfig.DISPLAY_WELCOME_FOOTER=false',
-      'interfaceConfig.APP_NAME="SUPREMO TRADERS"',
-      'interfaceConfig.NATIVE_APP_NAME="SUPREMO TRADERS"'
-    ].join('&');
-    
-    // Check if URL already has a hash fragment
-    if (url.includes('#')) {
-      return `${url}&${config}`;
-    } else {
-      return `${url}#${config}`;
-    }
-  };
-
   const handleJoinMeeting = (link?: string) => {
     let videoUrl: string;
     if (link) {
-      videoUrl = addVideoConfig(link);
+      videoUrl = link;
     } else {
-      // Generate a random room
+      // Generate a random room for Daily.co
       const roomName = `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      const videoLink = `https://meet.jit.si/${roomName}`;
-      videoUrl = addVideoConfig(videoLink);
+      videoUrl = `https://supremotraders.daily.co/${roomName}`;
     }
     
-    // Open in new window
+    // Open in new window - Daily.co instant join with NO lobby!
     const newWindow = window.open(videoUrl, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
     
     // Check if popup was blocked
@@ -414,8 +387,7 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
 
   const handleGenerateMeetingLink = () => {
     const roomName = `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    const baseLink = `https://meet.jit.si/${roomName}`;
-    setMeetingLink(addVideoConfig(baseLink));
+    setMeetingLink(`https://supremotraders.daily.co/${roomName}`);
   };
 
   const handleEditMeeting = (meeting: Meeting) => {
@@ -492,7 +464,7 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
       handleJoinMeeting(meeting.meetingLink);
     } else {
       const roomName = `supremo-meeting-${meeting.id}`;
-      const videoLink = `https://meet.jit.si/${roomName}`;
+      const videoLink = `https://supremotraders.daily.co/${roomName}`;
       handleJoinMeeting(videoLink);
     }
   };

@@ -38,26 +38,11 @@ export function UpcomingMeetings() {
     .slice(0, 3); // Show max 3 upcoming meetings
 
   const handleJoinMeeting = (meeting: MeetingWithParticipants) => {
-    // Auto-generate meeting link if not present
+    // Auto-generate Daily.co meeting link if not present
     const roomName = `supremo-meeting-${meeting.id}`;
-    const config = [
-      'config.prejoinPageEnabled=false',
-      'config.startWithAudioMuted=false',
-      'config.startWithVideoMuted=false',
-      'interfaceConfig.SHOW_JITSI_WATERMARK=false',
-      'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
-      'interfaceConfig.SHOW_BRAND_WATERMARK=false',
-      'interfaceConfig.BRAND_WATERMARK_LINK=""',
-      'interfaceConfig.JITSI_WATERMARK_LINK=""',
-      'interfaceConfig.SHOW_POWERED_BY=false',
-      'interfaceConfig.DISPLAY_WELCOME_PAGE_CONTENT=false',
-      'interfaceConfig.DISPLAY_WELCOME_FOOTER=false',
-      'interfaceConfig.APP_NAME="SUPREMO TRADERS"',
-      'interfaceConfig.NATIVE_APP_NAME="SUPREMO TRADERS"'
-    ].join('&');
+    const meetingLink = meeting.meetingLink || `https://supremotraders.daily.co/${roomName}`;
     
-    const meetingLink = meeting.meetingLink || `https://meet.jit.si/${roomName}#${config}`;
-    
+    // Daily.co - instant join with NO lobby!
     const newWindow = window.open(meetingLink, '_blank', 'noopener,noreferrer');
     
     if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
