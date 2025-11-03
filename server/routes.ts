@@ -1353,6 +1353,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const message = JSON.parse(data.toString());
         
+        if (message.type === 'incoming_call') {
+          // Broadcast incoming call notification to all members of the conversation
+          const { conversationId, callType, roomName, from } = message.data;
+          
+          // Get conversation to find all members
+          const conversation = await storage.getConversationById(conversationId);
+          if (!conversation) return;
+          
+          // Parse member IDs
+          const memberIds = JSON.parse(conversation.memberIds as any);
+          
+          // Broadcast to all members (they will filter out their own call on the client)
+          wss.clients.forEach((client: any) => {
+            if (client.readyState === ws.OPEN && memberIds.includes(client.userId)) {
+              client.send(JSON.stringify({
+                type: 'incoming_call',
+                data: {
+                  conversationId,
+                  callType,
+                  roomName,
+                  from,
+                },
+              }));
+            }
+          });
+          return;
+        }
+        
         if (message.type === 'new_message') {
           const validation = insertMessageSchema.extend({
             conversationId: z.number(),

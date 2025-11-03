@@ -17,6 +17,7 @@ import Tasks from './Tasks';
 import DailyWorksheet from './DailyWorksheet';
 import AdminWorksheets from './AdminWorksheets';
 import { UpcomingMeetings } from './UpcomingMeetings';
+import IncomingCallModal from './IncomingCallModal';
 import logoImage from '@assets/image_1761659890673.png';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -99,6 +100,14 @@ export default function ChatLayout({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastConversationIdRef = useRef<number | null>(null);
+  
+  // Incoming call state
+  const [incomingCall, setIncomingCall] = useState<{
+    from: { id: number; name: string; avatar?: string };
+    conversationId: number;
+    callType: 'audio' | 'video';
+    roomName: string;
+  } | null>(null);
 
   const isAdmin = currentUser.role === 'admin';
   const token = localStorage.getItem('auth_token') || '';
@@ -274,6 +283,80 @@ export default function ChatLayout({
     }
   }, [isDark]);
 
+  // WebSocket listener for incoming calls
+  useEffect(() => {
+    if (!ws?.on) return;
+
+    const unsubscribe = ws.on('incoming_call', (data: any) => {
+      // Don't show notification if the call is from me
+      if (data.from.id === currentUser.id) return;
+
+      // Check if this user is part of the conversation
+      const conversation = conversations.find(c => c.id === data.conversationId);
+      if (!conversation) return;
+
+      // Show incoming call notification
+      setIncomingCall({
+        from: data.from,
+        conversationId: data.conversationId,
+        callType: data.callType,
+        roomName: data.roomName,
+      });
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [ws, currentUser.id, conversations]);
+
+  // Handle accepting incoming call
+  const handleAcceptCall = () => {
+    if (!incomingCall) return;
+
+    const config = [
+      'config.prejoinPageEnabled=false',
+      'config.startWithAudioMuted=false',
+      `config.startWithVideoMuted=${incomingCall.callType === 'audio'}`,
+      'interfaceConfig.SHOW_JITSI_WATERMARK=false',
+      'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
+      'interfaceConfig.SHOW_BRAND_WATERMARK=false',
+      'interfaceConfig.BRAND_WATERMARK_LINK=""',
+      'interfaceConfig.JITSI_WATERMARK_LINK=""',
+      'interfaceConfig.SHOW_POWERED_BY=false',
+      'interfaceConfig.DISPLAY_WELCOME_PAGE_CONTENT=false',
+      'interfaceConfig.DISPLAY_WELCOME_FOOTER=false',
+      'interfaceConfig.APP_NAME="SUPREMO TRADERS"',
+      'interfaceConfig.NATIVE_APP_NAME="SUPREMO TRADERS"',
+      incomingCall.callType === 'audio' ? 'interfaceConfig.TOOLBAR_BUTTONS=["microphone", "hangup", "chat", "settings"]' : ''
+    ].filter(Boolean).join('&');
+
+    const meetingLink = `https://meet.jit.si/${incomingCall.roomName}#${config}`;
+
+    // Open in new window and join immediately
+    window.open(meetingLink, '_blank', 'noopener,noreferrer');
+
+    toast({
+      title: 'Joined call',
+      description: `Connected to ${incomingCall.from.name}`,
+    });
+
+    // Close the incoming call modal
+    setIncomingCall(null);
+  };
+
+  // Handle rejecting incoming call
+  const handleRejectCall = () => {
+    if (!incomingCall) return;
+
+    toast({
+      title: 'Call declined',
+      description: `Declined call from ${incomingCall.from.name}`,
+    });
+
+    // Close the incoming call modal
+    setIncomingCall(null);
+  };
+
   const handleStartCall = () => {
     if (!activeConversation) return;
     
@@ -281,9 +364,26 @@ export default function ChatLayout({
     // Using conversation ID ensures everyone in the same conversation joins the same room
     const roomName = `supremo-chat-conv-${activeConversation.id}`;
     
-    // Configure video call to enable prejoin page for camera/mic access
+    // Send WebSocket notification to all members in the conversation
+    if (ws?.isConnected) {
+      ws.send({
+        type: 'incoming_call',
+        data: {
+          conversationId: activeConversation.id,
+          callType: 'video',
+          roomName,
+          from: {
+            id: currentUser.id,
+            name: currentUser.name,
+            avatar: currentUser.avatar,
+          },
+        },
+      });
+    }
+    
+    // Configure video call - no prejoin for immediate connection
     const config = [
-      'config.prejoinPageEnabled=true',
+      'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
       'config.startWithVideoMuted=false',
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',
@@ -300,12 +400,12 @@ export default function ChatLayout({
     
     const meetingLink = `https://meet.jit.si/${roomName}#${config}`;
     
-    // Open in new window for unlimited duration
+    // Open in new window for unlimited duration - join immediately
     window.open(meetingLink, '_blank', 'noopener,noreferrer');
     
     toast({
-      title: 'Meeting started',
-      description: 'The video call has been opened in a new window',
+      title: 'Video call started',
+      description: 'Calling ' + (activeConversation.title || activeConversation.members),
     });
   };
 
@@ -353,9 +453,26 @@ export default function ChatLayout({
     // Generate a deterministic room name
     const roomName = `supremo-audio-conv-${activeConversation.id}`;
     
+    // Send WebSocket notification to all members in the conversation
+    if (ws?.isConnected) {
+      ws.send({
+        type: 'incoming_call',
+        data: {
+          conversationId: activeConversation.id,
+          callType: 'audio',
+          roomName,
+          from: {
+            id: currentUser.id,
+            name: currentUser.name,
+            avatar: currentUser.avatar,
+          },
+        },
+      });
+    }
+    
     // Configure AUDIO-ONLY call with prejoin page
     const config = [
-      'config.prejoinPageEnabled=true',
+      'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
       'config.startWithVideoMuted=true',
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',
@@ -373,12 +490,12 @@ export default function ChatLayout({
     
     const meetingLink = `https://meet.jit.si/${roomName}#${config}`;
     
-    // Open in new window
+    // Open in new window - no prejoin, join immediately
     window.open(meetingLink, '_blank', 'noopener,noreferrer');
     
     toast({
       title: 'Audio call started',
-      description: 'The audio call has been opened in a new window',
+      description: 'Calling ' + (activeConversation.title || activeConversation.members),
     });
   };
 
@@ -989,6 +1106,18 @@ export default function ChatLayout({
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Incoming Call Modal */}
+      {incomingCall && (
+        <IncomingCallModal
+          isOpen={true}
+          callerName={incomingCall.from.name}
+          callerAvatar={incomingCall.from.avatar}
+          callType={incomingCall.callType}
+          onAccept={handleAcceptCall}
+          onReject={handleRejectCall}
+        />
+      )}
     </div>
   );
 }
