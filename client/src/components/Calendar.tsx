@@ -365,7 +365,7 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
   // Helper function to add branding-hiding config to video call URL
   const addVideoConfig = (url: string) => {
     const config = [
-      'config.prejoinPageEnabled=false',
+      'config.prejoinPageEnabled=true',
       'config.startWithAudioMuted=false',
       'config.startWithVideoMuted=false',
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',

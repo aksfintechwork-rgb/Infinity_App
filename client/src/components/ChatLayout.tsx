@@ -281,9 +281,9 @@ export default function ChatLayout({
     // Using conversation ID ensures everyone in the same conversation joins the same room
     const roomName = `supremo-chat-conv-${activeConversation.id}`;
     
-    // Configure video call to hide branding and customize interface
+    // Configure video call to enable prejoin page for camera/mic access
     const config = [
-      'config.prejoinPageEnabled=false',
+      'config.prejoinPageEnabled=true',
       'config.startWithAudioMuted=false',
       'config.startWithVideoMuted=false',
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',
