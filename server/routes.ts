@@ -730,12 +730,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = await response.json();
 
       if (!response.ok) {
-        // If room already exists (409), that's okay - return success
-        if (response.status === 409) {
+        // If room already exists, return existing room URL
+        if (response.status === 409 || (response.status === 400 && data.info?.includes('already exists'))) {
           return res.json({ 
             success: true, 
             url: `https://supremotraders.daily.co/${roomName}`,
-            message: 'Room already exists'
+            message: 'Using existing room'
           });
         }
         console.error('Daily.co API error:', data);
