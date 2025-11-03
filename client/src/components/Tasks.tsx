@@ -178,8 +178,8 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
         else if (filterView === 'all') {
           queryParams = '?filter=all';
         }
-        // Regular filter views
-        else if (filterView !== 'all') {
+        // Regular filter views (created or assigned)
+        else {
           queryParams = `?filter=${filterView}`;
         }
       }
@@ -197,15 +197,27 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
 
   const createTaskMutation = useMutation({
     mutationFn: async (data: TaskFormValues) => {
-      return apiRequest('POST', '/api/tasks', {
+      const response = await apiRequest('POST', '/api/tasks', {
         ...data,
         assignedTo: data.assignedTo ? parseInt(data.assignedTo) : undefined,
       });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
       setIsCreateDialogOpen(false);
       form.reset();
+      toast({
+        title: 'Task created successfully',
+        description: 'Your task has been created and team members have been notified.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to create task',
+        description: error.message || 'Please try again.',
+        variant: 'destructive',
+      });
     },
   });
 

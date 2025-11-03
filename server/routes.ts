@@ -28,7 +28,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Helper function to broadcast task updates (only to authorized users)
-  const broadcastTaskUpdate = (type: 'task_created' | 'task_updated' | 'task_deleted', taskData: any, authorizedUserIds: number[]) => {
+  const broadcastTaskUpdate = (type: 'task_created' | 'task_updated' | 'task_deleted' | 'task_status_updated', taskData: any, authorizedUserIds: number[]) => {
     if (!wss) return;
     
     // Require non-empty authorized user IDs to prevent inadvertent broadcasts
@@ -867,13 +867,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Failed to retrieve created task" });
       }
       
-      // Collect authorized user IDs
+      // Collect authorized user IDs (creator and assignee)
       const authorizedUserIds = [taskDetails.createdBy];
       if (taskDetails.assignedTo) {
         authorizedUserIds.push(taskDetails.assignedTo);
       }
       
-      broadcastTaskUpdate('task_created', taskDetails, authorizedUserIds);
+      // Get all admin user IDs for real-time updates
+      const adminIds = (await storage.getAllUsers()).filter(u => u.role === 'admin').map(u => u.id);
+      
+      // Broadcast to both authorized users and admins for real-time updates
+      const allRecipients = Array.from(new Set([...authorizedUserIds, ...adminIds]));
+      broadcastTaskUpdate('task_created', taskDetails, allRecipients);
       
       res.status(201).json(taskDetails);
     } catch (error) {
@@ -1050,7 +1055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const adminIds = allAdmins.map(admin => admin.id);
         
         // Broadcast to both authorized users and admins
-        const allRecipients = [...new Set([...authorizedUserIds, ...adminIds])];
+        const allRecipients = Array.from(new Set([...authorizedUserIds, ...adminIds]));
         broadcastTaskUpdate('task_status_updated', {
           ...taskDetails,
           updatedBy: user?.name || 'Unknown',
