@@ -317,6 +317,7 @@ export default function ChatLayout({
       'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
       `config.startWithVideoMuted=${incomingCall.callType === 'audio'}`,
+      `userInfo.displayName="${currentUser.loginId}"`,
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',
       'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
       'interfaceConfig.SHOW_BRAND_WATERMARK=false',
@@ -381,11 +382,12 @@ export default function ChatLayout({
       });
     }
     
-    // Configure video call - no prejoin for immediate connection
+    // Configure video call - skip prejoin and use login ID as display name
     const config = [
       'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
       'config.startWithVideoMuted=false',
+      `userInfo.displayName="${currentUser.loginId}"`,
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',
       'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
       'interfaceConfig.SHOW_BRAND_WATERMARK=false',
@@ -417,11 +419,12 @@ export default function ChatLayout({
     // Generate a deterministic room name
     const roomName = `supremo-audio-conv-${conversationId}`;
     
-    // Configure AUDIO-ONLY call with prejoin page
+    // Configure AUDIO-ONLY call - skip prejoin and use login ID as display name
     const config = [
-      'config.prejoinPageEnabled=true',
+      'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
       'config.startWithVideoMuted=true',
+      `userInfo.displayName="${currentUser.loginId}"`,
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',
       'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
       'interfaceConfig.SHOW_BRAND_WATERMARK=false',
@@ -470,11 +473,12 @@ export default function ChatLayout({
       });
     }
     
-    // Configure AUDIO-ONLY call with prejoin page
+    // Configure AUDIO-ONLY call - skip prejoin and use login ID as display name
     const config = [
       'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
       'config.startWithVideoMuted=true',
+      `userInfo.displayName="${currentUser.loginId}"`,
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',
       'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
       'interfaceConfig.SHOW_BRAND_WATERMARK=false',

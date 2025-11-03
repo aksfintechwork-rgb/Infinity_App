@@ -13,6 +13,7 @@ import { requestNotificationPermission, notifyNewMessage, initializeAudio } from
 interface User {
   id: number;
   name: string;
+  loginId: string;
   email?: string;
   role: string;
   avatar?: string;
