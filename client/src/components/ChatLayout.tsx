@@ -366,24 +366,7 @@ export default function ChatLayout({
     
     // Generate a deterministic room name so all participants join the same call
     // Using conversation ID ensures everyone in the same conversation joins the same room
-    const roomName = `supremo-chat-conv-${activeConversation.id}`;
-    
-    // Send WebSocket notification to all members in the conversation
-    if (ws?.isConnected) {
-      ws.send({
-        type: 'incoming_call',
-        data: {
-          conversationId: activeConversation.id,
-          callType: 'video',
-          roomName,
-          from: {
-            id: currentUser.id,
-            name: currentUser.name,
-            avatar: currentUser.avatar,
-          },
-        },
-      });
-    }
+    const roomName = `supremo-video-conv-${activeConversation.id}`;
     
     // Configure video call - skip prejoin, lobby, and use login ID as display name
     const config = [
@@ -408,12 +391,12 @@ export default function ChatLayout({
     
     const meetingLink = `https://meet.jit.si/${roomName}#${config}`;
     
-    // Open in new window for unlimited duration - join immediately
+    // Open in new window - 1 CLICK JOIN!
     window.open(meetingLink, '_blank', 'noopener,noreferrer');
     
     toast({
       title: 'Video call started',
-      description: 'Calling ' + (activeConversation.title || activeConversation.members),
+      description: 'Joining call with ' + (activeConversation.title || activeConversation.members),
     });
   };
 
@@ -465,23 +448,6 @@ export default function ChatLayout({
     // Generate a deterministic room name
     const roomName = `supremo-audio-conv-${activeConversation.id}`;
     
-    // Send WebSocket notification to all members in the conversation
-    if (ws?.isConnected) {
-      ws.send({
-        type: 'incoming_call',
-        data: {
-          conversationId: activeConversation.id,
-          callType: 'audio',
-          roomName,
-          from: {
-            id: currentUser.id,
-            name: currentUser.name,
-            avatar: currentUser.avatar,
-          },
-        },
-      });
-    }
-    
     // Configure AUDIO-ONLY call - skip prejoin, lobby, and use login ID as display name
     const config = [
       'config.prejoinPageEnabled=false',
@@ -506,12 +472,12 @@ export default function ChatLayout({
     
     const meetingLink = `https://meet.jit.si/${roomName}#${config}`;
     
-    // Open in new window - no prejoin, join immediately
+    // Open in new window - 1 CLICK JOIN!
     window.open(meetingLink, '_blank', 'noopener,noreferrer');
     
     toast({
       title: 'Audio call started',
-      description: 'Calling ' + (activeConversation.title || activeConversation.members),
+      description: 'Joining call with ' + (activeConversation.title || activeConversation.members),
     });
   };
 

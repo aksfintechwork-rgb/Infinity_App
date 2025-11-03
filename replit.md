@@ -68,11 +68,11 @@ Preferred communication style: Simple, everyday language.
   - Keyboard-accessible dropdown navigation using onSelect handlers
   - Flexible time scheduling - set meetings at any custom time via intuitive datetime inputs
 - **AI Meeting Summaries**: GPT-4o (via Replit AI Integrations) generates structured, multi-language summaries with objectives, topics, outcomes, and participant guidance.
-- **Instant Video/Audio Calling**: Full calling functionality in chat header (Microsoft Teams-style) with separate phone and video icons.
+- **Instant Video/Audio Calling**: Full calling functionality in chat header (Microsoft Teams-style) with separate phone and video icons - **1 CLICK TO JOIN!**
   - **Chat Header Buttons**: When chatting with anyone (individual or group), phone icon and video icon appear in the top-right header for instant calling
   - **Audio Calls**: Click phone icon (📞) to start audio-only call with video disabled and minimal toolbar for focused voice communication
   - **Video Calls**: Click video icon (🎥) to start full video call with camera and screen sharing
-  - **Pre-join Screen**: Both call types show pre-join page for camera/microphone testing before joining
+  - **Direct Join**: Both call types open Jitsi meeting in new window and join immediately - NO pre-join screen, NO lobby, NO waiting - just 1 click!
   - **New Window**: Calls open in separate windows to maintain access to chat, tasks, and calendar during calls
   - **Unlimited Duration**: No time limits on any calls
 - **Task Management**: Start/target dates, status tracking with completion percentage (0%, 25%, 50%, 75%, 100%), visual progress bars, status update reasons, task assignment, real-time WebSocket updates, customizable automated reminders, and a professional UI. 
