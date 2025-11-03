@@ -75,6 +75,7 @@ Preferred communication style: Simple, everyday language.
   - **Direct Join**: Both call types open Daily.co meeting in new window and join immediately - NO pre-join screen, NO lobby, NO waiting - just 1 click!
   - **New Window**: Calls open in separate windows to maintain access to chat, tasks, and calendar during calls
   - **Unlimited Duration**: No time limits on any calls
+  - **Dynamic Room Creation**: Backend API endpoint creates Daily.co rooms on-demand via `/api/daily/create-room` with graceful handling of existing rooms
 - **Task Management**: Start/target dates, status tracking with completion percentage (0%, 25%, 50%, 75%, 100%), visual progress bars, status update reasons, task assignment, real-time WebSocket updates, customizable automated reminders, and a professional UI. 
   - **Task Visibility**: Regular users see ALL tasks they're involved in (tasks they created OR tasks assigned to them). Admins can view and filter all tasks (all tasks, created by them, assigned to them, or by specific team member).
   - **Task Editing**: All users can update task status, completion percentage, and remarks for tasks assigned to them. Admins can edit any task.
@@ -126,7 +127,7 @@ Preferred communication style: Simple, everyday language.
 
 -   **Neon Database**: Serverless PostgreSQL hosting.
 -   **OpenAI via Replit AI Integrations**: GPT-4o for AI meeting summarization.
--   **Daily.co**: Video conferencing platform for team meetings and instant audio/video calls with NO lobby screens.
+-   **Daily.co**: Video conferencing platform for team meetings and instant audio/video calls with NO lobby screens. Uses REST API for dynamic room creation with DAILY_API_KEY environment variable.
 -   **Google Fonts**: Inter font family.
 -   **File Storage**: Local filesystem (`uploads/` directory) with Multer.
 -   **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`, `xlsx` (for Excel file handling).
