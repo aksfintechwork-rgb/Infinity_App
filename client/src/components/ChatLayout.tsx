@@ -408,8 +408,9 @@ export default function ChatLayout({
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Open the room in new window
-      window.open(data.url, '_blank', 'noopener,noreferrer');
+      // Open the room in new window with video disabled for audio calls
+      const audioCallUrl = `${data.url}?video=false`;
+      window.open(audioCallUrl, '_blank', 'noopener,noreferrer');
       
       const displayName = conversation.title || conversation.members;
       toast({
@@ -442,8 +443,9 @@ export default function ChatLayout({
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Open the room in new window - instant join!
-      window.open(data.url, '_blank', 'noopener,noreferrer');
+      // Open the room in new window with video disabled for audio calls - instant join!
+      const audioCallUrl = `${data.url}?video=false`;
+      window.open(audioCallUrl, '_blank', 'noopener,noreferrer');
       
       toast({
         title: 'Audio call started',

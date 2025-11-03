@@ -419,7 +419,7 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
 
   const handleGenerateMeetingLink = () => {
     const roomName = `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    setMeetingLink(`https://supremotraders.daily.co/${roomName}`);
+    setMeetingLink(`https://atulkadam.daily.co/${roomName}`);
   };
 
   const handleEditMeeting = (meeting: Meeting) => {

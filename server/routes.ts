@@ -734,7 +734,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (response.status === 409 || (response.status === 400 && data.info?.includes('already exists'))) {
           return res.json({ 
             success: true, 
-            url: `https://supremotraders.daily.co/${roomName}`,
+            url: `https://atulkadam.daily.co/${roomName}`,
             message: 'Using existing room'
           });
         }

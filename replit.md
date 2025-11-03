@@ -70,12 +70,13 @@ Preferred communication style: Simple, everyday language.
 - **AI Meeting Summaries**: GPT-4o (via Replit AI Integrations) generates structured, multi-language summaries with objectives, topics, outcomes, and participant guidance.
 - **Instant Video/Audio Calling**: Full calling functionality in chat header (Microsoft Teams-style) with separate phone and video icons - **1 CLICK TO JOIN!**
   - **Chat Header Buttons**: When chatting with anyone (individual or group), phone icon and video icon appear in the top-right header for instant calling
-  - **Audio Calls**: Click phone icon (📞) to start audio-only call with video disabled and minimal toolbar for focused voice communication
-  - **Video Calls**: Click video icon (🎥) to start full video call with camera and screen sharing
+  - **Audio Calls**: Click phone icon (📞) to start audio-only call with video disabled by default (users can enable video later if needed)
+  - **Video Calls**: Click video icon (🎥) to start full video call with camera and screen sharing enabled by default
   - **Direct Join**: Both call types open Daily.co meeting in new window and join immediately - NO pre-join screen, NO lobby, NO waiting - just 1 click!
   - **New Window**: Calls open in separate windows to maintain access to chat, tasks, and calendar during calls
   - **Unlimited Duration**: No time limits on any calls
   - **Dynamic Room Creation**: Backend API endpoint creates Daily.co rooms on-demand via `/api/daily/create-room` with graceful handling of existing rooms
+  - **Account Domain**: Uses atulkadam.daily.co for all video/audio calls
 - **Task Management**: Start/target dates, status tracking with completion percentage (0%, 25%, 50%, 75%, 100%), visual progress bars, status update reasons, task assignment, real-time WebSocket updates, customizable automated reminders, and a professional UI. 
   - **Task Visibility**: Regular users see ALL tasks they're involved in (tasks they created OR tasks assigned to them). Admins can view and filter all tasks (all tasks, created by them, assigned to them, or by specific team member).
   - **Task Editing**: All users can update task status, completion percentage, and remarks for tasks assigned to them. Admins can edit any task.
