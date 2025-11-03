@@ -362,24 +362,56 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
     });
   };
 
-  const handleJoinMeeting = (link?: string) => {
-    let videoUrl: string;
+  const handleJoinMeeting = async (link?: string) => {
+    let roomName: string;
+    
     if (link) {
-      videoUrl = link;
+      // Extract room name from link or use link directly
+      const match = link.match(/daily\.co\/(.+)$/);
+      roomName = match ? match[1] : `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     } else {
       // Generate a random room for Daily.co
-      const roomName = `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      videoUrl = `https://supremotraders.daily.co/${roomName}`;
+      roomName = `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     }
     
-    // Open in new window - Daily.co instant join with NO lobby!
-    const newWindow = window.open(videoUrl, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
-    
-    // Check if popup was blocked
-    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+    try {
+      // Create room first via backend API
+      const response = await fetch('/api/daily/create-room', {
+        method: 'POST',
+        body: JSON.stringify({ roomName }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create room');
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create room');
+      }
+      
+      // Open in new window - Daily.co instant join with NO lobby!
+      const newWindow = window.open(data.url, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
+      
+      // Check if popup was blocked
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        toast({
+          title: 'Popup blocked',
+          description: 'Please allow popups for this site to join video meetings in a new window.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error creating room:', error);
       toast({
-        title: 'Popup blocked',
-        description: 'Please allow popups for this site to join video meetings in a new window.',
+        title: 'Error',
+        description: 'Failed to join meeting. Please try again.',
         variant: 'destructive',
       });
     }
@@ -459,13 +491,50 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
     });
   };
 
-  const handleQuickStartMeeting = (meeting: Meeting) => {
-    if (meeting.meetingLink) {
-      handleJoinMeeting(meeting.meetingLink);
-    } else {
-      const roomName = `supremo-meeting-${meeting.id}`;
-      const videoLink = `https://supremotraders.daily.co/${roomName}`;
-      handleJoinMeeting(videoLink);
+  const handleQuickStartMeeting = async (meeting: Meeting) => {
+    const roomName = meeting.meetingLink 
+      ? meeting.meetingLink.match(/daily\.co\/(.+)$/)?.[1] || `supremo-meeting-${meeting.id}`
+      : `supremo-meeting-${meeting.id}`;
+    
+    try {
+      // Create room first via backend API
+      const response = await fetch('/api/daily/create-room', {
+        method: 'POST',
+        body: JSON.stringify({ roomName }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create room');
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create room');
+      }
+      
+      // Open in new window
+      const newWindow = window.open(data.url, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
+      
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        toast({
+          title: 'Popup blocked',
+          description: 'Please allow popups for this site to join video meetings.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error joining meeting:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to join meeting. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 

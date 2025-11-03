@@ -37,24 +37,55 @@ export function UpcomingMeetings() {
     })
     .slice(0, 3); // Show max 3 upcoming meetings
 
-  const handleJoinMeeting = (meeting: MeetingWithParticipants) => {
+  const handleJoinMeeting = async (meeting: MeetingWithParticipants) => {
     // Auto-generate Daily.co meeting link if not present
-    const roomName = `supremo-meeting-${meeting.id}`;
-    const meetingLink = meeting.meetingLink || `https://supremotraders.daily.co/${roomName}`;
+    const roomName = meeting.meetingLink 
+      ? meeting.meetingLink.match(/daily\.co\/(.+)$/)?.[1] || `supremo-meeting-${meeting.id}`
+      : `supremo-meeting-${meeting.id}`;
     
-    // Daily.co - instant join with NO lobby!
-    const newWindow = window.open(meetingLink, '_blank', 'noopener,noreferrer');
-    
-    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-      toast({
-        title: 'Popup blocked',
-        description: 'Please allow popups to join the meeting',
-        variant: 'destructive',
+    try {
+      // Create room first via backend API
+      const response = await fetch('/api/daily/create-room', {
+        method: 'POST',
+        body: JSON.stringify({ roomName }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
       });
-    } else {
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create room');
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create room');
+      }
+      
+      // Daily.co - instant join with NO lobby!
+      const newWindow = window.open(data.url, '_blank', 'noopener,noreferrer');
+      
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        toast({
+          title: 'Popup blocked',
+          description: 'Please allow popups to join the meeting',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Joining meeting',
+          description: `Opened "${meeting.title}" in new window`,
+        });
+      }
+    } catch (error) {
+      console.error('Error joining meeting:', error);
       toast({
-        title: 'Joining meeting',
-        description: `Opened "${meeting.title}" in new window`,
+        title: 'Error',
+        description: 'Failed to join meeting. Please try again.',
+        variant: 'destructive',
       });
     }
   };

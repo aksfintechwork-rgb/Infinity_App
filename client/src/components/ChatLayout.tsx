@@ -311,19 +311,34 @@ export default function ChatLayout({
   }, [ws, currentUser.id, conversations]);
 
   // Handle accepting incoming call
-  const handleAcceptCall = () => {
+  const handleAcceptCall = async () => {
     if (!incomingCall) return;
 
-    // Daily.co room URL - instant join!
-    const meetingLink = `https://supremotraders.daily.co/${incomingCall.roomName}`;
+    try {
+      // Create room first via backend API
+      const response = await apiRequest('POST', '/api/daily/create-room', { roomName: incomingCall.roomName });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create room');
+      }
+      
+      // Open the room in new window and join immediately
+      window.open(data.url, '_blank', 'noopener,noreferrer');
 
-    // Open in new window and join immediately
-    window.open(meetingLink, '_blank', 'noopener,noreferrer');
-
-    toast({
-      title: 'Joined call',
-      description: `Connected to ${incomingCall.from.name}`,
-    });
+      toast({
+        title: 'Joined call',
+        description: `Connected to ${incomingCall.from.name}`,
+      });
+    } catch (error) {
+      console.error('Error joining call:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to join call. Please try again.',
+        variant: 'destructive'
+      });
+    }
 
     // Close the incoming call modal
     setIncomingCall(null);
@@ -342,26 +357,40 @@ export default function ChatLayout({
     setIncomingCall(null);
   };
 
-  const handleStartCall = () => {
+  const handleStartCall = async () => {
     if (!activeConversation) return;
     
     // Generate a deterministic room name for Daily.co
-    // Using conversation ID ensures everyone joins the same room
     const roomName = `supremo-video-${activeConversation.id}`;
     
-    // Daily.co room URL - NO lobby, NO prejoin, instant join!
-    const meetingLink = `https://supremotraders.daily.co/${roomName}`;
-    
-    // Open in new window - 1 CLICK JOIN!
-    window.open(meetingLink, '_blank', 'noopener,noreferrer');
-    
-    toast({
-      title: 'Video call started',
-      description: 'Joining call with ' + (activeConversation.title || activeConversation.members),
-    });
+    try {
+      // Create room first via backend API
+      const response = await apiRequest('POST', '/api/daily/create-room', { roomName });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create room');
+      }
+      
+      // Open the room in new window - instant join!
+      window.open(data.url, '_blank', 'noopener,noreferrer');
+      
+      toast({
+        title: 'Video call started',
+        description: 'Joining call with ' + (activeConversation.title || activeConversation.members),
+      });
+    } catch (error) {
+      console.error('Error creating room:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to start video call. Please try again.',
+        variant: 'destructive'
+      });
+    }
   };
 
-  const handleQuickAudioCall = (conversationId: number) => {
+  const handleQuickAudioCall = async (conversationId: number) => {
     // Find the conversation
     const conversation = conversations.find(c => c.id === conversationId);
     if (!conversation) return;
@@ -369,35 +398,65 @@ export default function ChatLayout({
     // Generate a deterministic room name for Daily.co
     const roomName = `supremo-audio-${conversationId}`;
     
-    // Daily.co room URL - instant join!
-    const meetingLink = `https://supremotraders.daily.co/${roomName}`;
-    
-    // Open in new window
-    window.open(meetingLink, '_blank', 'noopener,noreferrer');
-    
-    const displayName = conversation.title || conversation.members;
-    toast({
-      title: 'Audio call started',
-      description: `Calling ${displayName}...`,
-    });
+    try {
+      // Create room first via backend API
+      const response = await apiRequest('POST', '/api/daily/create-room', { roomName });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create room');
+      }
+      
+      // Open the room in new window
+      window.open(data.url, '_blank', 'noopener,noreferrer');
+      
+      const displayName = conversation.title || conversation.members;
+      toast({
+        title: 'Audio call started',
+        description: `Calling ${displayName}...`,
+      });
+    } catch (error) {
+      console.error('Error creating room:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to start audio call. Please try again.',
+        variant: 'destructive'
+      });
+    }
   };
 
-  const handleStartAudioCall = () => {
+  const handleStartAudioCall = async () => {
     if (!activeConversation) return;
     
     // Generate a deterministic room name for Daily.co
     const roomName = `supremo-audio-${activeConversation.id}`;
     
-    // Daily.co room URL - instant join!
-    const meetingLink = `https://supremotraders.daily.co/${roomName}`;
-    
-    // Open in new window - 1 CLICK JOIN!
-    window.open(meetingLink, '_blank', 'noopener,noreferrer');
-    
-    toast({
-      title: 'Audio call started',
-      description: 'Joining call with ' + (activeConversation.title || activeConversation.members),
-    });
+    try {
+      // Create room first via backend API
+      const response = await apiRequest('POST', '/api/daily/create-room', { roomName });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create room');
+      }
+      
+      // Open the room in new window - instant join!
+      window.open(data.url, '_blank', 'noopener,noreferrer');
+      
+      toast({
+        title: 'Audio call started',
+        description: 'Joining call with ' + (activeConversation.title || activeConversation.members),
+      });
+    } catch (error) {
+      console.error('Error creating room:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to start audio call. Please try again.',
+        variant: 'destructive'
+      });
+    }
   };
 
   return (
