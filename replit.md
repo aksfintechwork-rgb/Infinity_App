@@ -70,7 +70,7 @@ Preferred communication style: Simple, everyday language.
 - **AI Meeting Summaries**: GPT-4o (via Replit AI Integrations) generates structured, multi-language summaries with objectives, topics, outcomes, and participant guidance.
 - **Instant Video/Audio Calling**: Video call integration for direct and group calls with screen sharing and unlimited duration. Video meetings open in separate windows to maintain access to chat, tasks, and calendar during calls. Pre-join page enabled for camera/microphone access and device testing before joining meetings.
 - **Task Management**: Start/target dates, status tracking with completion percentage (0%, 25%, 50%, 75%, 100%), visual progress bars, status update reasons, task assignment, real-time WebSocket updates, customizable automated reminders, and a professional UI. 
-  - **Task Visibility**: Regular users see ONLY tasks assigned to them. Admins can view and filter all tasks (all tasks, created by them, assigned to them, or by specific team member).
+  - **Task Visibility**: Regular users see ALL tasks they're involved in (tasks they created OR tasks assigned to them). Admins can view and filter all tasks (all tasks, created by them, assigned to them, or by specific team member).
   - **Task Editing**: All users can update task status, completion percentage, and remarks for tasks assigned to them. Admins can edit any task.
   - **Custom Task Reminders**: Per-task reminder frequency with options: hourly, every 3 hours, every 6 hours, daily, every 2 days, or none. Reminders sent via chat messages from system user "Atul" with toast notifications for immediate visibility.
   - **Excel Import/Export** (Admin-only): Bulk task management via Excel spreadsheets with comprehensive error handling:

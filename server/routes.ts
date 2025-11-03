@@ -932,8 +932,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tasks = await storage.getAllTasks();
         }
       } else {
-        // Regular users can ONLY see tasks assigned to them
-        tasks = await storage.getTasksByAssignee(req.userId);
+        // Regular users see ALL tasks they're involved in (created OR assigned)
+        tasks = await storage.getAllTasksForUser(req.userId);
       }
 
       res.json(tasks);
