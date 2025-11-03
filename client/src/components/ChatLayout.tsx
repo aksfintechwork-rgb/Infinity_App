@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 interface User {
   id: number;
   name: string;
+  loginId: string;
   email?: string;
   role: string;
   avatar?: string;
@@ -313,32 +314,9 @@ export default function ChatLayout({
   const handleAcceptCall = () => {
     if (!incomingCall) return;
 
-    const config = [
-      'config.prejoinPageEnabled=false',
-      'config.startWithAudioMuted=false',
-      `config.startWithVideoMuted=${incomingCall.callType === 'audio'}`,
-      'config.enableLobby=false',
-      'config.disableLobby=true',
-      'config.enableLobbyChat=false',
-      'config.autoKnockLobby=false',
-      'config.hideConferenceSubject=false',
-      'config.requireDisplayName=false',
-      'config.subject=""',
-      `userInfo.displayName="${currentUser.loginId}"`,
-      'interfaceConfig.SHOW_JITSI_WATERMARK=false',
-      'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
-      'interfaceConfig.SHOW_BRAND_WATERMARK=false',
-      'interfaceConfig.BRAND_WATERMARK_LINK=""',
-      'interfaceConfig.JITSI_WATERMARK_LINK=""',
-      'interfaceConfig.SHOW_POWERED_BY=false',
-      'interfaceConfig.DISPLAY_WELCOME_PAGE_CONTENT=false',
-      'interfaceConfig.DISPLAY_WELCOME_FOOTER=false',
-      'interfaceConfig.APP_NAME="SUPREMO TRADERS"',
-      'interfaceConfig.NATIVE_APP_NAME="SUPREMO TRADERS"',
-      incomingCall.callType === 'audio' ? 'interfaceConfig.TOOLBAR_BUTTONS=["microphone", "hangup", "chat", "settings"]' : ''
-    ].filter(Boolean).join('&');
-
-    const meetingLink = `https://meet.jit.si/${incomingCall.roomName}#${config}`;
+    // Configure call - FORCE skip ALL waiting screens with moderator privileges
+    const isAudioOnly = incomingCall.callType === 'audio';
+    const meetingLink = `https://meet.jit.si/${incomingCall.roomName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=${isAudioOnly}&userInfo.displayName="${currentUser.loginId}"&userInfo.moderator=true`;
 
     // Open in new window and join immediately
     window.open(meetingLink, '_blank', 'noopener,noreferrer');
@@ -372,32 +350,8 @@ export default function ChatLayout({
     // Using conversation ID ensures everyone in the same conversation joins the same room
     const roomName = `supremo-video-conv-${activeConversation.id}`;
     
-    // Configure video call - FORCE skip ALL waiting screens
-    const config = [
-      'config.prejoinPageEnabled=false',
-      'config.startWithAudioMuted=false',
-      'config.startWithVideoMuted=false',
-      'config.enableLobby=false',
-      'config.disableLobby=true',
-      'config.enableLobbyChat=false',
-      'config.autoKnockLobby=false',
-      'config.hideConferenceSubject=false',
-      'config.requireDisplayName=false',
-      'config.subject=""',
-      `userInfo.displayName="${currentUser.loginId}"`,
-      'interfaceConfig.SHOW_JITSI_WATERMARK=false',
-      'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
-      'interfaceConfig.SHOW_BRAND_WATERMARK=false',
-      'interfaceConfig.BRAND_WATERMARK_LINK=""',
-      'interfaceConfig.JITSI_WATERMARK_LINK=""',
-      'interfaceConfig.SHOW_POWERED_BY=false',
-      'interfaceConfig.DISPLAY_WELCOME_PAGE_CONTENT=false',
-      'interfaceConfig.DISPLAY_WELCOME_FOOTER=false',
-      'interfaceConfig.APP_NAME="SUPREMO TRADERS"',
-      'interfaceConfig.NATIVE_APP_NAME="SUPREMO TRADERS"'
-    ].join('&');
-    
-    const meetingLink = `https://meet.jit.si/${roomName}#${config}`;
+    // Configure video call - FORCE skip ALL waiting screens with moderator privileges
+    const meetingLink = `https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&userInfo.displayName="${currentUser.loginId}"&userInfo.moderator=true`;
     
     // Open in new window - 1 CLICK JOIN!
     window.open(meetingLink, '_blank', 'noopener,noreferrer');
@@ -416,33 +370,8 @@ export default function ChatLayout({
     // Generate a deterministic room name
     const roomName = `supremo-audio-conv-${conversationId}`;
     
-    // Configure AUDIO-ONLY call - FORCE skip ALL waiting screens
-    const config = [
-      'config.prejoinPageEnabled=false',
-      'config.startWithAudioMuted=false',
-      'config.startWithVideoMuted=true',
-      'config.enableLobby=false',
-      'config.disableLobby=true',
-      'config.enableLobbyChat=false',
-      'config.autoKnockLobby=false',
-      'config.hideConferenceSubject=false',
-      'config.requireDisplayName=false',
-      'config.subject=""',
-      `userInfo.displayName="${currentUser.loginId}"`,
-      'interfaceConfig.SHOW_JITSI_WATERMARK=false',
-      'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
-      'interfaceConfig.SHOW_BRAND_WATERMARK=false',
-      'interfaceConfig.BRAND_WATERMARK_LINK=""',
-      'interfaceConfig.JITSI_WATERMARK_LINK=""',
-      'interfaceConfig.SHOW_POWERED_BY=false',
-      'interfaceConfig.DISPLAY_WELCOME_PAGE_CONTENT=false',
-      'interfaceConfig.DISPLAY_WELCOME_FOOTER=false',
-      'interfaceConfig.APP_NAME="SUPREMO TRADERS"',
-      'interfaceConfig.NATIVE_APP_NAME="SUPREMO TRADERS"',
-      'interfaceConfig.TOOLBAR_BUTTONS=["microphone", "hangup", "chat", "settings"]'
-    ].join('&');
-    
-    const meetingLink = `https://meet.jit.si/${roomName}#${config}`;
+    // Configure AUDIO-ONLY call - FORCE skip ALL waiting screens with moderator privileges
+    const meetingLink = `https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=true&userInfo.displayName="${currentUser.loginId}"&userInfo.moderator=true`;
     
     // Open in new window
     window.open(meetingLink, '_blank', 'noopener,noreferrer');
@@ -460,33 +389,8 @@ export default function ChatLayout({
     // Generate a deterministic room name
     const roomName = `supremo-audio-conv-${activeConversation.id}`;
     
-    // Configure AUDIO-ONLY call - FORCE skip ALL waiting screens
-    const config = [
-      'config.prejoinPageEnabled=false',
-      'config.startWithAudioMuted=false',
-      'config.startWithVideoMuted=true',
-      'config.enableLobby=false',
-      'config.disableLobby=true',
-      'config.enableLobbyChat=false',
-      'config.autoKnockLobby=false',
-      'config.hideConferenceSubject=false',
-      'config.requireDisplayName=false',
-      'config.subject=""',
-      `userInfo.displayName="${currentUser.loginId}"`,
-      'interfaceConfig.SHOW_JITSI_WATERMARK=false',
-      'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
-      'interfaceConfig.SHOW_BRAND_WATERMARK=false',
-      'interfaceConfig.BRAND_WATERMARK_LINK=""',
-      'interfaceConfig.JITSI_WATERMARK_LINK=""',
-      'interfaceConfig.SHOW_POWERED_BY=false',
-      'interfaceConfig.DISPLAY_WELCOME_PAGE_CONTENT=false',
-      'interfaceConfig.DISPLAY_WELCOME_FOOTER=false',
-      'interfaceConfig.APP_NAME="SUPREMO TRADERS"',
-      'interfaceConfig.NATIVE_APP_NAME="SUPREMO TRADERS"',
-      'interfaceConfig.TOOLBAR_BUTTONS=["microphone", "hangup", "chat", "settings"]'
-    ].join('&');
-    
-    const meetingLink = `https://meet.jit.si/${roomName}#${config}`;
+    // Configure AUDIO-ONLY call - FORCE skip ALL waiting screens with moderator privileges
+    const meetingLink = `https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=true&userInfo.displayName="${currentUser.loginId}"&userInfo.moderator=true`;
     
     // Open in new window - 1 CLICK JOIN!
     window.open(meetingLink, '_blank', 'noopener,noreferrer');
