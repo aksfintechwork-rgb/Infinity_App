@@ -37,18 +37,17 @@ interface AdminWorksheetsProps {
 }
 
 export default function AdminWorksheets({ allUsers, onOpenMobileMenu }: AdminWorksheetsProps) {
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
 
   const { data: worksheets = [], isLoading } = useQuery<Worksheet[]>({
-    queryKey: ['/api/worksheets/all', selectedDate],
+    queryKey: [selectedDate ? `/api/worksheets/all?date=${selectedDate}` : '/api/worksheets/all'],
     refetchInterval: 30000,
   });
 
   const filteredWorksheets = worksheets.filter(ws => {
-    const dateMatch = ws.date.startsWith(selectedDate);
     const userMatch = selectedUserId === 'all' || ws.userId === parseInt(selectedUserId);
-    return dateMatch && userMatch;
+    return userMatch;
   });
 
   const submittedWorksheets = filteredWorksheets.filter(ws => ws.status === 'submitted');
@@ -92,7 +91,22 @@ export default function AdminWorksheets({ allUsers, onOpenMobileMenu }: AdminWor
             onChange={(e) => setSelectedDate(e.target.value)}
             className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
             data-testid="input-date-filter"
+            placeholder="All dates"
           />
+          {selectedDate && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedDate('')}
+              className="h-9"
+              data-testid="button-clear-date"
+            >
+              Show All Dates
+            </Button>
+          )}
+          {!selectedDate && (
+            <span className="text-sm text-muted-foreground">Showing all dates</span>
+          )}
         </div>
         <Select value={selectedUserId} onValueChange={setSelectedUserId}>
           <SelectTrigger className="w-48" data-testid="select-user-filter">
