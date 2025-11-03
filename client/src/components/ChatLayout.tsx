@@ -317,6 +317,9 @@ export default function ChatLayout({
       'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
       `config.startWithVideoMuted=${incomingCall.callType === 'audio'}`,
+      'config.disableLobby=true',
+      'config.enableLobbyChat=false',
+      'config.requireDisplayName=false',
       `userInfo.displayName="${currentUser.loginId}"`,
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',
       'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
@@ -382,11 +385,14 @@ export default function ChatLayout({
       });
     }
     
-    // Configure video call - skip prejoin and use login ID as display name
+    // Configure video call - skip prejoin, lobby, and use login ID as display name
     const config = [
       'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
       'config.startWithVideoMuted=false',
+      'config.disableLobby=true',
+      'config.enableLobbyChat=false',
+      'config.requireDisplayName=false',
       `userInfo.displayName="${currentUser.loginId}"`,
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',
       'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
@@ -419,11 +425,14 @@ export default function ChatLayout({
     // Generate a deterministic room name
     const roomName = `supremo-audio-conv-${conversationId}`;
     
-    // Configure AUDIO-ONLY call - skip prejoin and use login ID as display name
+    // Configure AUDIO-ONLY call - skip prejoin, lobby, and use login ID as display name
     const config = [
       'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
       'config.startWithVideoMuted=true',
+      'config.disableLobby=true',
+      'config.enableLobbyChat=false',
+      'config.requireDisplayName=false',
       `userInfo.displayName="${currentUser.loginId}"`,
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',
       'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
@@ -473,11 +482,14 @@ export default function ChatLayout({
       });
     }
     
-    // Configure AUDIO-ONLY call - skip prejoin and use login ID as display name
+    // Configure AUDIO-ONLY call - skip prejoin, lobby, and use login ID as display name
     const config = [
       'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
       'config.startWithVideoMuted=true',
+      'config.disableLobby=true',
+      'config.enableLobbyChat=false',
+      'config.requireDisplayName=false',
       `userInfo.displayName="${currentUser.loginId}"`,
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',
       'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
@@ -630,6 +642,7 @@ export default function ChatLayout({
                       onClick={() => {
                         setActiveConversationId(conv.id);
                         onConversationSelect?.(conv.id);
+                        onMarkConversationAsRead?.(conv.id);
                       }}
                     />
                   ))
@@ -915,6 +928,7 @@ export default function ChatLayout({
                           onClick={() => {
                             setActiveConversationId(conv.id);
                             onConversationSelect?.(conv.id);
+                            onMarkConversationAsRead?.(conv.id);
                           }}
                         />
                       );
@@ -1086,6 +1100,7 @@ export default function ChatLayout({
                         onClick={() => {
                           setActiveConversationId(conv.id);
                           onConversationSelect?.(conv.id);
+                          onMarkConversationAsRead?.(conv.id);
                           setIsMobileMenuOpen(false);
                         }}
                       />

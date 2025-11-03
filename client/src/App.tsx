@@ -104,6 +104,9 @@ function App() {
       // Show notification if message is not from current user
       // and either user is on different conversation or window is not focused
       if (message.senderId !== currentUser.id) {
+        const conversation = conversations.find(c => c.id === message.conversationId);
+        const conversationName = conversation?.title || message.senderName;
+        
         // Show toast notification for task reminders from Atul
         if (message.senderName === 'Atul') {
           toast({
@@ -118,13 +121,20 @@ function App() {
           !document.hasFocus();
 
         if (shouldNotify) {
-          const conversation = conversations.find(c => c.id === message.conversationId);
+          // Show browser notification with sound
           notifyNewMessage(
             message.senderName,
             message.body || 'Sent an attachment',
             conversation?.title,
             conversation?.isGroup || false
           );
+          
+          // ALSO show on-screen toast notification for immediate visibility
+          toast({
+            title: `💬 ${conversationName}`,
+            description: `${message.senderName}: ${message.body || 'Sent an attachment'}`,
+            duration: 6000,
+          });
         }
       }
     });
