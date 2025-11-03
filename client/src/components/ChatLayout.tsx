@@ -317,9 +317,13 @@ export default function ChatLayout({
       'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
       `config.startWithVideoMuted=${incomingCall.callType === 'audio'}`,
+      'config.enableLobby=false',
       'config.disableLobby=true',
       'config.enableLobbyChat=false',
+      'config.autoKnockLobby=false',
+      'config.hideConferenceSubject=false',
       'config.requireDisplayName=false',
+      'config.subject=""',
       `userInfo.displayName="${currentUser.loginId}"`,
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',
       'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
@@ -368,14 +372,18 @@ export default function ChatLayout({
     // Using conversation ID ensures everyone in the same conversation joins the same room
     const roomName = `supremo-video-conv-${activeConversation.id}`;
     
-    // Configure video call - skip prejoin, lobby, and use login ID as display name
+    // Configure video call - FORCE skip ALL waiting screens
     const config = [
       'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
       'config.startWithVideoMuted=false',
+      'config.enableLobby=false',
       'config.disableLobby=true',
       'config.enableLobbyChat=false',
+      'config.autoKnockLobby=false',
+      'config.hideConferenceSubject=false',
       'config.requireDisplayName=false',
+      'config.subject=""',
       `userInfo.displayName="${currentUser.loginId}"`,
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',
       'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
@@ -408,14 +416,18 @@ export default function ChatLayout({
     // Generate a deterministic room name
     const roomName = `supremo-audio-conv-${conversationId}`;
     
-    // Configure AUDIO-ONLY call - skip prejoin, lobby, and use login ID as display name
+    // Configure AUDIO-ONLY call - FORCE skip ALL waiting screens
     const config = [
       'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
       'config.startWithVideoMuted=true',
+      'config.enableLobby=false',
       'config.disableLobby=true',
       'config.enableLobbyChat=false',
+      'config.autoKnockLobby=false',
+      'config.hideConferenceSubject=false',
       'config.requireDisplayName=false',
+      'config.subject=""',
       `userInfo.displayName="${currentUser.loginId}"`,
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',
       'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
@@ -448,14 +460,18 @@ export default function ChatLayout({
     // Generate a deterministic room name
     const roomName = `supremo-audio-conv-${activeConversation.id}`;
     
-    // Configure AUDIO-ONLY call - skip prejoin, lobby, and use login ID as display name
+    // Configure AUDIO-ONLY call - FORCE skip ALL waiting screens
     const config = [
       'config.prejoinPageEnabled=false',
       'config.startWithAudioMuted=false',
       'config.startWithVideoMuted=true',
+      'config.enableLobby=false',
       'config.disableLobby=true',
       'config.enableLobbyChat=false',
+      'config.autoKnockLobby=false',
+      'config.hideConferenceSubject=false',
       'config.requireDisplayName=false',
+      'config.subject=""',
       `userInfo.displayName="${currentUser.loginId}"`,
       'interfaceConfig.SHOW_JITSI_WATERMARK=false',
       'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
