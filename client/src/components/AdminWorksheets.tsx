@@ -5,20 +5,13 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
-import { Menu, Calendar, Clock, CheckCircle2, Circle } from 'lucide-react';
+import { Menu, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface User {
   id: number;
   name: string;
   role: string;
-}
-
-interface Todo {
-  id: string;
-  task: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  completed: boolean;
 }
 
 interface HourlyLog {
@@ -43,13 +36,6 @@ interface AdminWorksheetsProps {
   onOpenMobileMenu?: () => void;
 }
 
-const PRIORITY_COLORS = {
-  low: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
-  medium: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
-  high: 'bg-orange-500/10 text-orange-700 dark:text-orange-400',
-  urgent: 'bg-red-500/10 text-red-700 dark:text-red-400',
-};
-
 export default function AdminWorksheets({ allUsers, onOpenMobileMenu }: AdminWorksheetsProps) {
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
@@ -66,14 +52,6 @@ export default function AdminWorksheets({ allUsers, onOpenMobileMenu }: AdminWor
   });
 
   const submittedWorksheets = filteredWorksheets.filter(ws => ws.status === 'submitted');
-
-  const parseTodos = (todosJson: string): Todo[] => {
-    try {
-      return JSON.parse(todosJson || '[]');
-    } catch {
-      return [];
-    }
-  };
 
   const parseHourlyLogs = (logsJson: string): HourlyLog[] => {
     try {
@@ -155,9 +133,7 @@ export default function AdminWorksheets({ allUsers, onOpenMobileMenu }: AdminWor
             </Card>
           ) : (
             submittedWorksheets.map((worksheet) => {
-              const todos = parseTodos(worksheet.todos);
               const hourlyLogs = parseHourlyLogs(worksheet.hourlyLogs);
-              const completedTodos = todos.filter(t => t.completed).length;
 
               return (
                 <Card key={worksheet.id} data-testid={`worksheet-${worksheet.id}`}>
@@ -182,40 +158,6 @@ export default function AdminWorksheets({ allUsers, onOpenMobileMenu }: AdminWor
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div>
-                      <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4" />
-                        To-Do List ({completedTodos}/{todos.length} completed)
-                      </h3>
-                      {todos.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No tasks planned</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {todos.map((todo) => (
-                            <div
-                              key={todo.id}
-                              className="flex items-center gap-3 p-2 rounded-md border bg-card/50"
-                            >
-                              {todo.completed ? (
-                                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-500 flex-shrink-0" />
-                              ) : (
-                                <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                              )}
-                              <span
-                                className={`flex-1 text-sm ${
-                                  todo.completed ? 'line-through text-muted-foreground' : 'text-foreground'
-                                }`}
-                              >
-                                {todo.task}
-                              </span>
-                              <Badge className={PRIORITY_COLORS[todo.priority]} data-testid={`priority-${todo.priority}`}>
-                                {todo.priority}
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
 
                     <div>
                       <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">

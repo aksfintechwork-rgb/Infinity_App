@@ -94,6 +94,9 @@ Preferred communication style: Simple, everyday language.
 - **Task Assignment & Remarks**: Users can create tasks and edit assignments/remarks for their own tasks; admins can edit any task.
 - **Daily Work Log**: Comprehensive daily planning and activity tracking system for all users:
   - **Daily To-Do List**: Add tasks with priority levels (Low, Medium, High, Urgent), check off completed items, and organize daily work
+    - **PRIVACY POLICY**: Todo lists are completely PRIVATE - only visible to the user who created them
+    - Admins CANNOT see user todo lists - only hourly activity logs
+    - Other users CANNOT see your todo list
   - **Priority-Based Planning**: Visual priority badges with color coding for quick task identification
   - **Customizable Working Hours**: Users can set their own work hours (e.g., 8 AM - 6 PM, 9 AM - 5 PM) via settings button
     - Hourly activity log dynamically adjusts to selected hours
@@ -106,11 +109,10 @@ Preferred communication style: Simple, everyday language.
   - **Auto-Refresh**: Worksheet data refreshes every 30 seconds to stay current
   - **Date Display**: Shows current date (e.g., "Friday, November 1, 2024") for easy reference
   - **Duplicate Prevention**: Backend enforces one worksheet per user per day with automatic update-if-exists logic
-  - **Admin Team View**: Admins can view all submitted team worksheets with date and user filters:
+  - **Admin Team View**: Admins can view submitted team worksheets with date and user filters (PRIVACY: todos are NOT visible):
     - Filter by specific date to see daily submissions
     - Filter by specific user or view all users
-    - See completion statistics (completed todos / total todos)
-    - View all hourly activity logs with timestamps
+    - View hourly activity logs with timestamps (NOT private todo lists)
     - Submitted time display for accountability
     - One-click access via "Team Work Logs" button in admin navigation
 

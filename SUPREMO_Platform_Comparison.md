@@ -105,14 +105,15 @@ Comprehensive Comparison with Microsoft Teams & Zoom
 | Feature | SUPREMO | Teams | Zoom |
 |---------|---------|-------|------|
 | Daily Worksheets | ✅ **Todo + Hourly** | ❌ | ❌ |
+| **Todo Privacy** | ✅ **100% Private** | ❌ | ❌ |
 | Custom Work Hours | ✅ **User-specific** | ❌ | ❌ |
-| Admin Team View | ✅ **All submissions** | ❌ | ❌ |
+| Admin Team View | ✅ **Activity logs only** | ❌ | ❌ |
 | Priority Planning | ✅ **4 levels** | ❌ | ❌ |
 | Submission Lock | ✅ **After submit** | ❌ | ❌ |
 
 **Exclusive Feature:** No comparable feature in Teams or Zoom
 
-**Value:** Complete visibility into daily team productivity
+**Privacy First:** Todos are completely private - only you can see your planning. Admins see only hourly activity logs for accountability.
 
 ---
 
