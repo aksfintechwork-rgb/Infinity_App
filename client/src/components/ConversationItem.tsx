@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, Users, CheckCheck, Pin, PinOff } from 'lucide-react';
+import { MessageCircle, Users, CheckCheck, Pin, PinOff, Phone } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 
 interface ConversationItemProps {
@@ -17,6 +17,7 @@ interface ConversationItemProps {
   isOnline?: boolean;
   isPinned?: boolean;
   onPinToggle?: (id: number) => void;
+  onAudioCall?: (id: number) => void;
   onClick: () => void;
 }
 
@@ -58,6 +59,7 @@ export default function ConversationItem({
   isOnline = false,
   isPinned = false,
   onPinToggle,
+  onAudioCall,
   onClick,
 }: ConversationItemProps) {
   const displayName = title || members;
@@ -74,6 +76,13 @@ export default function ConversationItem({
     e.stopPropagation();
     if (onPinToggle) {
       onPinToggle(id);
+    }
+  };
+
+  const handleAudioCallClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onAudioCall) {
+      onAudioCall(id);
     }
   };
 
@@ -119,6 +128,19 @@ export default function ConversationItem({
             </h3>
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
+            {onAudioCall && !isGroup && (
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleAudioCallClick}
+                className="h-6 w-6 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-green-500/20"
+                data-testid="button-quick-audio-call"
+                aria-label="Quick audio call"
+                title="Quick audio call"
+              >
+                <Phone className="w-3.5 h-3.5 text-green-600 dark:text-green-500" />
+              </Button>
+            )}
             {onPinToggle && (
               <Button
                 size="icon"

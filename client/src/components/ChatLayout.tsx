@@ -309,6 +309,44 @@ export default function ChatLayout({
     });
   };
 
+  const handleQuickAudioCall = (conversationId: number) => {
+    // Find the conversation
+    const conversation = conversations.find(c => c.id === conversationId);
+    if (!conversation) return;
+
+    // Generate a deterministic room name
+    const roomName = `supremo-audio-conv-${conversationId}`;
+    
+    // Configure AUDIO-ONLY call with prejoin page
+    const config = [
+      'config.prejoinPageEnabled=true',
+      'config.startWithAudioMuted=false',
+      'config.startWithVideoMuted=true',
+      'interfaceConfig.SHOW_JITSI_WATERMARK=false',
+      'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
+      'interfaceConfig.SHOW_BRAND_WATERMARK=false',
+      'interfaceConfig.BRAND_WATERMARK_LINK=""',
+      'interfaceConfig.JITSI_WATERMARK_LINK=""',
+      'interfaceConfig.SHOW_POWERED_BY=false',
+      'interfaceConfig.DISPLAY_WELCOME_PAGE_CONTENT=false',
+      'interfaceConfig.DISPLAY_WELCOME_FOOTER=false',
+      'interfaceConfig.APP_NAME="SUPREMO TRADERS"',
+      'interfaceConfig.NATIVE_APP_NAME="SUPREMO TRADERS"',
+      'interfaceConfig.TOOLBAR_BUTTONS=["microphone", "hangup", "chat", "settings"]'
+    ].join('&');
+    
+    const meetingLink = `https://meet.jit.si/${roomName}#${config}`;
+    
+    // Open in new window
+    window.open(meetingLink, '_blank', 'noopener,noreferrer');
+    
+    const displayName = conversation.title || conversation.members;
+    toast({
+      title: 'Audio call started',
+      description: `Calling ${displayName}...`,
+    });
+  };
+
   return (
     <div className="flex h-screen bg-background">
       <div className="hidden md:flex w-80 border-r border-border flex-col bg-background">
@@ -432,6 +470,7 @@ export default function ChatLayout({
                       isOnline={isConversationOnline(conv)}
                       isPinned={pinnedConversationIds.includes(conv.id)}
                       onPinToggle={handlePinToggle}
+                      onAudioCall={handleQuickAudioCall}
                       onClick={() => {
                         setActiveConversationId(conv.id);
                         onConversationSelect?.(conv.id);
@@ -690,6 +729,7 @@ export default function ChatLayout({
                               pinMutation.mutate(id);
                             }
                           }}
+                          onAudioCall={handleQuickAudioCall}
                           onClick={() => {
                             setActiveConversationId(conv.id);
                             onConversationSelect?.(conv.id);
@@ -860,6 +900,7 @@ export default function ChatLayout({
                         isOnline={isConversationOnline(conv)}
                         isPinned={pinnedConversationIds.includes(conv.id)}
                         onPinToggle={handlePinToggle}
+                        onAudioCall={handleQuickAudioCall}
                         onClick={() => {
                           setActiveConversationId(conv.id);
                           onConversationSelect?.(conv.id);
