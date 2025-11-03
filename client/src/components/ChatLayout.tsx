@@ -324,8 +324,9 @@ export default function ChatLayout({
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Open the room in new window and join immediately
-      window.open(data.url, '_blank', 'noopener,noreferrer');
+      // Open the room in new window and join immediately with user name
+      const callUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}`;
+      window.open(callUrl, '_blank', 'noopener,noreferrer');
 
       toast({
         title: 'Joined call',
@@ -373,8 +374,23 @@ export default function ChatLayout({
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Open the room in new window - instant join!
-      window.open(data.url, '_blank', 'noopener,noreferrer');
+      // Open the room in new window with user name - instant join!
+      const callUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}`;
+      window.open(callUrl, '_blank', 'noopener,noreferrer');
+      
+      // Send incoming call notification to other members via WebSocket
+      if (ws?.isConnected) {
+        ws.send({
+          type: 'incoming-call',
+          conversationId: activeConversation.id,
+          roomName: roomName,
+          callType: 'video',
+          from: {
+            id: currentUser.id,
+            name: currentUser.name
+          }
+        });
+      }
       
       toast({
         title: 'Video call started',
@@ -408,9 +424,23 @@ export default function ChatLayout({
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Open the room in new window with video disabled for audio calls
-      const audioCallUrl = `${data.url}?video=false`;
+      // Open the room in new window with video disabled and user name for audio calls
+      const audioCallUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
       window.open(audioCallUrl, '_blank', 'noopener,noreferrer');
+      
+      // Send incoming call notification to other members via WebSocket
+      if (ws?.isConnected) {
+        ws.send({
+          type: 'incoming-call',
+          conversationId: conversationId,
+          roomName: roomName,
+          callType: 'audio',
+          from: {
+            id: currentUser.id,
+            name: currentUser.name
+          }
+        });
+      }
       
       const displayName = conversation.title || conversation.members;
       toast({
@@ -443,9 +473,23 @@ export default function ChatLayout({
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Open the room in new window with video disabled for audio calls - instant join!
-      const audioCallUrl = `${data.url}?video=false`;
+      // Open the room in new window with video disabled and user name for audio calls - instant join!
+      const audioCallUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
       window.open(audioCallUrl, '_blank', 'noopener,noreferrer');
+      
+      // Send incoming call notification to other members via WebSocket
+      if (ws?.isConnected) {
+        ws.send({
+          type: 'incoming-call',
+          conversationId: activeConversation.id,
+          roomName: roomName,
+          callType: 'audio',
+          from: {
+            id: currentUser.id,
+            name: currentUser.name
+          }
+        });
+      }
       
       toast({
         title: 'Audio call started',
