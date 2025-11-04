@@ -1542,6 +1542,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
         
+        if (message.type === 'invite_to_call') {
+          // Send call invitation to specific user
+          const { userId, conversationId, callType, roomName, from } = message.data;
+          
+          // Find the WebSocket connection for the invited user
+          wss.clients.forEach((client: any) => {
+            if (client.readyState === ws.OPEN && client.userId === userId) {
+              client.send(JSON.stringify({
+                type: 'incoming_call',
+                data: {
+                  conversationId,
+                  callType,
+                  roomName,
+                  from: from.id,
+                  callerName: from.name,
+                  callerAvatar: from.avatar
+                },
+              }));
+            }
+          });
+          return;
+        }
+        
         if (message.type === 'call_answered') {
           // Broadcast call answered notification to stop outgoing ringtone for caller
           const { conversationId } = message.data;
