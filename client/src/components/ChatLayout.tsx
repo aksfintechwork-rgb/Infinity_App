@@ -18,6 +18,7 @@ import DailyWorksheet from './DailyWorksheet';
 import AdminWorksheets from './AdminWorksheets';
 import { UpcomingMeetings } from './UpcomingMeetings';
 import IncomingCallModal from './IncomingCallModal';
+import { useOutgoingRingtone } from '@/hooks/use-outgoing-ringtone';
 import logoImage from '@assets/image_1761659890673.png';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -109,6 +110,16 @@ export default function ChatLayout({
     callType: 'audio' | 'video';
     roomName: string;
   } | null>(null);
+
+  // Outgoing call state
+  const [outgoingCall, setOutgoingCall] = useState<{
+    conversationId: number;
+    callType: 'audio' | 'video';
+    calledName: string;
+  } | null>(null);
+
+  // Play outgoing ringtone when calling someone
+  useOutgoingRingtone(!!outgoingCall);
 
   const isAdmin = currentUser.role === 'admin';
   const token = localStorage.getItem('auth_token') || '';
@@ -310,11 +321,67 @@ export default function ChatLayout({
     };
   }, [ws, currentUser.id, conversations]);
 
+  // WebSocket listeners for call responses (to stop outgoing ringtone)
+  useEffect(() => {
+    if (!ws?.on) return;
+
+    const unsubscribeAnswered = ws.on('call_answered', (data: any) => {
+      // Stop outgoing ringtone if this is my call
+      if (outgoingCall && data.conversationId === outgoingCall.conversationId) {
+        setOutgoingCall(null);
+      }
+    });
+
+    const unsubscribeRejected = ws.on('call_rejected', (data: any) => {
+      // Stop outgoing ringtone if this is my call
+      if (outgoingCall && data.conversationId === outgoingCall.conversationId) {
+        setOutgoingCall(null);
+        toast({
+          title: 'Call declined',
+          description: `${outgoingCall.calledName} declined the call`,
+          variant: 'destructive',
+        });
+      }
+    });
+
+    return () => {
+      unsubscribeAnswered();
+      unsubscribeRejected();
+    };
+  }, [ws, outgoingCall, toast]);
+
+  // Auto-timeout for outgoing call after 30 seconds
+  useEffect(() => {
+    if (!outgoingCall) return;
+
+    const timeout = setTimeout(() => {
+      setOutgoingCall(null);
+      toast({
+        title: 'Call timeout',
+        description: 'No answer',
+      });
+    }, 30000); // 30 seconds
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [outgoingCall, toast]);
+
   // Handle accepting incoming call
   const handleAcceptCall = async () => {
     if (!incomingCall) return;
 
     try {
+      // Send call answered notification to caller via WebSocket (stops their outgoing ringtone)
+      if (ws?.isConnected) {
+        ws.send({
+          type: 'call_answered',
+          data: {
+            conversationId: incomingCall.conversationId,
+          }
+        });
+      }
+
       // Create room first via backend API
       const response = await apiRequest('POST', '/api/daily/create-room', { roomName: incomingCall.roomName });
       
@@ -348,6 +415,16 @@ export default function ChatLayout({
   // Handle rejecting incoming call
   const handleRejectCall = () => {
     if (!incomingCall) return;
+
+    // Send call rejected notification to caller via WebSocket (stops their outgoing ringtone)
+    if (ws?.isConnected) {
+      ws.send({
+        type: 'call_rejected',
+        data: {
+          conversationId: incomingCall.conversationId,
+        }
+      });
+    }
 
     toast({
       title: 'Call declined',
@@ -393,10 +470,17 @@ export default function ChatLayout({
           }
         });
       }
+
+      // Start outgoing call ringtone
+      setOutgoingCall({
+        conversationId: activeConversation.id,
+        callType: 'video',
+        calledName: activeConversation.title || activeConversation.members,
+      });
       
       toast({
         title: 'Video call started',
-        description: 'Joining call with ' + (activeConversation.title || activeConversation.members),
+        description: 'Calling ' + (activeConversation.title || activeConversation.members) + '...',
       });
     } catch (error) {
       console.error('Error creating room:', error);
@@ -445,8 +529,15 @@ export default function ChatLayout({
           }
         });
       }
-      
+
+      // Start outgoing call ringtone
       const displayName = conversation.title || conversation.members;
+      setOutgoingCall({
+        conversationId: conversationId,
+        callType: 'audio',
+        calledName: displayName,
+      });
+      
       toast({
         title: 'Audio call started',
         description: `Calling ${displayName}...`,
@@ -496,10 +587,17 @@ export default function ChatLayout({
           }
         });
       }
+
+      // Start outgoing call ringtone
+      setOutgoingCall({
+        conversationId: activeConversation.id,
+        callType: 'audio',
+        calledName: activeConversation.title || activeConversation.members,
+      });
       
       toast({
         title: 'Audio call started',
-        description: 'Joining call with ' + (activeConversation.title || activeConversation.members),
+        description: 'Calling ' + (activeConversation.title || activeConversation.members) + '...',
       });
     } catch (error) {
       console.error('Error creating room:', error);

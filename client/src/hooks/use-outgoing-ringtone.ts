@@ -2,9 +2,10 @@ import { useEffect, useRef } from 'react';
 
 export function useOutgoingRingtone(isPlaying: boolean) {
   const audioContextRef = useRef<AudioContext | null>(null);
-  const oscillatorRef = useRef<OscillatorNode | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
+  const currentOscillatorRef = useRef<OscillatorNode | null>(null);
+  const currentGainNodeRef = useRef<GainNode | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasStartedRef = useRef(false);
 
   useEffect(() => {
@@ -16,9 +17,29 @@ export function useOutgoingRingtone(isPlaying: boolean) {
       audioContextRef.current = audioContext;
 
       const playTone = () => {
+        // Stop any currently playing tone first
+        if (currentOscillatorRef.current) {
+          try {
+            currentOscillatorRef.current.stop();
+          } catch (e) {
+            // Ignore if already stopped
+          }
+        }
+        if (currentGainNodeRef.current) {
+          try {
+            currentGainNodeRef.current.disconnect();
+          } catch (e) {
+            // Ignore
+          }
+        }
+
         // Create oscillator for single-tone beep
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
+
+        // Store in refs so cleanup can access them
+        currentOscillatorRef.current = oscillator;
+        currentGainNodeRef.current = gainNode;
 
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
@@ -30,11 +51,15 @@ export function useOutgoingRingtone(isPlaying: boolean) {
 
         oscillator.start();
         
-        // Play for 0.5 seconds
-        setTimeout(() => {
+        // Play for 0.5 seconds then stop
+        timeoutRef.current = setTimeout(() => {
           try {
-            oscillator.stop();
-            gainNode.disconnect();
+            if (currentOscillatorRef.current === oscillator) {
+              oscillator.stop();
+              gainNode.disconnect();
+              currentOscillatorRef.current = null;
+              currentGainNodeRef.current = null;
+            }
           } catch (e) {
             // Ignore if already stopped
           }
@@ -51,23 +76,31 @@ export function useOutgoingRingtone(isPlaying: boolean) {
     return () => {
       // Always cleanup audio on unmount/close
       if (hasStartedRef.current) {
+        // Clear interval
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
         }
-        if (oscillatorRef.current) {
+        // Clear timeout
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+        // Stop currently playing oscillator immediately
+        if (currentOscillatorRef.current) {
           try {
-            oscillatorRef.current.stop();
+            currentOscillatorRef.current.stop();
           } catch (e) {
             // Ignore
           }
         }
-        if (gainNodeRef.current) {
+        // Disconnect gain node
+        if (currentGainNodeRef.current) {
           try {
-            gainNodeRef.current.disconnect();
+            currentGainNodeRef.current.disconnect();
           } catch (e) {
             // Ignore
           }
         }
+        // Close audio context
         if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
           try {
             audioContextRef.current.close();
