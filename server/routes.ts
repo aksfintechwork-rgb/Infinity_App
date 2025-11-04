@@ -1267,6 +1267,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to delete any task
+  app.delete("/api/admin/tasks/:id", authMiddleware, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      const task = await storage.getTaskById(taskId);
+
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+
+      // Collect authorized user IDs before deletion for WebSocket broadcast
+      const authorizedUserIds = [task.createdBy];
+      if (task.assignedTo) {
+        authorizedUserIds.push(task.assignedTo);
+      }
+
+      await storage.deleteTask(taskId);
+      
+      // Broadcast to all involved users
+      broadcastTaskUpdate('task_deleted', { id: taskId }, authorizedUserIds);
+      
+      res.json({ message: "Task deleted successfully by admin" });
+    } catch (error) {
+      console.error("Admin delete task error:", error);
+      res.status(500).json({ error: "Failed to delete task" });
+    }
+  });
+
   app.post("/api/tasks/:id/support", authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (!req.userId) {
