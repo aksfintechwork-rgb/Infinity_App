@@ -129,6 +129,8 @@ export const messages = pgTable("messages", {
   senderId: integer("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   body: text("body"),
   attachmentUrl: text("attachment_url"),
+  editedAt: timestamp("edited_at"),
+  forwardedFromId: integer("forwarded_from_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -139,9 +141,17 @@ export const insertMessageSchema = _baseMessageSchema.omit({
   id: true,
   // @ts-ignore - drizzle-zod type inference issue
   createdAt: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  editedAt: true,
+});
+
+export const updateMessageSchema = z.object({
+  body: z.string().optional(),
+  attachmentUrl: z.string().optional().nullable(),
 });
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type UpdateMessage = z.infer<typeof updateMessageSchema>;
 export type Message = typeof messages.$inferSelect;
 
 export const recurrencePatternEnum = z.enum(["none", "daily", "weekly", "monthly"]);

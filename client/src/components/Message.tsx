@@ -1,7 +1,13 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, MoreVertical, Edit2, Forward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface MessageProps {
   id: number;
@@ -11,16 +17,23 @@ interface MessageProps {
   body?: string;
   attachmentUrl?: string;
   createdAt: string;
+  editedAt?: string | null;
   isCurrentUser?: boolean;
+  onEdit?: (messageId: number, currentBody: string) => void;
+  onForward?: (messageId: number) => void;
 }
 
 export default function Message({
+  id,
   senderName,
   senderAvatar,
   body,
   attachmentUrl,
   createdAt,
+  editedAt,
   isCurrentUser = false,
+  onEdit,
+  onForward,
 }: MessageProps) {
   const initials = senderName
     .split(' ')
@@ -33,7 +46,7 @@ export default function Message({
   const isImage = attachmentUrl?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
 
   return (
-    <div className="flex gap-3 mb-4">
+    <div className="flex gap-3 mb-4 group">
       <Avatar className="w-8 h-8 flex-shrink-0">
         <AvatarImage src={senderAvatar} />
         <AvatarFallback className="text-xs">{initials}</AvatarFallback>
@@ -50,6 +63,44 @@ export default function Message({
           <span className="text-xs text-muted-foreground">
             {format(new Date(createdAt), 'h:mm a')}
           </span>
+          {editedAt && (
+            <span className="text-xs text-muted-foreground italic" data-testid="text-edited-indicator">
+              (edited)
+            </span>
+          )}
+          
+          <div className="ml-auto invisible group-hover:visible">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  data-testid={`button-message-menu-${id}`}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {isCurrentUser && body && (
+                  <DropdownMenuItem
+                    onClick={() => onEdit?.(id, body)}
+                    data-testid={`button-edit-message-${id}`}
+                  >
+                    <Edit2 className="mr-2 h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  onClick={() => onForward?.(id)}
+                  data-testid={`button-forward-message-${id}`}
+                >
+                  <Forward className="mr-2 h-4 w-4" />
+                  Forward
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         
         {body && (

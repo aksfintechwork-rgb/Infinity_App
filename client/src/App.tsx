@@ -139,6 +139,34 @@ function App() {
       }
     });
 
+    // Listen for message edited events
+    const unsubscribeMessageEdited = ws.on('message_edited', (data: { messageId: number; body: string; editedAt: string }) => {
+      setMessages((prev) => {
+        const updatedMessages = prev.map((msg) =>
+          msg.id === data.messageId
+            ? { ...msg, body: data.body, editedAt: data.editedAt }
+            : msg
+        );
+        
+        // Update conversation last message if this was the most recent message
+        setConversations((prevConvs) =>
+          prevConvs.map((conv) => {
+            const convMessages = updatedMessages.filter(m => m.conversationId === conv.id);
+            const mostRecentMessage = convMessages[convMessages.length - 1];
+            if (mostRecentMessage && mostRecentMessage.id === data.messageId) {
+              return {
+                ...conv,
+                lastMessage: data.body,
+              };
+            }
+            return conv;
+          })
+        );
+        
+        return updatedMessages;
+      });
+    });
+
     // Listen for user creation events
     const unsubscribeUserCreated = ws.on('user_created', (user: User) => {
       setAllUsers((prev) => {
@@ -182,6 +210,7 @@ function App() {
 
     return () => {
       unsubscribeMessage();
+      unsubscribeMessageEdited();
       unsubscribeUserCreated();
       unsubscribeUserDeleted();
       unsubscribeOnlineUsers();

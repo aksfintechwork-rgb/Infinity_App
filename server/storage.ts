@@ -5,6 +5,7 @@ import {
   type InsertConversation,
   type Message,
   type InsertMessage,
+  type UpdateMessage,
   type ConversationMember,
   type InsertConversationMember,
   type PinnedConversation,
@@ -66,8 +67,10 @@ export interface IStorage {
   isPinned(userId: number, conversationId: number): Promise<boolean>;
   
   createMessage(message: InsertMessage): Promise<Message>;
+  getMessageById(id: number): Promise<Message | undefined>;
   getMessagesByConversationId(conversationId: number): Promise<Message[]>;
   getLastMessageByConversationId(conversationId: number): Promise<Message | undefined>;
+  updateMessage(id: number, updates: { body?: string; attachmentUrl?: string | null }): Promise<Message | undefined>;
   
   markConversationAsRead(userId: number, conversationId: number, lastMessageId: number | null): Promise<void>;
   getUnreadCount(userId: number, conversationId: number): Promise<number>;
@@ -330,12 +333,29 @@ export class PostgresStorage implements IStorage {
     return result[0];
   }
 
+  async getMessageById(id: number): Promise<Message | undefined> {
+    const result = await db.select().from(messages).where(eq(messages.id, id)).limit(1);
+    return result[0];
+  }
+
   async getMessagesByConversationId(conversationId: number): Promise<Message[]> {
     return db
       .select()
       .from(messages)
       .where(eq(messages.conversationId, conversationId))
       .orderBy(messages.createdAt);
+  }
+
+  async updateMessage(id: number, updates: { body?: string; attachmentUrl?: string | null }): Promise<Message | undefined> {
+    const result = await db
+      .update(messages)
+      .set({ 
+        ...updates,
+        editedAt: new Date(),
+      })
+      .where(eq(messages.id, id))
+      .returning();
+    return result[0];
   }
 
   async getLastMessageByConversationId(conversationId: number): Promise<Message | undefined> {

@@ -18,6 +18,8 @@ import DailyWorksheet from './DailyWorksheet';
 import AdminWorksheets from './AdminWorksheets';
 import { UpcomingMeetings } from './UpcomingMeetings';
 import IncomingCallModal from './IncomingCallModal';
+import EditMessageDialog from './EditMessageDialog';
+import ForwardMessageDialog from './ForwardMessageDialog';
 import { useOutgoingRingtone } from '@/hooks/use-outgoing-ringtone';
 import logoImage from '@assets/image_1761659890673.png';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -117,6 +119,10 @@ export default function ChatLayout({
     callType: 'audio' | 'video';
     calledName: string;
   } | null>(null);
+
+  // Edit and forward message state
+  const [editingMessage, setEditingMessage] = useState<{ id: number; body: string } | null>(null);
+  const [forwardingMessageId, setForwardingMessageId] = useState<number | null>(null);
 
   // Play outgoing ringtone when calling someone
   useOutgoingRingtone(!!outgoingCall);
@@ -366,6 +372,20 @@ export default function ChatLayout({
       clearTimeout(timeout);
     };
   }, [outgoingCall, toast]);
+
+  // Edit and forward message handlers
+  const handleEditMessage = (messageId: number, currentBody: string) => {
+    setEditingMessage({ id: messageId, body: currentBody });
+  };
+
+  const handleForwardMessage = (messageId: number) => {
+    setForwardingMessageId(messageId);
+  };
+
+  const handleMessageEdited = (messageId: number, newBody: string, editedAt: Date) => {
+    // Close the edit dialog - App.tsx WebSocket listener will update message state
+    setEditingMessage(null);
+  };
 
   // Handle accepting incoming call
   const handleAcceptCall = async () => {
@@ -921,6 +941,8 @@ export default function ChatLayout({
                     key={msg.id}
                     {...msg}
                     isCurrentUser={msg.senderId === currentUser.id}
+                    onEdit={handleEditMessage}
+                    onForward={handleForwardMessage}
                   />
                 ))}
                 {isTyping && <TypingIndicator userName="Someone" />}
@@ -1231,6 +1253,24 @@ export default function ChatLayout({
           onReject={handleRejectCall}
         />
       )}
+
+      {/* Edit Message Dialog */}
+      <EditMessageDialog
+        isOpen={!!editingMessage}
+        messageId={editingMessage?.id || 0}
+        currentBody={editingMessage?.body || ''}
+        onClose={() => setEditingMessage(null)}
+        onMessageEdited={handleMessageEdited}
+      />
+
+      {/* Forward Message Dialog */}
+      <ForwardMessageDialog
+        isOpen={!!forwardingMessageId}
+        messageId={forwardingMessageId || 0}
+        conversations={conversations}
+        currentConversationId={activeConversationId || 0}
+        onClose={() => setForwardingMessageId(null)}
+      />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { hashPassword, comparePassword, generateToken, authMiddleware, getCurrentUser, requireAdmin, type AuthRequest, verifyToken } from "./auth";
-import { insertUserSchema, insertConversationSchema, insertMessageSchema, insertMeetingSchema, insertTaskSchema, insertSupportRequestSchema } from "@shared/schema";
+import { insertUserSchema, insertConversationSchema, insertMessageSchema, updateMessageSchema, insertMeetingSchema, insertTaskSchema, insertSupportRequestSchema } from "@shared/schema";
 import { z } from "zod";
 import { upload, getFileUrl } from "./upload";
 import { WebSocketServer, WebSocket } from "ws";
@@ -620,6 +620,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Create message error:", error);
       res.status(500).json({ error: "Failed to create message" });
+    }
+  });
+
+  app.patch("/api/messages/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const messageId = parseInt(req.params.id);
+      if (isNaN(messageId)) {
+        return res.status(400).json({ error: "Invalid message ID" });
+      }
+
+      const validation = updateMessageSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid input", details: validation.error });
+      }
+
+      const existingMessage = await storage.getMessageById(messageId);
+      if (!existingMessage) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+
+      if (existingMessage.senderId !== req.userId) {
+        return res.status(403).json({ error: "You can only edit your own messages" });
+      }
+
+      const updatedMessage = await storage.updateMessage(messageId, validation.data);
+      if (!updatedMessage) {
+        return res.status(500).json({ error: "Failed to update message" });
+      }
+
+      const sender = await storage.getUserById(updatedMessage.senderId);
+      res.json({
+        ...updatedMessage,
+        senderName: sender?.name || 'Unknown',
+        senderAvatar: sender?.avatar,
+      });
+    } catch (error) {
+      console.error("Edit message error:", error);
+      res.status(500).json({ error: "Failed to edit message" });
+    }
+  });
+
+  app.post("/api/messages/forward", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { messageId, conversationIds } = req.body;
+      
+      if (!messageId || !Array.isArray(conversationIds) || conversationIds.length === 0) {
+        return res.status(400).json({ error: "Message ID and conversation IDs are required" });
+      }
+
+      const originalMessage = await storage.getMessageById(messageId);
+      if (!originalMessage) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+
+      const userConvIds = await storage.getUserConversationIds(req.userId);
+      if (!userConvIds.includes(originalMessage.conversationId)) {
+        return res.status(403).json({ error: "Access denied to original message" });
+      }
+
+      const forwardedMessages = [];
+      for (const conversationId of conversationIds) {
+        if (!userConvIds.includes(conversationId)) {
+          continue;
+        }
+
+        const forwardedMessage = await storage.createMessage({
+          conversationId,
+          senderId: req.userId,
+          body: originalMessage.body || undefined,
+          attachmentUrl: originalMessage.attachmentUrl || undefined,
+          forwardedFromId: originalMessage.id,
+        });
+
+        const sender = await storage.getUserById(forwardedMessage.senderId);
+        forwardedMessages.push({
+          ...forwardedMessage,
+          senderName: sender?.name || 'Unknown',
+          senderAvatar: sender?.avatar,
+        });
+      }
+
+      res.status(201).json({ 
+        success: true, 
+        forwardedCount: forwardedMessages.length,
+        messages: forwardedMessages,
+      });
+    } catch (error) {
+      console.error("Forward message error:", error);
+      res.status(500).json({ error: "Failed to forward message" });
     }
   });
 
@@ -1555,6 +1652,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 memberIds.includes(client.userId)) {
               client.send(JSON.stringify({
                 type: 'new_message',
+                data: messageWithSender,
+              }));
+            }
+          });
+        }
+
+        if (message.type === 'message_edited') {
+          const { messageId, body, attachmentUrl } = message.data;
+          
+          const existingMessage = await storage.getMessageById(messageId);
+          if (!existingMessage) {
+            ws.send(JSON.stringify({ type: 'error', error: 'Message not found' }));
+            return;
+          }
+          
+          if (existingMessage.senderId !== ws.userId) {
+            ws.send(JSON.stringify({ type: 'error', error: 'Can only edit your own messages' }));
+            return;
+          }
+          
+          const updatedMessage = await storage.updateMessage(messageId, { body, attachmentUrl });
+          if (!updatedMessage) {
+            ws.send(JSON.stringify({ type: 'error', error: 'Failed to update message' }));
+            return;
+          }
+          
+          const sender = await storage.getUserById(updatedMessage.senderId);
+          const messageWithSender = {
+            ...updatedMessage,
+            senderName: sender?.name || 'Unknown',
+            senderAvatar: sender?.avatar,
+          };
+          
+          const members = await storage.getConversationMembers(existingMessage.conversationId);
+          const memberIds = members.map(m => m.id);
+          
+          wss.clients.forEach((client: WebSocketClient) => {
+            if (client.readyState === WebSocket.OPEN && 
+                client.userId && 
+                memberIds.includes(client.userId)) {
+              client.send(JSON.stringify({
+                type: 'message_edited',
                 data: messageWithSender,
               }));
             }
