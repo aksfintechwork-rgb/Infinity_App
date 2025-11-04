@@ -1,24 +1,10 @@
 # SUPREMO TRADERS LLP Team Communication Platform
 
 ## Overview
-This project is an internal, real-time communication platform for SUPREMO TRADERS LLP. It features direct messaging, group chats, file attachments, and role-based access. Beyond core chat functionalities, it integrates a meeting calendar with AI summarization, video conferencing, comprehensive task management, and user profile management. The platform aims to be an efficient and professional communication tool, enhancing team collaboration and productivity.
+This project is an internal, real-time communication platform for SUPREMO TRADERS LLP. It features direct messaging, group chats, file attachments, and role-based access. Beyond core chat functionalities, it integrates a meeting calendar with AI summarization, video conferencing, comprehensive task management, and user profile management. The platform aims to be an efficient and professional communication tool, enhancing team collaboration and productivity with a focus on data preservation and integrity across all updates.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
-
-## CRITICAL: Data Preservation Policy
-**MANDATORY RULE FOR ALL FUTURE UPDATES:**
-- ALL existing data MUST be preserved in every update - tasks, messages, meetings, conversations, user data, file attachments
-- NEVER delete or hide existing data when implementing new features
-- NEVER modify database schema in ways that lose data (e.g., changing column types, dropping columns)
-- Filter logic changes should ONLY affect what users SEE, not what data EXISTS in the database
-- UI updates should ONLY change visibility/presentation, never data deletion
-- When adding features: extend existing tables with new columns, don't replace or remove existing ones
-- Always use `npm run db:push --force` for schema changes to preserve existing data
-- **Data Integrity First**: Any update must ensure backward compatibility with all existing records
-- Excel import should ADD new tasks, not replace existing ones
-- Admin filters show/hide tasks from view, but all tasks remain in database
-- Regular user visibility restrictions are VIEW-LEVEL only - all their assigned tasks exist in database permanently
 
 ## System Architecture
 
@@ -33,111 +19,36 @@ Preferred communication style: Simple, everyday language.
 ### Data Storage
 - **Database**: PostgreSQL via Neon serverless HTTP driver, managed with Drizzle ORM.
 - **Schema**: Includes tables for users, conversations, messages, meetings (with AI summaries), tasks, and associated entities.
+- **Data Preservation**: All existing data (tasks, messages, meetings, conversations, user data, file attachments) must be preserved across updates. Schema changes must be backward compatible and non-destructive.
 
 ### Authentication & Authorization
 - **Authentication**: JWT tokens (7-day expiration), bcrypt hashing, localStorage for client tokens, case-insensitive login IDs.
-- **Role-Based Access Control**: `admin` and `user` roles, with distinct access privileges.
+- **Role-Based Access Control**: `admin` and `user` roles with distinct access privileges.
 - **Security**: Environment variables for secrets, password validation, auth/admin middleware, auto-healing admin password system.
 
-### Cross-Device Compatibility
-- Seamless operation across devices and browsers with automatic WebSocket reconnection, robust file handling, and enhanced desktop notifications.
-- **Mobile Optimization**: Touch-optimized interface, larger fonts, responsive layouts, and a comprehensive mobile navigation system with a Floating Action Button (FAB).
-
-### Real-Time Features
-- **Presence Tracking**: WebSocket-based online/offline status with multi-tab support and visual indicators.
-- **Enhanced Notifications**: Browser desktop notifications with distinct audio alerts and automatic AudioContext management.
-
-### Key Features
-- **Group Conversations**: Group naming, member management, and optional message history access.
-- **File & Image Sharing**: Enhanced media display with larger, clearer image previews (448px max-width, 400px max-height), clickable images that open full-size in new tabs, hover effects for interactivity, and one-click file downloads. Supports images (JPG, PNG, GIF, WebP), PDFs, and documents.
+### Core Features
+- **Cross-Device Compatibility**: Seamless operation across devices and browsers with automatic WebSocket reconnection and mobile optimization.
+- **Real-Time Features**: Presence tracking, enhanced desktop notifications with audio alerts.
+- **Group Conversations**: Naming, member management, and optional message history access.
+- **File & Image Sharing**: Enhanced media display, clickable previews, and one-click downloads for various file types.
 - **Admin Tools**: User deletion, real-time user list updates, and task oversight.
-- **Meeting Calendar**: Full monthly grid view with clickable days, month navigation, and interactive meeting badges:
-  - **Start Meeting Now**: Instantly opens a video meeting in a new window without creating a calendar entry
-  - **Schedule Meeting**: Create calendar entries with custom date/time selection using native datetime-local inputs
-  - **Weekly Off Display**: Sundays are visually marked as weekly off with red header text, "Weekly Off" label, subtle red background, and "OFF" indicator in each Sunday cell
-  - **Meeting Badge Dropdown**: Click any meeting to access:
-    - **Join Meeting**: Opens video conference in a new window (keeps main calendar accessible)
-    - **Edit**: Opens edit dialog with pre-filled meeting details for quick time and participant updates
-    - **Delete**: Removes the meeting with confirmation
-  - **Auto-Generated Meeting Links**: Daily.co video links created automatically when joining - no technical room names visible to users
-  - **Meeting Capacity**: Supports up to 35 participants (recommended) or 75 maximum with unlimited duration
-  - **Recurring Meetings**: Daily, weekly, or monthly patterns with automatic display across all scheduled occurrence dates
-  - **Meeting Reminders**: Automated reminder system sends chat notifications to all participants at 15 minutes and 5 minutes before each meeting. Reminders sent via system user "Atul" with service checking every minute for upcoming meetings.
-  - **Indian Standard Time (IST)**: All times displayed and managed in IST with automatic UTC conversion for database storage
-  - Popup blocker detection with user-friendly toast notifications
-  - Keyboard-accessible dropdown navigation using onSelect handlers
-  - Flexible time scheduling - set meetings at any custom time via intuitive datetime inputs
-- **AI Meeting Summaries**: GPT-4o (via Replit AI Integrations) generates structured, multi-language summaries with objectives, topics, outcomes, and participant guidance.
-- **Instant Video/Audio Calling**: Full calling functionality in chat header (Microsoft Teams-style) with separate phone and video icons - **1 CLICK TO JOIN!**
-  - **Chat Header Buttons**: When chatting with anyone (individual or group), phone icon and video icon appear in the top-right header for instant calling
-  - **Audio Calls**: Click phone icon to start audio-only call with video disabled by default (users can enable video later if needed)
-  - **Video Calls**: Click video icon to start full video call with camera and screen sharing enabled by default
-  - **Direct Join**: Both call types open Daily.co meeting in new window and join immediately - NO pre-join screen, NO lobby, NO waiting - just 1 click!
-  - **User Names in Calls**: All calls display real user names in Daily.co instead of "Guest" via userName parameter
-  - **Incoming Call Notifications**: LOUD and CLEAR notifications when receiving calls:
-    - **Dual-Tone Ringtone**: Loud (0.8 volume) dual-frequency ringtone (480Hz + 620Hz) plays for 30 seconds
-    - **Visual Modal**: Large prominent modal with caller name, avatar, and call type (audio/video)
-    - **Toast Notification**: Uppercase alert notification with 30-second duration
-    - **Desktop Notification**: Browser notification with caller details (if permissions granted)
-    - **WebSocket Real-Time**: Instant call alerts broadcast to all conversation members
-    - **Accept/Decline Buttons**: One-click to answer or reject incoming calls
-    - **Auto-Decline**: Calls auto-reject after 30 seconds if unanswered
-  - **New Window**: Calls open in separate windows to maintain access to chat, tasks, and calendar during calls
-  - **Unlimited Duration**: No time limits on any calls
-  - **Dynamic Room Creation**: Backend API endpoint creates Daily.co rooms on-demand via `/api/daily/create-room` with graceful handling of existing rooms
-  - **Account Domain**: Uses atulkadam.daily.co for all video/audio calls
-- **Task Management**: Start/target dates, status tracking with completion percentage (0%, 25%, 50%, 75%, 100%), visual progress bars, status update reasons, task assignment, real-time WebSocket updates, customizable automated reminders, and a professional UI. 
-  - **Task Visibility**: Regular users see ALL tasks they're involved in (tasks they created OR tasks assigned to them). Admins can view and filter all tasks (all tasks, created by them, assigned to them, or by specific team member).
-  - **Task Editing**: All users can update task status, completion percentage, and remarks for tasks assigned to them. Admins can edit any task.
-  - **Custom Task Reminders**: Per-task reminder frequency with options: hourly, every 3 hours, every 6 hours, daily, every 2 days, or none. Reminders sent via chat messages from system user "Atul" with toast notifications for immediate visibility.
-  - **Excel Import/Export** (Admin-only): Bulk task management via Excel spreadsheets with comprehensive error handling:
-    - **Export**: Downloads all currently visible tasks (respecting filters) as .xlsx file with complete task data including ID, title, description, dates, status, completion percentage, assignees, reminders, and remarks
-    - **Import**: Bulk upload tasks from Excel files with intelligent date conversion (handles Excel serial dates), assignee name matching, and validation
-    - **Error Reporting**: Detailed feedback showing row numbers and specific failure reasons (missing title, unknown assignee, invalid data) for up to 5 failed rows with summary count
-    - **Date Handling**: Automatic conversion of Excel serial dates to ISO format, accounting for Excel's 1900 leap year bug
-    - **Validation**: Title requirement, assignee existence verification, reminder frequency whitelist with safe defaults
-  - **Backend Implementation**: All 5 task retrieval methods in `server/storage.ts` (getTaskById, getTasksByCreator, getTasksByAssignee, getAllTasksForUser, getAllTasks) include `completionPercentage`, `statusUpdateReason`, `reminderFrequency`, and `lastReminderSent` fields in their SELECT statements to ensure complete data delivery to API consumers.
-- **Professional UI Design**: Clean, responsive interface with a professional blue palette, solid colors, and enhanced visual hierarchy across all components (sidebar, conversation list, search, mobile).
-- **Quick Join Meetings**: "Quick Join" section in chat sidebar displays upcoming meetings (next 24 hours) with one-click join buttons. Shows up to 3 upcoming meetings with time labels (Today/Tomorrow), reducing clicks from 3+ to just 1 for joining meetings.
-- **Smart Chat Scrolling**: Intelligent auto-scroll system that allows users to read chat history without interruption. Features conversation-aware scrolling that:
-  - Automatically scrolls to bottom when opening or switching conversations (shows latest messages)
-  - Preserves scroll position when user scrolls up to read history (no forced auto-scroll)
-  - Only auto-scrolls when user is near bottom (within 150px threshold)
-  - Uses double requestAnimationFrame for reliable DOM synchronization
-  - Direct scrollTop manipulation for consistent cross-browser behavior
-- **Pin Chat Feature**: Users can pin up to 3 conversations to the top of their list with backend validation, real-time updates, and visual indicators.
-- **Password Management**: Self-service password change feature with validation and security checks.
-- **User Profile & Settings**: View profile information and manage app preferences (dark mode, notifications, sound alerts) with persistence via localStorage.
-- **Task Assignment & Remarks**: Users can create tasks and edit assignments/remarks for their own tasks; admins can edit any task.
-- **Daily Work Log**: Comprehensive daily planning and activity tracking system for all users:
-  - **Daily To-Do List**: Add tasks with priority levels (Low, Medium, High, Urgent), check off completed items, and organize daily work
-    - **PRIVACY POLICY**: Todo lists are completely PRIVATE - only visible to the user who created them
-    - Admins CANNOT see user todo lists - only hourly activity logs
-    - Other users CANNOT see your todo list
-  - **Priority-Based Planning**: Visual priority badges with color coding for quick task identification
-  - **Customizable Working Hours**: Users can set their own work hours (e.g., 8 AM - 6 PM, 9 AM - 5 PM) via settings button
-    - Hourly activity log dynamically adjusts to selected hours
-    - Settings saved to localStorage and persist across sessions
-    - Validation ensures end hour is after start hour
-  - **Hourly Activity Tracking**: Log work activities for each hour within custom work hours range
-  - **Save & Submit**: Save work-in-progress logs throughout the day, submit final worksheet when complete
-  - **Auto-Save on Submit**: Click Submit directly - worksheet auto-saves first if needed, then submits seamlessly
-  - **Status Tracking**: Submitted worksheets are locked to prevent editing, ensuring data integrity
-  - **Auto-Refresh**: Worksheet data refreshes every 30 seconds to stay current
-  - **Date Display**: Shows current date (e.g., "Friday, November 1, 2024") for easy reference
-  - **Duplicate Prevention**: Backend enforces one worksheet per user per day with automatic update-if-exists logic
-  - **Admin Team View**: Admins can view submitted team worksheets with date and user filters (PRIVACY: todos are NOT visible):
-    - Filter by specific date to see daily submissions
-    - Filter by specific user or view all users
-    - View hourly activity logs with timestamps (NOT private todo lists)
-    - Submitted time display for accountability
-    - One-click access via "Team Work Logs" button in admin navigation
+- **Meeting Calendar**: Full monthly grid view, one-click "Start Meeting Now", "Schedule Meeting" with custom dates, recurring meetings (daily, weekly, monthly), auto-generated Daily.co links, meeting reminders, and IST time management.
+- **AI Meeting Summaries**: GPT-4o generates structured, multi-language summaries.
+- **Instant Video/Audio Calling**: One-click calling from chat header using Daily.co, direct join (no lobby), user names displayed, and robust incoming call notifications. Calls open in new windows to maintain chat access.
+- **Task Management**: Start/target dates, status tracking with completion percentage, visual progress bars, status update reasons, task assignment, real-time WebSocket updates, customizable automated reminders, and admin-only Excel import/export functionality with comprehensive error handling.
+- **Professional UI Design**: Clean, responsive interface with a professional blue palette.
+- **Quick Join Meetings**: "Quick Join" section in chat sidebar displays upcoming meetings for one-click access.
+- **Smart Chat Scrolling**: Intelligent auto-scroll system for uninterrupted chat history reading.
+- **Pin Chat Feature**: Users can pin up to 3 conversations.
+- **Password Management**: Self-service password change.
+- **User Profile & Settings**: View profile information and manage app preferences (dark mode, notifications, sound alerts).
+- **Daily Work Log**: Comprehensive daily planning and activity tracking system for all users with private to-do lists, priority levels, customizable working hours, hourly activity logging, auto-save, and admin team view (excluding private to-dos).
 
 ## External Dependencies
 
 -   **Neon Database**: Serverless PostgreSQL hosting.
 -   **OpenAI via Replit AI Integrations**: GPT-4o for AI meeting summarization.
--   **Daily.co**: Video conferencing platform for team meetings and instant audio/video calls with NO lobby screens. Uses REST API for dynamic room creation with DAILY_API_KEY environment variable.
+-   **Daily.co**: Video conferencing platform for team meetings and instant audio/video calls.
 -   **Google Fonts**: Inter font family.
--   **File Storage**: Local filesystem (`uploads/` directory) with Multer.
--   **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`, `xlsx` (for Excel file handling).
+-   **File Storage**: Local filesystem (`uploads/` directory).
+-   **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`, `xlsx`.
