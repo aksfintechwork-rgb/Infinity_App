@@ -124,6 +124,10 @@ export default function ChatLayout({
   const [editingMessage, setEditingMessage] = useState<{ id: number; body: string } | null>(null);
   const [forwardingMessageId, setForwardingMessageId] = useState<number | null>(null);
 
+  // Track call window reference
+  const callWindowRef = useRef<Window | null>(null);
+  const windowCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   // Play outgoing ringtone when calling someone
   useOutgoingRingtone(!!outgoingCall);
 
@@ -372,6 +376,32 @@ export default function ChatLayout({
       clearTimeout(timeout);
     };
   }, [outgoingCall, toast]);
+
+  // Monitor call window - stop ringtone when window is closed
+  useEffect(() => {
+    if (!outgoingCall || !callWindowRef.current) return;
+
+    // Check if window is closed every 500ms
+    windowCheckIntervalRef.current = setInterval(() => {
+      if (callWindowRef.current && callWindowRef.current.closed) {
+        // Window was closed - stop outgoing ringtone
+        setOutgoingCall(null);
+        callWindowRef.current = null;
+        
+        if (windowCheckIntervalRef.current) {
+          clearInterval(windowCheckIntervalRef.current);
+          windowCheckIntervalRef.current = null;
+        }
+      }
+    }, 500);
+
+    return () => {
+      if (windowCheckIntervalRef.current) {
+        clearInterval(windowCheckIntervalRef.current);
+        windowCheckIntervalRef.current = null;
+      }
+    };
+  }, [outgoingCall]);
 
   // Edit and forward message handlers
   const handleEditMessage = (messageId: number, currentBody: string) => {
