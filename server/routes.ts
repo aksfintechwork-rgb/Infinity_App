@@ -1445,6 +1445,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
         
+        if (message.type === 'call_answered') {
+          // Broadcast call answered notification to stop outgoing ringtone for caller
+          const { conversationId } = message.data;
+          
+          // Validate conversationId
+          if (typeof conversationId !== 'number') {
+            ws.send(JSON.stringify({ type: 'error', error: 'Invalid conversationId' }));
+            return;
+          }
+          
+          // Verify user belongs to this conversation
+          const userConvIds = await storage.getUserConversationIds(ws.userId!);
+          if (!userConvIds.includes(conversationId)) {
+            ws.send(JSON.stringify({ type: 'error', error: 'Access denied' }));
+            return;
+          }
+          
+          // Get conversation to find all members
+          const conversation = await storage.getConversationById(conversationId);
+          if (!conversation) return;
+          
+          // Parse member IDs
+          const memberIds = JSON.parse(conversation.memberIds as any);
+          
+          // Broadcast to all conversation members (caller will stop their ringtone)
+          wss.clients.forEach((client: any) => {
+            if (client.readyState === ws.OPEN && memberIds.includes(client.userId)) {
+              client.send(JSON.stringify({
+                type: 'call_answered',
+                data: { conversationId },
+              }));
+            }
+          });
+          return;
+        }
+        
+        if (message.type === 'call_rejected') {
+          // Broadcast call rejected notification to stop outgoing ringtone for caller
+          const { conversationId } = message.data;
+          
+          // Validate conversationId
+          if (typeof conversationId !== 'number') {
+            ws.send(JSON.stringify({ type: 'error', error: 'Invalid conversationId' }));
+            return;
+          }
+          
+          // Verify user belongs to this conversation
+          const userConvIds = await storage.getUserConversationIds(ws.userId!);
+          if (!userConvIds.includes(conversationId)) {
+            ws.send(JSON.stringify({ type: 'error', error: 'Access denied' }));
+            return;
+          }
+          
+          // Get conversation to find all members
+          const conversation = await storage.getConversationById(conversationId);
+          if (!conversation) return;
+          
+          // Parse member IDs
+          const memberIds = JSON.parse(conversation.memberIds as any);
+          
+          // Broadcast to all conversation members (caller will stop their ringtone and show notification)
+          wss.clients.forEach((client: any) => {
+            if (client.readyState === ws.OPEN && memberIds.includes(client.userId)) {
+              client.send(JSON.stringify({
+                type: 'call_rejected',
+                data: { conversationId },
+              }));
+            }
+          });
+          return;
+        }
+        
         if (message.type === 'new_message') {
           const validation = insertMessageSchema.extend({
             conversationId: z.number(),
