@@ -214,6 +214,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/users/update-last-seen", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      await storage.updateUserLastSeen(req.userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Update last seen error:", error);
+      res.status(500).json({ error: "Failed to update last seen" });
+    }
+  });
+
   app.get("/api/admin/users", authMiddleware, requireAdmin, async (req, res) => {
     try {
       const users = await storage.getAllUsers();
@@ -1541,6 +1555,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('message', async (data) => {
       try {
         const message = JSON.parse(data.toString());
+        
+        // Update last seen on any WebSocket activity
+        if (ws.userId) {
+          await storage.updateUserLastSeen(ws.userId);
+        }
         
         if (message.type === 'incoming_call') {
           // Broadcast incoming call notification to all members of the conversation
