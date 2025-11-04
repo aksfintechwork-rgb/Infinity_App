@@ -443,7 +443,10 @@ export default function ChatLayout({
       
       // Open the room in new window and join immediately with user name
       const callUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}`;
-      window.open(callUrl, '_blank', 'noopener,noreferrer');
+      const callWindow = window.open(callUrl, '_blank', 'noopener,noreferrer');
+      
+      // Don't track window for incoming calls (we're not the caller)
+      // callWindowRef.current = callWindow;
 
       toast({
         title: 'Joined call',
@@ -503,7 +506,10 @@ export default function ChatLayout({
       
       // Open the room in new window with user name - instant join!
       const callUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}`;
-      window.open(callUrl, '_blank', 'noopener,noreferrer');
+      const callWindow = window.open(callUrl, '_blank', 'noopener,noreferrer');
+      
+      // Store window reference to monitor when it's closed
+      callWindowRef.current = callWindow;
       
       // Send incoming call notification to other members via WebSocket
       if (ws?.isConnected) {
@@ -515,7 +521,8 @@ export default function ChatLayout({
             callType: 'video',
             from: {
               id: currentUser.id,
-              name: currentUser.name
+              name: currentUser.name,
+              avatar: currentUser.avatar
             }
           }
         });
@@ -562,7 +569,10 @@ export default function ChatLayout({
       
       // Open the room in new window with video disabled and user name for audio calls
       const audioCallUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
-      window.open(audioCallUrl, '_blank', 'noopener,noreferrer');
+      const callWindow = window.open(audioCallUrl, '_blank', 'noopener,noreferrer');
+      
+      // Store window reference to monitor when it's closed
+      callWindowRef.current = callWindow;
       
       // Send incoming call notification to other members via WebSocket
       if (ws?.isConnected) {
@@ -574,7 +584,8 @@ export default function ChatLayout({
             callType: 'audio',
             from: {
               id: currentUser.id,
-              name: currentUser.name
+              name: currentUser.name,
+              avatar: currentUser.avatar
             }
           }
         });
@@ -620,7 +631,10 @@ export default function ChatLayout({
       
       // Open the room in new window with video disabled and user name for audio calls - instant join!
       const audioCallUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
-      window.open(audioCallUrl, '_blank', 'noopener,noreferrer');
+      const callWindow = window.open(audioCallUrl, '_blank', 'noopener,noreferrer');
+      
+      // Store window reference to monitor when it's closed
+      callWindowRef.current = callWindow;
       
       // Send incoming call notification to other members via WebSocket
       if (ws?.isConnected) {
@@ -632,7 +646,8 @@ export default function ChatLayout({
             callType: 'audio',
             from: {
               id: currentUser.id,
-              name: currentUser.name
+              name: currentUser.name,
+              avatar: currentUser.avatar
             }
           }
         });
