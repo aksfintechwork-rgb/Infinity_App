@@ -70,9 +70,18 @@ Preferred communication style: Simple, everyday language.
 - **AI Meeting Summaries**: GPT-4o (via Replit AI Integrations) generates structured, multi-language summaries with objectives, topics, outcomes, and participant guidance.
 - **Instant Video/Audio Calling**: Full calling functionality in chat header (Microsoft Teams-style) with separate phone and video icons - **1 CLICK TO JOIN!**
   - **Chat Header Buttons**: When chatting with anyone (individual or group), phone icon and video icon appear in the top-right header for instant calling
-  - **Audio Calls**: Click phone icon (📞) to start audio-only call with video disabled by default (users can enable video later if needed)
-  - **Video Calls**: Click video icon (🎥) to start full video call with camera and screen sharing enabled by default
+  - **Audio Calls**: Click phone icon to start audio-only call with video disabled by default (users can enable video later if needed)
+  - **Video Calls**: Click video icon to start full video call with camera and screen sharing enabled by default
   - **Direct Join**: Both call types open Daily.co meeting in new window and join immediately - NO pre-join screen, NO lobby, NO waiting - just 1 click!
+  - **User Names in Calls**: All calls display real user names in Daily.co instead of "Guest" via userName parameter
+  - **Incoming Call Notifications**: LOUD and CLEAR notifications when receiving calls:
+    - **Dual-Tone Ringtone**: Loud (0.8 volume) dual-frequency ringtone (480Hz + 620Hz) plays for 30 seconds
+    - **Visual Modal**: Large prominent modal with caller name, avatar, and call type (audio/video)
+    - **Toast Notification**: Uppercase alert notification with 30-second duration
+    - **Desktop Notification**: Browser notification with caller details (if permissions granted)
+    - **WebSocket Real-Time**: Instant call alerts broadcast to all conversation members
+    - **Accept/Decline Buttons**: One-click to answer or reject incoming calls
+    - **Auto-Decline**: Calls auto-reject after 30 seconds if unanswered
   - **New Window**: Calls open in separate windows to maintain access to chat, tasks, and calendar during calls
   - **Unlimited Duration**: No time limits on any calls
   - **Dynamic Room Creation**: Backend API endpoint creates Daily.co rooms on-demand via `/api/daily/create-room` with graceful handling of existing rooms
