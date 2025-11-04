@@ -20,6 +20,7 @@ import { UpcomingMeetings } from './UpcomingMeetings';
 import IncomingCallModal from './IncomingCallModal';
 import EditMessageDialog from './EditMessageDialog';
 import ForwardMessageDialog from './ForwardMessageDialog';
+import InviteToCallDialog from './InviteToCallDialog';
 import { useOutgoingRingtone } from '@/hooks/use-outgoing-ringtone';
 import logoImage from '@assets/image_1761659890673.png';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -123,6 +124,9 @@ export default function ChatLayout({
   // Edit and forward message state
   const [editingMessage, setEditingMessage] = useState<{ id: number; body: string } | null>(null);
   const [forwardingMessageId, setForwardingMessageId] = useState<number | null>(null);
+
+  // Invite to call state
+  const [isInviteToCallOpen, setIsInviteToCallOpen] = useState(false);
 
   // Track call window reference
   const callWindowRef = useRef<Window | null>(null);
@@ -415,6 +419,35 @@ export default function ChatLayout({
   const handleMessageEdited = (messageId: number, newBody: string, editedAt: Date) => {
     // Close the edit dialog - App.tsx WebSocket listener will update message state
     setEditingMessage(null);
+  };
+
+  // Handle inviting user to active call
+  const handleSendCallInvite = (userId: number) => {
+    if (!outgoingCall || !ws?.isConnected) return;
+
+    const user = allUsers.find(u => u.id === userId);
+    if (!user) return;
+
+    // Generate the room name based on conversation and call type
+    const roomName = outgoingCall.callType === 'video' 
+      ? `supremo-video-${outgoingCall.conversationId}`
+      : `supremo-audio-${outgoingCall.conversationId}`;
+
+    // Send invitation via WebSocket
+    ws.send({
+      type: 'invite_to_call',
+      data: {
+        userId,
+        conversationId: outgoingCall.conversationId,
+        callType: outgoingCall.callType,
+        roomName,
+        from: {
+          id: currentUser.id,
+          name: currentUser.name,
+          avatar: currentUser.avatar
+        }
+      }
+    });
   };
 
   // Handle accepting incoming call
@@ -905,51 +938,81 @@ export default function ChatLayout({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {/* Audio Call Button - Desktop */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleStartAudioCall}
-                  className="hidden md:flex h-9 w-9"
-                  data-testid="button-audio-call"
-                  title="Start audio call"
-                >
-                  <Phone className="w-4 h-4" />
-                </Button>
-                
-                {/* Video Call Button - Desktop */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleStartCall}
-                  className="hidden md:flex h-9 w-9"
-                  data-testid="button-video-call"
-                  title="Start video call"
-                >
-                  <Video className="w-4 h-4" />
-                </Button>
+                {/* Show invite button if call is active, otherwise show call buttons */}
+                {outgoingCall ? (
+                  <>
+                    {/* Invite to Call Button - Desktop */}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => setIsInviteToCallOpen(true)}
+                      className="hidden md:flex"
+                      data-testid="button-invite-to-call"
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Invite
+                    </Button>
+                    {/* Invite to Call Button - Mobile */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsInviteToCallOpen(true)}
+                      className="md:hidden h-9 w-9"
+                      data-testid="button-invite-to-call-mobile"
+                      title="Invite to call"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    {/* Audio Call Button - Desktop */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleStartAudioCall}
+                      className="hidden md:flex h-9 w-9"
+                      data-testid="button-audio-call"
+                      title="Start audio call"
+                    >
+                      <Phone className="w-4 h-4" />
+                    </Button>
+                    
+                    {/* Video Call Button - Desktop */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleStartCall}
+                      className="hidden md:flex h-9 w-9"
+                      data-testid="button-video-call"
+                      title="Start video call"
+                    >
+                      <Video className="w-4 h-4" />
+                    </Button>
 
-                {/* Mobile: Combined call buttons */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleStartAudioCall}
-                  className="md:hidden h-9 w-9"
-                  data-testid="button-audio-call-mobile"
-                  title="Audio call"
-                >
-                  <Phone className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleStartCall}
-                  className="md:hidden h-9 w-9"
-                  data-testid="button-video-call-mobile"
-                  title="Video call"
-                >
-                  <Video className="w-4 h-4" />
-                </Button>
+                    {/* Mobile: Combined call buttons */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleStartAudioCall}
+                      className="md:hidden h-9 w-9"
+                      data-testid="button-audio-call-mobile"
+                      title="Audio call"
+                    >
+                      <Phone className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleStartCall}
+                      className="md:hidden h-9 w-9"
+                      data-testid="button-video-call-mobile"
+                      title="Video call"
+                    >
+                      <Video className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
                 {activeConversation.isGroup && (
                   <>
                     <Button
@@ -1316,6 +1379,26 @@ export default function ChatLayout({
         currentConversationId={activeConversationId || 0}
         onClose={() => setForwardingMessageId(null)}
       />
+
+      {/* Invite to Call Dialog */}
+      {outgoingCall && (
+        <InviteToCallDialog
+          isOpen={isInviteToCallOpen}
+          onClose={() => setIsInviteToCallOpen(false)}
+          currentUserId={currentUser.id}
+          conversationId={outgoingCall.conversationId}
+          callType={outgoingCall.callType}
+          roomName={outgoingCall.callType === 'video' 
+            ? `supremo-video-${outgoingCall.conversationId}`
+            : `supremo-audio-${outgoingCall.conversationId}`
+          }
+          allUsers={allUsers}
+          conversationMemberIds={
+            conversations.find(c => c.id === outgoingCall.conversationId)?.memberIds || []
+          }
+          onSendInvite={handleSendCallInvite}
+        />
+      )}
     </div>
   );
 }
