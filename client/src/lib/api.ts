@@ -73,6 +73,19 @@ export async function getAllUsers(token: string) {
   return response.json();
 }
 
+export async function updateLastSeen(token: string) {
+  const response = await fetch(`${API_BASE}/users/update-last-seen`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update last seen');
+  }
+
+  return response.json();
+}
+
 export async function getConversations(token: string) {
   const response = await fetch(`${API_BASE}/conversations`, {
     headers: { Authorization: `Bearer ${token}` },

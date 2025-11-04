@@ -26,6 +26,7 @@ import logoImage from '@assets/image_1761659890673.png';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { formatLastSeen } from '@/lib/utils';
 
 interface User {
   id: number;
@@ -34,6 +35,7 @@ interface User {
   email?: string;
   role: string;
   avatar?: string;
+  lastSeenAt?: string;
 }
 
 interface Conversation {
@@ -930,10 +932,24 @@ export default function ChatLayout({
                   <h2 className="font-semibold text-foreground truncate" data-testid="text-conversation-title">
                     {activeConversation.title || activeConversation.members}
                   </h2>
-                  {activeConversation.isGroup && (
+                  {activeConversation.isGroup ? (
                     <p className="text-xs text-muted-foreground truncate md:block hidden">
                       {activeConversation.members}
                     </p>
+                  ) : (
+                    <>
+                      {(() => {
+                        const otherUserId = activeConversation.memberIds?.find(id => id !== currentUser.id);
+                        const otherUser = allUsers.find(u => u.id === otherUserId);
+                        const isOnline = otherUserId ? onlineUserIds.includes(otherUserId) : false;
+                        const lastSeenText = otherUser ? formatLastSeen(otherUser.lastSeenAt, isOnline) : '';
+                        return lastSeenText ? (
+                          <p className="text-xs text-muted-foreground truncate" data-testid="text-last-seen">
+                            {lastSeenText}
+                          </p>
+                        ) : null;
+                      })()}
+                    </>
                   )}
                 </div>
               </div>

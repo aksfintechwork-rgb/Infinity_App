@@ -219,6 +219,28 @@ function App() {
     };
   }, [ws.isConnected, ws.on, currentUser, activeConversationId, conversations]);
 
+  // Periodically update last seen timestamp
+  useEffect(() => {
+    if (!token || !currentUser) return;
+
+    const updateLastSeen = async () => {
+      try {
+        await api.updateLastSeen(token);
+      } catch (error) {
+        // Silently fail - not critical
+        console.debug('Failed to update last seen:', error);
+      }
+    };
+
+    // Update immediately on mount
+    updateLastSeen();
+
+    // Update every minute
+    const interval = setInterval(updateLastSeen, 60000);
+
+    return () => clearInterval(interval);
+  }, [token, currentUser]);
+
   const loadUserData = async () => {
     try {
       const [user, users, convs] = await Promise.all([
