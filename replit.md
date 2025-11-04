@@ -34,7 +34,7 @@ Preferred communication style: Simple, everyday language.
 - **Admin Tools**: User deletion, real-time user list updates, and task oversight.
 - **Meeting Calendar**: Full monthly grid view, one-click "Start Meeting Now", "Schedule Meeting" with custom dates, recurring meetings (daily, weekly, monthly), auto-generated Daily.co links, meeting reminders, and IST time management.
 - **AI Meeting Summaries**: GPT-4o generates structured, multi-language summaries.
-- **Instant Video/Audio Calling**: One-click calling from chat header using Daily.co, direct join (no lobby), user names displayed, and robust incoming call notifications. Calls open in new windows to maintain chat access.
+- **Instant Video/Audio Calling**: One-click calling from chat header using Daily.co, direct join (no lobby), user names displayed, and robust incoming/outgoing call notifications. Incoming calls show loud dual-tone ringtone, visual modal, and desktop notifications. Outgoing calls play loud single-tone ringtone that stops when answered/rejected. Calls open in new windows to maintain chat access.
 - **Task Management**: Start/target dates, status tracking with completion percentage, visual progress bars, status update reasons, task assignment, real-time WebSocket updates, customizable automated reminders, and admin-only Excel import/export functionality with comprehensive error handling.
 - **Professional UI Design**: Clean, responsive interface with a professional blue palette.
 - **Quick Join Meetings**: "Quick Join" section in chat sidebar displays upcoming meetings for one-click access.
