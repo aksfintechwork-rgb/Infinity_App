@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Calendar, User, CheckCircle2, Circle, Clock, XCircle, Search, Filter, TrendingUp, AlertCircle, Target, Zap, ArrowUpDown, Edit, Menu, Download, Upload } from 'lucide-react';
+import { Plus, Calendar, User, CheckCircle2, Circle, Clock, XCircle, Search, Filter, TrendingUp, AlertCircle, Target, Zap, ArrowUpDown, Edit, Menu, Download, Upload, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -305,6 +305,29 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
       // Close both the status update dialog and the task details dialog
       setIsStatusUpdateDialogOpen(false);
       setSelectedTask(null);
+    },
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: number) => {
+      // Use admin endpoint if user is admin, otherwise use regular endpoint
+      const endpoint = isAdmin ? `/api/admin/tasks/${taskId}` : `/api/tasks/${taskId}`;
+      return apiRequest('DELETE', endpoint);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+      setSelectedTask(null);
+      toast({
+        title: 'Task deleted',
+        description: 'The task has been removed successfully.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to delete task',
+        description: error.message || 'Please try again.',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -1278,6 +1301,25 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
                   <Target className="w-3 h-3 mr-1" />
                   Update Status & Progress
                 </Button>
+                
+                {/* Delete button - visible to task creator or admin */}
+                {(isAdmin || selectedTask.createdBy === currentUser.id) && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+                        deleteTaskMutation.mutate(selectedTask.id);
+                      }
+                    }}
+                    disabled={deleteTaskMutation.isPending}
+                    className="w-full sm:w-auto"
+                    data-testid="button-delete-task"
+                  >
+                    <Trash2 className="w-3 h-3 mr-1" />
+                    {deleteTaskMutation.isPending ? 'Deleting...' : 'Delete Task'}
+                  </Button>
+                )}
               </div>
             </div>
           </DialogContent>
