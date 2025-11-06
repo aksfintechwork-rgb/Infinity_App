@@ -211,11 +211,6 @@ export default function ChatLayout({
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
   const activeMessages = messages.filter((m) => m.conversationId === activeConversationId);
-  
-  console.log(`[RENDER] Rendering conversation ${activeConversationId}: ${activeMessages.length} messages filtered from ${messages.length} total`);
-  if (activeConversationId && activeMessages.length > 0) {
-    console.log(`[RENDER] Active messages:`, activeMessages.map(m => `${m.id}(conv:${m.conversationId}, "${m.body?.substring(0, 20)}...")`));
-  }
 
   useEffect(() => {
     if (activeConversationId && onConversationSelect) {

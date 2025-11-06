@@ -83,15 +83,11 @@ function App() {
     if (!ws.isConnected || !currentUser) return;
 
     const unsubscribeMessage = ws.on('new_message', (message: Message) => {
-      console.log(`[WS] New message received: ${message.id} for conversation ${message.conversationId}`);
-      
       setMessages((prev) => {
         // Prevent duplicate messages with same ID
         if (prev.some(m => m.id === message.id)) {
-          console.log(`[WS] Duplicate message ${message.id} - skipping`);
           return prev;
         }
-        console.log(`[WS] Adding message ${message.id} to state (${prev.length} -> ${prev.length + 1} messages)`);
         return [...prev, message];
       });
       
@@ -276,24 +272,14 @@ function App() {
 
   const loadConversationMessages = async (conversationId: number) => {
     try {
-      console.log(`[LOAD] Loading messages for conversation ${conversationId}`);
       setActiveConversationId(conversationId);
       const msgs = await api.getMessages(token!, conversationId);
-      console.log(`[LOAD] API returned ${msgs.length} messages for conversation ${conversationId}:`, msgs.map(m => `${m.id}(conv:${m.conversationId})`));
       
       setMessages((prev) => {
-        console.log(`[LOAD] Before update: ${prev.length} total messages in state`);
-        
         // CRITICAL FIX: Remove messages for this conversation, then add fresh ones from API
-        // Step 1: Keep all messages NOT from this conversation
+        // This prevents message accumulation and cross-contamination
         const messagesFromOtherConversations = prev.filter((m) => m.conversationId !== conversationId);
-        console.log(`[LOAD] Kept ${messagesFromOtherConversations.length} messages from other conversations`);
-        
-        // Step 2: Combine with fresh messages from API for this conversation
-        const result = [...messagesFromOtherConversations, ...msgs];
-        console.log(`[LOAD] Final state: ${messagesFromOtherConversations.length} from others + ${msgs.length} from API = ${result.length} total`);
-        
-        return result;
+        return [...messagesFromOtherConversations, ...msgs];
       });
     } catch (error) {
       console.error('Failed to load messages:', error);
