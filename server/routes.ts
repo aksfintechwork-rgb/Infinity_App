@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { hashPassword, comparePassword, generateToken, authMiddleware, getCurrentUser, requireAdmin, type AuthRequest, verifyToken } from "./auth";
-import { insertUserSchema, insertConversationSchema, insertMessageSchema, updateMessageSchema, insertMeetingSchema, insertTaskSchema, insertSupportRequestSchema } from "@shared/schema";
+import { insertUserSchema, insertConversationSchema, insertMessageSchema, updateMessageSchema, insertMeetingSchema, insertTaskSchema, insertSupportRequestSchema, insertProjectSchema } from "@shared/schema";
 import { z } from "zod";
 import { upload, getFileUrl } from "./upload";
 import { WebSocketServer, WebSocket } from "ws";
@@ -1501,7 +1501,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/projects", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const project = await storage.createProject(req.body);
+      const validatedData = insertProjectSchema.parse(req.body);
+      const project = await storage.createProject(validatedData);
       res.json(project);
       
       broadcastUpdate({
@@ -1529,7 +1530,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/projects/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const project = await storage.updateProject(parseInt(req.params.id), req.body);
+      const validatedData = insertProjectSchema.partial().parse(req.body);
+      const project = await storage.updateProject(parseInt(req.params.id), validatedData);
       if (!project) {
         return res.status(404).json({ error: "Project not found" });
       }

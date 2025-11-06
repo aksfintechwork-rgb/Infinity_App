@@ -181,6 +181,19 @@ export default function Projects({ currentUser, allUsers, onOpenMobileMenu }: Pr
     }
   };
 
+  const handleOpenCreateDialog = () => {
+    setEditingProject(null);
+    form.reset({
+      projectName: '',
+      description: '',
+      status: 'not_started',
+      progress: 0,
+      priority: 'medium',
+      responsiblePersonId: currentUser.id,
+    });
+    setIsCreateDialogOpen(true);
+  };
+
   const getStatusBadgeVariant = (status: Project['status']) => {
     switch (status) {
       case 'completed':
@@ -245,7 +258,7 @@ export default function Projects({ currentUser, allUsers, onOpenMobileMenu }: Pr
           }
         }}>
           <DialogTrigger asChild>
-            <Button data-testid="button-create-project">
+            <Button onClick={handleOpenCreateDialog} data-testid="button-create-project">
               <Plus className="w-4 h-4 mr-2" />
               New Project
             </Button>
