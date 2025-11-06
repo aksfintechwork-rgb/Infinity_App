@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone, PhoneOff, Folder } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone, PhoneOff, Folder, HardDrive } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
@@ -17,6 +17,7 @@ import Tasks from './Tasks';
 import DailyWorksheet from './DailyWorksheet';
 import AdminWorksheets from './AdminWorksheets';
 import Projects from './Projects';
+import SupremoDrive from './SupremoDrive';
 import { UpcomingMeetings } from './UpcomingMeetings';
 import IncomingCallModal from './IncomingCallModal';
 import EditMessageDialog from './EditMessageDialog';
@@ -780,6 +781,15 @@ export default function ChatLayout({
               <Folder className="w-4 h-4 mr-2 flex-shrink-0" />
               <span className="truncate">Projects</span>
             </Button>
+            <Button
+              variant={currentView === 'drive' ? 'default' : 'ghost'}
+              onClick={() => setCurrentView('drive')}
+              data-testid="button-view-drive"
+              className="h-11 justify-start font-medium text-sm"
+            >
+              <HardDrive className="w-4 h-4 mr-2 flex-shrink-0" />
+              <span className="truncate">Supremo Drive</span>
+            </Button>
             {isAdmin && (
               <>
                 <Button
@@ -908,6 +918,8 @@ export default function ChatLayout({
           <AdminWorksheets allUsers={allUsers} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
         ) : currentView === 'projects' ? (
           <Projects currentUser={currentUser} allUsers={allUsers} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
+        ) : currentView === 'drive' ? (
+          <SupremoDrive currentUser={currentUser} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
         ) : activeConversation ? (
           <>
             <div className="min-h-[64px] md:h-16 border-b border-border flex items-center justify-between px-3 md:px-6 flex-shrink-0">
@@ -1343,6 +1355,15 @@ export default function ChatLayout({
                 >
                   <Folder className="w-4 h-4 mr-1.5" />
                   Projects
+                </Button>
+                <Button
+                  variant={currentView === 'drive' ? 'default' : 'ghost'}
+                  onClick={() => { setCurrentView('drive'); setIsMobileMenuOpen(false); }}
+                  data-testid="button-view-drive-mobile"
+                  className="h-11 text-sm font-semibold rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
+                >
+                  <HardDrive className="w-4 h-4 mr-1.5" />
+                  Supremo Drive
                 </Button>
                 {isAdmin && (
                   <>
