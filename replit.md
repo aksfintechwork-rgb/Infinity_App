@@ -61,6 +61,8 @@ Preferred communication style: Simple, everyday language.
 
 2. **Fixed TaskReminderService Database Error**: Replaced malformed SQL array literal usage `sql\`${conversations.id} = ANY(${sharedConvIds})\`` with proper Drizzle ORM `inArray(conversations.id, sharedConvIds)` in task-reminders.ts. This eliminated server crashes caused by "malformed array literal" PostgreSQL errors.
 
-3. **Added broadcastUpdate Function**: Implemented missing `broadcastUpdate()` WebSocket broadcast function in server/routes.ts to enable real-time project and drive updates across all connected clients. This fixed ReferenceError crashes that prevented project and folder creation.
+3. **Added broadcastUpdate Function**: Implemented missing `broadcastUpdate()` WebSocket broadcast function in server/routes.ts to enable real-time project and drive updates across all connected clients. This fixed ReferenceError crashes that prevented project and folder creation. Wired broadcasts to all CRUD operations for projects and drive (folders/files).
 
-All core features (Project Tracker and Supremo Drive) are now fully operational with real-time WebSocket updates.
+4. **Fixed File Upload Authentication Bug**: Corrected authentication token key from `localStorage.getItem('token')` to `localStorage.getItem('auth_token')` in SupremoDrive.tsx. Also fixed backend `/api/drive/upload` route to use `req.userId` instead of `req.user!.id` and added broadcast support. This resolved 401 authentication errors that prevented file uploads.
+
+All core features (Project Tracker and Supremo Drive) are now fully operational with real-time WebSocket updates and proper authentication.

@@ -1773,12 +1773,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/drive/folders", authMiddleware, async (req: AuthRequest, res) => {
     try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
       const validatedData = insertDriveFolderSchema.parse({
         ...req.body,
-        createdById: req.user!.id,
+        createdById: req.userId,
       });
       const folder = await storage.createDriveFolder(validatedData);
       res.json(folder);
+      
+      broadcastUpdate({
+        type: 'drive_folder_created',
+        folder,
+      });
     } catch (error) {
       console.error("Create folder error:", error);
       res.status(500).json({ error: "Failed to create folder" });
@@ -1801,8 +1810,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/drive/folders/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      await storage.deleteDriveFolder(parseInt(req.params.id));
+      const folderId = parseInt(req.params.id);
+      await storage.deleteDriveFolder(folderId);
       res.json({ success: true });
+      
+      broadcastUpdate({
+        type: 'drive_folder_deleted',
+        folderId,
+      });
     } catch (error) {
       console.error("Delete folder error:", error);
       res.status(500).json({ error: "Failed to delete folder" });
@@ -1823,6 +1838,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/drive/upload", authMiddleware, upload.single('file'), async (req: AuthRequest, res) => {
     try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
@@ -1836,11 +1855,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mimeType: req.file.mimetype,
         size: req.file.size,
         folderId,
-        uploadedById: req.user!.id,
+        uploadedById: req.userId,
       };
 
       const file = await storage.createDriveFile(fileData);
       res.json(file);
+      
+      broadcastUpdate({
+        type: 'drive_file_uploaded',
+        file,
+      });
     } catch (error) {
       console.error("Upload file error:", error);
       res.status(500).json({ error: "Failed to upload file" });

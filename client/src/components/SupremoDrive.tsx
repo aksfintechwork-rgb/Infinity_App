@@ -97,7 +97,7 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
         formData.append('folderId', currentFolderId.toString());
       }
 
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/drive/upload', {
         method: 'POST',
         headers: {
