@@ -1574,7 +1574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Broadcast to all members (they will filter out their own call on the client)
           wss.clients.forEach((client: any) => {
-            if (client.readyState === ws.OPEN && memberIds.includes(client.userId)) {
+            if (client.readyState === WebSocket.OPEN && memberIds.includes(client.userId)) {
               client.send(JSON.stringify({
                 type: 'incoming_call',
                 data: {

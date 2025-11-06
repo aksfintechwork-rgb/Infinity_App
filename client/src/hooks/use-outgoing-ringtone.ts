@@ -71,10 +71,50 @@ export function useOutgoingRingtone(isPlaying: boolean) {
 
       // Then repeat every 2 seconds
       intervalRef.current = setInterval(playTone, 2000);
+    } else if (!isPlaying && hasStartedRef.current) {
+      // Immediately stop when isPlaying becomes false
+      // Clear interval
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      // Clear timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      // Stop currently playing oscillator immediately
+      if (currentOscillatorRef.current) {
+        try {
+          currentOscillatorRef.current.stop();
+          currentOscillatorRef.current = null;
+        } catch (e) {
+          // Ignore
+        }
+      }
+      // Disconnect gain node
+      if (currentGainNodeRef.current) {
+        try {
+          currentGainNodeRef.current.disconnect();
+          currentGainNodeRef.current = null;
+        } catch (e) {
+          // Ignore
+        }
+      }
+      // Close audio context
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        try {
+          audioContextRef.current.close();
+          audioContextRef.current = null;
+        } catch (e) {
+          // Ignore
+        }
+      }
+      hasStartedRef.current = false;
     }
 
     return () => {
-      // Always cleanup audio on unmount/close
+      // Always cleanup audio on unmount
       if (hasStartedRef.current) {
         // Clear interval
         if (intervalRef.current) {

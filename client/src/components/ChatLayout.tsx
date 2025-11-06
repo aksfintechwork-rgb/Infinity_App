@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone, PhoneOff } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
@@ -962,9 +962,49 @@ export default function ChatLayout({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {/* Show invite button if call is active, otherwise show call buttons */}
+                {/* Show invite and cancel buttons if call is active, otherwise show call buttons */}
                 {outgoingCall ? (
                   <>
+                    {/* Cancel Call Button - Desktop */}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        setOutgoingCall(null);
+                        if (callWindowRef.current && !callWindowRef.current.closed) {
+                          callWindowRef.current.close();
+                        }
+                        toast({
+                          title: 'Call cancelled',
+                          description: 'You ended the call',
+                        });
+                      }}
+                      className="hidden md:flex"
+                      data-testid="button-cancel-call"
+                    >
+                      <PhoneOff className="w-4 h-4 mr-2" />
+                      Cancel Call
+                    </Button>
+                    {/* Cancel Call Button - Mobile */}
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => {
+                        setOutgoingCall(null);
+                        if (callWindowRef.current && !callWindowRef.current.closed) {
+                          callWindowRef.current.close();
+                        }
+                        toast({
+                          title: 'Call cancelled',
+                          description: 'You ended the call',
+                        });
+                      }}
+                      className="md:hidden h-9 w-9"
+                      data-testid="button-cancel-call-mobile"
+                      title="Cancel call"
+                    >
+                      <PhoneOff className="w-4 h-4" />
+                    </Button>
                     {/* Invite to Call Button - Desktop */}
                     <Button
                       variant="default"
