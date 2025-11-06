@@ -392,3 +392,62 @@ export type ProjectWithDetails = Project & {
   duration: number;
   statusColor: 'green' | 'yellow' | 'red';
 };
+
+export const driveFolders = pgTable("drive_folders", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: text("name").notNull(),
+  parentId: integer("parent_id").references(() => driveFolders.id, { onDelete: "cascade" }),
+  createdById: integer("created_by_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+const _baseDriveFolderSchema = createInsertSchema(driveFolders, {
+  name: z.string().min(1, "Folder name is required"),
+});
+
+export const insertDriveFolderSchema = _baseDriveFolderSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  createdAt: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  updatedAt: true,
+});
+
+export type InsertDriveFolder = z.infer<typeof insertDriveFolderSchema>;
+export type DriveFolder = typeof driveFolders.$inferSelect;
+export type DriveFolderWithDetails = DriveFolder & {
+  createdByName: string;
+  itemCount: number;
+};
+
+export const driveFiles = pgTable("drive_files", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: text("name").notNull(),
+  originalName: text("original_name").notNull(),
+  storagePath: text("storage_path").notNull(),
+  mimeType: text("mime_type").notNull(),
+  size: integer("size").notNull(),
+  folderId: integer("folder_id").references(() => driveFolders.id, { onDelete: "cascade" }),
+  uploadedById: integer("uploaded_by_id").notNull().references(() => users.id),
+  uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
+});
+
+const _baseDriveFileSchema = createInsertSchema(driveFiles, {
+  name: z.string().min(1, "File name is required"),
+  size: z.number().min(0),
+});
+
+export const insertDriveFileSchema = _baseDriveFileSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  uploadedAt: true,
+});
+
+export type InsertDriveFile = z.infer<typeof insertDriveFileSchema>;
+export type DriveFile = typeof driveFiles.$inferSelect;
+export type DriveFileWithDetails = DriveFile & {
+  uploadedByName: string;
+};
