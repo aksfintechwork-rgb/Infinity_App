@@ -1489,6 +1489,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/projects", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const projects = await storage.getAllProjects();
+      res.json(projects);
+    } catch (error) {
+      console.error("Get projects error:", error);
+      res.status(500).json({ error: "Failed to get projects" });
+    }
+  });
+
+  app.post("/api/projects", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const project = await storage.createProject(req.body);
+      res.json(project);
+      
+      broadcastUpdate({
+        type: 'project_created',
+        project,
+      });
+    } catch (error) {
+      console.error("Create project error:", error);
+      res.status(500).json({ error: "Failed to create project" });
+    }
+  });
+
+  app.get("/api/projects/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const project = await storage.getProjectById(parseInt(req.params.id));
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      console.error("Get project error:", error);
+      res.status(500).json({ error: "Failed to get project" });
+    }
+  });
+
+  app.put("/api/projects/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const project = await storage.updateProject(parseInt(req.params.id), req.body);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+      
+      broadcastUpdate({
+        type: 'project_updated',
+        project,
+      });
+    } catch (error) {
+      console.error("Update project error:", error);
+      res.status(500).json({ error: "Failed to update project" });
+    }
+  });
+
+  app.delete("/api/projects/:id", authMiddleware, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      await storage.deleteProject(parseInt(req.params.id));
+      res.json({ success: true });
+      
+      broadcastUpdate({
+        type: 'project_deleted',
+        projectId: parseInt(req.params.id),
+      });
+    } catch (error) {
+      console.error("Delete project error:", error);
+      res.status(500).json({ error: "Failed to delete project" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   wss = new WebSocketServer({ server: httpServer, path: '/ws' });

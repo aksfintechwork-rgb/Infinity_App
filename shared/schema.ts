@@ -364,6 +364,7 @@ export const projects = pgTable("projects", {
 
 const _baseProjectSchema = createInsertSchema(projects, {
   projectName: z.string().min(1, "Project name is required"),
+  projectId: z.string().optional(),
   startDate: z.string().transform((val) => new Date(val)),
   endDate: z.string().transform((val) => new Date(val)),
   actualEndDate: z.string().optional().transform((val) => val ? new Date(val) : undefined),
@@ -376,12 +377,12 @@ const _baseProjectSchema = createInsertSchema(projects, {
 export const insertProjectSchema = _baseProjectSchema.omit({
   // @ts-ignore - drizzle-zod type inference issue
   id: true,
-  // @ts-ignore - drizzle-zod type inference issue  
-  projectId: true,
   // @ts-ignore - drizzle-zod type inference issue
   createdAt: true,
   // @ts-ignore - drizzle-zod type inference issue
   updatedAt: true,
+}).extend({
+  projectId: z.string().optional(),
 });
 
 export type InsertProject = z.infer<typeof insertProjectSchema>;
