@@ -1659,8 +1659,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/projects", authMiddleware, async (req: AuthRequest, res) => {
     try {
+      console.log("[PROJECT] Create project request:", { body: req.body, userId: req.userId });
+      
       const validatedData = insertProjectSchema.parse(req.body);
+      console.log("[PROJECT] Validated data:", validatedData);
+      
       const project = await storage.createProject(validatedData);
+      console.log("[PROJECT] Project created successfully:", project);
+      
       res.json(project);
       
       broadcastUpdate({
@@ -1668,7 +1674,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         project,
       });
     } catch (error) {
-      console.error("Create project error:", error);
+      console.error("[PROJECT] Create project error:", error);
+      if (error instanceof Error) {
+        console.error("[PROJECT] Error details:", error.message, error.stack);
+      }
       res.status(500).json({ error: "Failed to create project" });
     }
   });
