@@ -331,3 +331,63 @@ export interface DailyWorksheetWithDetails extends DailyWorksheet {
   parsedTodos: WorksheetTodo[];
   parsedHourlyLogs: HourlyLog[];
 }
+
+export const projectStatusEnum = z.enum(["not_started", "in_progress", "on_hold", "completed", "delayed"]);
+export type ProjectStatus = z.infer<typeof projectStatusEnum>;
+
+export const projectPriorityEnum = z.enum(["low", "medium", "high"]);
+export type ProjectPriority = z.infer<typeof projectPriorityEnum>;
+
+export const projects = pgTable("projects", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  projectId: text("project_id").notNull().unique(),
+  projectName: text("project_name").notNull(),
+  description: text("description"),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  actualEndDate: timestamp("actual_end_date"),
+  status: text("status").notNull().default("not_started"),
+  progress: integer("progress").notNull().default(0),
+  responsiblePersonId: integer("responsible_person_id").notNull().references(() => users.id),
+  supportTeam: text("support_team"),
+  tasksToDo: text("tasks_to_do"),
+  issues: text("issues"),
+  dependencies: text("dependencies"),
+  nextSteps: text("next_steps"),
+  targetCompletionDate: timestamp("target_completion_date"),
+  remarks: text("remarks"),
+  attachmentUrl: text("attachment_url"),
+  priority: text("priority").notNull().default("medium"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+const _baseProjectSchema = createInsertSchema(projects, {
+  projectName: z.string().min(1, "Project name is required"),
+  startDate: z.string().transform((val) => new Date(val)),
+  endDate: z.string().transform((val) => new Date(val)),
+  actualEndDate: z.string().optional().transform((val) => val ? new Date(val) : undefined),
+  targetCompletionDate: z.string().optional().transform((val) => val ? new Date(val) : undefined),
+  status: projectStatusEnum.default("not_started"),
+  priority: projectPriorityEnum.default("medium"),
+  progress: z.number().min(0).max(100).default(0),
+});
+
+export const insertProjectSchema = _baseProjectSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue  
+  projectId: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  createdAt: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  updatedAt: true,
+});
+
+export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type Project = typeof projects.$inferSelect;
+export type ProjectWithDetails = Project & {
+  responsiblePersonName: string;
+  duration: number;
+  statusColor: 'green' | 'yellow' | 'red';
+};

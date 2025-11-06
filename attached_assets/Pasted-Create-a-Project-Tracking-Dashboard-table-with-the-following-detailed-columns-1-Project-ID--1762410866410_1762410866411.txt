@@ -1,0 +1,37 @@
+Create a "Project Tracking Dashboard" table with the following detailed columns:
+
+1️⃣ Project_ID – Auto-generated unique ID (e.g., PRJ-001).  
+2️⃣ Project_Name – Title of the project.  
+3️⃣ Description – Short summary of scope and objectives.  
+4️⃣ Start_Date – Planned project start date.  
+5️⃣ End_Date – Planned completion date.  
+6️⃣ Actual_End_Date – When it was actually completed (blank until done).  
+7️⃣ Duration – Auto-calculated (End_Date – Start_Date).  
+8️⃣ Current_Status – Dropdown: [Not Started / In Progress / On Hold / Completed / Delayed].  
+9️⃣ Progress_% – Numeric field showing current progress.  
+10️⃣ Responsible_Person – Assigned team member or department.  
+11️⃣ Support_Team / Escalation_POC – Person(s) providing support if issues arise.  
+12️⃣ Tasks_To_Do – Detailed list of pending actions or subtasks.  
+13️⃣ Issues / Risks – Problems blocking progress or potential risks.  
+14️⃣ Dependencies – Other projects, teams, or resources required before proceeding.  
+15️⃣ Next_Steps – Immediate actions planned for next period.  
+16️⃣ Target_Completion_Date – Realistic expected closure (based on progress).  
+17️⃣ Last_Updated – Auto-filled with date/time when record is modified.  
+18️⃣ Remarks / Notes – Any extra comment from manager.  
+19️⃣ Attachments – Upload documents, screenshots, or reports.  
+20️⃣ Priority – Dropdown: [High / Medium / Low].  
+21️⃣ Status_Color – Conditional format: 
+      - Green = On Track  
+      - Yellow = Minor Delay  
+      - Red = Critical or Blocked  
+
+🔁 Dashboard Features:
+- Auto-update Gantt chart showing project timeline and milestones.
+- Weekly summary mail/report for all projects (Status, Issues, Delays).
+- Filter by Responsible_Person, Department, or Status.
+- “Support Needed” auto-alert: send notification if issue marked as critical.
+- Progress auto-color (0-25%=Red, 26-70%=Yellow, 71-100%=Green).
+- Option to add “Remarks” and “Next Action Date” after every meeting review.
+
+🎯 Goal:
+Track every project from start to finish with clear accountability, live status, dependencies, and actionable next steps.
