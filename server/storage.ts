@@ -24,6 +24,9 @@ import {
   type DailyWorksheet,
   type InsertDailyWorksheet,
   type DailyWorksheetWithDetails,
+  type Project,
+  type InsertProject,
+  type ProjectWithDetails,
   users,
   conversations,
   messages,
@@ -35,6 +38,7 @@ import {
   tasks,
   taskSupportRequests,
   dailyWorksheets,
+  projects,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, inArray, sql, gte, lte } from "drizzle-orm";
@@ -107,6 +111,13 @@ export interface IStorage {
   submitDailyWorksheet(id: number): Promise<DailyWorksheet | undefined>;
   getAllDailyWorksheets(date?: Date): Promise<DailyWorksheetWithDetails[]>;
   getUserDailyWorksheets(userId: number, limit?: number): Promise<DailyWorksheetWithDetails[]>;
+  
+  createProject(project: InsertProject): Promise<Project>;
+  getProjectById(id: number): Promise<ProjectWithDetails | undefined>;
+  getAllProjects(): Promise<ProjectWithDetails[]>;
+  getProjectsByResponsiblePerson(responsiblePersonId: number): Promise<ProjectWithDetails[]>;
+  updateProject(id: number, updates: Partial<InsertProject>): Promise<Project | undefined>;
+  deleteProject(id: number): Promise<void>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -827,6 +838,175 @@ export class PostgresStorage implements IStorage {
       parsedTodos: JSON.parse(row.todos || '[]'),
       parsedHourlyLogs: JSON.parse(row.hourlyLogs || '[]'),
     }));
+  }
+
+  async createProject(project: InsertProject): Promise<Project> {
+    const projectId = `PRJ-${String(Date.now()).slice(-6)}`;
+    const result = await db
+      .insert(projects)
+      .values({ ...project, projectId })
+      .returning();
+    return result[0];
+  }
+
+  async getProjectById(id: number): Promise<ProjectWithDetails | undefined> {
+    const result = await db
+      .select({
+        id: projects.id,
+        projectId: projects.projectId,
+        projectName: projects.projectName,
+        description: projects.description,
+        startDate: projects.startDate,
+        endDate: projects.endDate,
+        actualEndDate: projects.actualEndDate,
+        status: projects.status,
+        progress: projects.progress,
+        responsiblePersonId: projects.responsiblePersonId,
+        supportTeam: projects.supportTeam,
+        tasksToDo: projects.tasksToDo,
+        issues: projects.issues,
+        dependencies: projects.dependencies,
+        nextSteps: projects.nextSteps,
+        targetCompletionDate: projects.targetCompletionDate,
+        remarks: projects.remarks,
+        attachmentUrl: projects.attachmentUrl,
+        priority: projects.priority,
+        createdAt: projects.createdAt,
+        updatedAt: projects.updatedAt,
+        responsiblePersonName: users.name,
+      })
+      .from(projects)
+      .innerJoin(users, eq(projects.responsiblePersonId, users.id))
+      .where(eq(projects.id, id))
+      .limit(1);
+    
+    if (!result[0]) return undefined;
+    
+    const project = result[0];
+    const duration = Math.ceil((project.endDate.getTime() - project.startDate.getTime()) / (1000 * 60 * 60 * 24));
+    let statusColor: 'green' | 'yellow' | 'red' = 'green';
+    
+    if (project.status === 'delayed' || project.status === 'on_hold') {
+      statusColor = 'red';
+    } else if (project.progress < 70) {
+      statusColor = 'yellow';
+    }
+    
+    return {
+      ...project,
+      duration,
+      statusColor,
+    };
+  }
+
+  async getAllProjects(): Promise<ProjectWithDetails[]> {
+    const result = await db
+      .select({
+        id: projects.id,
+        projectId: projects.projectId,
+        projectName: projects.projectName,
+        description: projects.description,
+        startDate: projects.startDate,
+        endDate: projects.endDate,
+        actualEndDate: projects.actualEndDate,
+        status: projects.status,
+        progress: projects.progress,
+        responsiblePersonId: projects.responsiblePersonId,
+        supportTeam: projects.supportTeam,
+        tasksToDo: projects.tasksToDo,
+        issues: projects.issues,
+        dependencies: projects.dependencies,
+        nextSteps: projects.nextSteps,
+        targetCompletionDate: projects.targetCompletionDate,
+        remarks: projects.remarks,
+        attachmentUrl: projects.attachmentUrl,
+        priority: projects.priority,
+        createdAt: projects.createdAt,
+        updatedAt: projects.updatedAt,
+        responsiblePersonName: users.name,
+      })
+      .from(projects)
+      .innerJoin(users, eq(projects.responsiblePersonId, users.id))
+      .orderBy(desc(projects.createdAt));
+    
+    return result.map(project => {
+      const duration = Math.ceil((project.endDate.getTime() - project.startDate.getTime()) / (1000 * 60 * 60 * 24));
+      let statusColor: 'green' | 'yellow' | 'red' = 'green';
+      
+      if (project.status === 'delayed' || project.status === 'on_hold') {
+        statusColor = 'red';
+      } else if (project.progress < 70) {
+        statusColor = 'yellow';
+      }
+      
+      return {
+        ...project,
+        duration,
+        statusColor,
+      };
+    });
+  }
+
+  async getProjectsByResponsiblePerson(responsiblePersonId: number): Promise<ProjectWithDetails[]> {
+    const result = await db
+      .select({
+        id: projects.id,
+        projectId: projects.projectId,
+        projectName: projects.projectName,
+        description: projects.description,
+        startDate: projects.startDate,
+        endDate: projects.endDate,
+        actualEndDate: projects.actualEndDate,
+        status: projects.status,
+        progress: projects.progress,
+        responsiblePersonId: projects.responsiblePersonId,
+        supportTeam: projects.supportTeam,
+        tasksToDo: projects.tasksToDo,
+        issues: projects.issues,
+        dependencies: projects.dependencies,
+        nextSteps: projects.nextSteps,
+        targetCompletionDate: projects.targetCompletionDate,
+        remarks: projects.remarks,
+        attachmentUrl: projects.attachmentUrl,
+        priority: projects.priority,
+        createdAt: projects.createdAt,
+        updatedAt: projects.updatedAt,
+        responsiblePersonName: users.name,
+      })
+      .from(projects)
+      .innerJoin(users, eq(projects.responsiblePersonId, users.id))
+      .where(eq(projects.responsiblePersonId, responsiblePersonId))
+      .orderBy(desc(projects.createdAt));
+    
+    return result.map(project => {
+      const duration = Math.ceil((project.endDate.getTime() - project.startDate.getTime()) / (1000 * 60 * 60 * 24));
+      let statusColor: 'green' | 'yellow' | 'red' = 'green';
+      
+      if (project.status === 'delayed' || project.status === 'on_hold') {
+        statusColor = 'red';
+      } else if (project.progress < 70) {
+        statusColor = 'yellow';
+      }
+      
+      return {
+        ...project,
+        duration,
+        statusColor,
+      };
+    });
+  }
+
+  async updateProject(id: number, updates: Partial<InsertProject>): Promise<Project | undefined> {
+    const result = await db
+      .update(projects)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(projects.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteProject(id: number): Promise<void> {
+    await db.delete(projects).where(eq(projects.id, id));
   }
 }
 
