@@ -83,7 +83,13 @@ function App() {
     if (!ws.isConnected || !currentUser) return;
 
     const unsubscribeMessage = ws.on('new_message', (message: Message) => {
-      setMessages((prev) => [...prev, message]);
+      setMessages((prev) => {
+        // Prevent duplicate messages with same ID
+        if (prev.some(m => m.id === message.id)) {
+          return prev;
+        }
+        return [...prev, message];
+      });
       
       setConversations((prev) =>
         prev.map((conv) =>
@@ -269,8 +275,12 @@ function App() {
       setActiveConversationId(conversationId);
       const msgs = await api.getMessages(token!, conversationId);
       setMessages((prev) => {
+        // Remove all old messages for this conversation
         const filtered = prev.filter((m) => m.conversationId !== conversationId);
-        return [...filtered, ...msgs];
+        // Deduplicate new messages by ID to prevent duplicates
+        const existingIds = new Set(filtered.map((m: Message) => m.id));
+        const uniqueNewMsgs = msgs.filter((m: Message) => !existingIds.has(m.id));
+        return [...filtered, ...uniqueNewMsgs];
       });
     } catch (error) {
       console.error('Failed to load messages:', error);
