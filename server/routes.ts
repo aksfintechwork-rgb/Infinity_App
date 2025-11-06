@@ -1019,6 +1019,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Supremo Drive Routes
+  app.get("/api/drive/folders", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const parentId = req.query.parentId ? parseInt(req.query.parentId as string) : null;
+      const folders = await storage.getAllDriveFolders(parentId);
+      res.json(folders);
+    } catch (error) {
+      console.error("Get drive folders error:", error);
+      res.status(500).json({ error: "Failed to get folders" });
+    }
+  });
+
+  app.post("/api/drive/folders", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const validation = insertDriveFolderSchema.safeParse({
+        ...req.body,
+        createdById: req.userId,
+      });
+
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid input", details: validation.error });
+      }
+
+      const folder = await storage.createDriveFolder(validation.data);
+      res.json(folder);
+    } catch (error) {
+      console.error("Create drive folder error:", error);
+      res.status(500).json({ error: "Failed to create folder" });
+    }
+  });
+
+  app.delete("/api/drive/folders/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const folderId = parseInt(req.params.id);
+      const folder = await storage.getDriveFolderById(folderId);
+
+      if (!folder) {
+        return res.status(404).json({ error: "Folder not found" });
+      }
+
+      await storage.deleteDriveFolder(folderId);
+      res.json({ message: "Folder deleted successfully" });
+    } catch (error) {
+      console.error("Delete drive folder error:", error);
+      res.status(500).json({ error: "Failed to delete folder" });
+    }
+  });
+
+  app.get("/api/drive/files", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const folderId = req.query.folderId ? parseInt(req.query.folderId as string) : null;
+      const files = await storage.getDriveFilesByFolder(folderId);
+      res.json(files);
+    } catch (error) {
+      console.error("Get drive files error:", error);
+      res.status(500).json({ error: "Failed to get files" });
+    }
+  });
+
+  app.post("/api/drive/files", authMiddleware, upload.single('file'), async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const folderId = req.body.folderId ? parseInt(req.body.folderId) : null;
+      
+      const fileData = {
+        name: req.file.originalname,
+        originalName: req.file.originalname,
+        storagePath: req.file.path,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+        folderId,
+        uploadedById: req.userId,
+      };
+
+      const file = await storage.createDriveFile(fileData);
+      res.json(file);
+    } catch (error) {
+      console.error("Upload drive file error:", error);
+      res.status(500).json({ error: "Failed to upload file" });
+    }
+  });
+
+  app.get("/api/drive/files/:id/download", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const fileId = parseInt(req.params.id);
+      const file = await storage.getDriveFileById(fileId);
+
+      if (!file) {
+        return res.status(404).json({ error: "File not found" });
+      }
+
+      res.download(file.storagePath, file.originalName);
+    } catch (error) {
+      console.error("Download drive file error:", error);
+      res.status(500).json({ error: "Failed to download file" });
+    }
+  });
+
+  app.delete("/api/drive/files/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const fileId = parseInt(req.params.id);
+      const file = await storage.getDriveFileById(fileId);
+
+      if (!file) {
+        return res.status(404).json({ error: "File not found" });
+      }
+
+      await storage.deleteDriveFile(fileId);
+      res.json({ message: "File deleted successfully" });
+    } catch (error) {
+      console.error("Delete drive file error:", error);
+      res.status(500).json({ error: "Failed to delete file" });
+    }
+  });
+
   // Task Management Routes
   app.post("/api/tasks", authMiddleware, async (req: AuthRequest, res) => {
     try {
