@@ -65,4 +65,6 @@ Preferred communication style: Simple, everyday language.
 
 4. **Fixed File Upload Authentication Bug**: Corrected authentication token key from `localStorage.getItem('token')` to `localStorage.getItem('auth_token')` in SupremoDrive.tsx. Also fixed backend `/api/drive/upload` route to use `req.userId` instead of `req.user!.id` and added broadcast support. This resolved 401 authentication errors that prevented file uploads.
 
-All core features (Project Tracker and Supremo Drive) are now fully operational with real-time WebSocket updates and proper authentication.
+5. **Fixed Incoming Call Notification Bug**: Replaced incorrect `JSON.parse(conversation.memberIds)` calls with proper `storage.getConversationMembers(conversationId)` in all three WebSocket call handlers (incoming_call, call_answered, call_rejected) in server/routes.ts. The `memberIds` column doesn't exist in the conversations table - members are stored in the conversation_members join table. This fix eliminated "undefined is not valid JSON" server crashes and enables incoming call notifications to be properly broadcast to all conversation participants.
+
+All core features (Project Tracker, Supremo Drive, and Incoming Call Notifications) are now fully operational with real-time WebSocket updates and proper authentication.

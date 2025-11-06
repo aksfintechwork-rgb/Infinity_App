@@ -1970,12 +1970,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Broadcast incoming call notification to all members of the conversation
           const { conversationId, callType, roomName, from } = message.data;
           
-          // Get conversation to find all members
-          const conversation = await storage.getConversationById(conversationId);
-          if (!conversation) return;
+          // Get conversation members
+          const members = await storage.getConversationMembers(conversationId);
+          if (!members || members.length === 0) return;
           
-          // Parse member IDs
-          const memberIds = JSON.parse(conversation.memberIds as any);
+          // Extract member IDs
+          const memberIds = members.map(m => m.id);
           
           // Broadcast to all members (they will filter out their own call on the client)
           wss.clients.forEach((client: any) => {
@@ -2034,12 +2034,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           
-          // Get conversation to find all members
-          const conversation = await storage.getConversationById(conversationId);
-          if (!conversation) return;
+          // Get conversation members
+          const members = await storage.getConversationMembers(conversationId);
+          if (!members || members.length === 0) return;
           
-          // Parse member IDs
-          const memberIds = JSON.parse(conversation.memberIds as any);
+          // Extract member IDs
+          const memberIds = members.map(m => m.id);
           
           // Broadcast to all conversation members (caller will stop their ringtone)
           wss.clients.forEach((client: any) => {
@@ -2070,12 +2070,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           
-          // Get conversation to find all members
-          const conversation = await storage.getConversationById(conversationId);
-          if (!conversation) return;
+          // Get conversation members
+          const members = await storage.getConversationMembers(conversationId);
+          if (!members || members.length === 0) return;
           
-          // Parse member IDs
-          const memberIds = JSON.parse(conversation.memberIds as any);
+          // Extract member IDs
+          const memberIds = members.map(m => m.id);
           
           // Broadcast to all conversation members (caller will stop their ringtone and show notification)
           wss.clients.forEach((client: any) => {
