@@ -546,23 +546,25 @@ export default function Projects({ currentUser, allUsers, onOpenMobileMenu }: Pr
                     <CardTitle className="text-lg truncate">{project.projectName}</CardTitle>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(project)}
-                      data-testid={`button-edit-project-${project.id}`}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    {currentUser.role === 'admin' && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(project.id)}
-                        data-testid={`button-delete-project-${project.id}`}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
+                    {(currentUser.role === 'admin' || currentUser.id === project.responsiblePersonId) && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(project)}
+                          data-testid={`button-edit-project-${project.id}`}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(project.id)}
+                          data-testid={`button-delete-project-${project.id}`}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </>
                     )}
                   </div>
                 </CardHeader>

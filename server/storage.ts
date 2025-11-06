@@ -49,7 +49,7 @@ import {
   driveFiles,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, inArray, sql, gte, lte } from "drizzle-orm";
+import { eq, and, or, desc, inArray, sql, gte, lte } from "drizzle-orm";
 
 export interface IStorage {
   getUserById(id: number): Promise<User | undefined>;
@@ -129,14 +129,14 @@ export interface IStorage {
   
   createDriveFolder(folder: InsertDriveFolder): Promise<DriveFolder>;
   getDriveFolderById(id: number): Promise<DriveFolder | undefined>;
-  getAllDriveFolders(parentId?: number | null): Promise<DriveFolderWithDetails[]>;
+  getAllDriveFolders(userId: number, parentId?: number | null): Promise<DriveFolderWithDetails[]>;
   updateDriveFolder(id: number, updates: Partial<InsertDriveFolder>): Promise<DriveFolder | undefined>;
   deleteDriveFolder(id: number): Promise<void>;
   
   createDriveFile(file: InsertDriveFile): Promise<DriveFile>;
   getDriveFileById(id: number): Promise<DriveFileWithDetails | undefined>;
-  getDriveFilesByFolder(folderId: number | null): Promise<DriveFileWithDetails[]>;
-  getAllDriveFiles(): Promise<DriveFileWithDetails[]>;
+  getDriveFilesByFolder(userId: number, folderId: number | null): Promise<DriveFileWithDetails[]>;
+  getAllDriveFiles(userId: number): Promise<DriveFileWithDetails[]>;
   updateDriveFile(id: number, updates: Partial<InsertDriveFile>): Promise<DriveFile | undefined>;
   deleteDriveFile(id: number): Promise<void>;
 }
@@ -1043,12 +1043,15 @@ export class PostgresStorage implements IStorage {
     return result[0];
   }
 
-  async getAllDriveFolders(parentId?: number | null): Promise<DriveFolderWithDetails[]> {
+  async getAllDriveFolders(userId: number, parentId?: number | null): Promise<DriveFolderWithDetails[]> {
+    // Build where clause: filter by userId AND parentId
+    const userFilter = eq(driveFolders.createdById, userId);
+    
     const whereClause = parentId === undefined 
-      ? undefined 
+      ? userFilter
       : parentId === null 
-        ? sql`${driveFolders.parentId} IS NULL`
-        : eq(driveFolders.parentId, parentId);
+        ? and(userFilter, sql`${driveFolders.parentId} IS NULL`)
+        : and(userFilter, eq(driveFolders.parentId, parentId));
 
     const result = await db
       .select({
@@ -1129,11 +1132,35 @@ export class PostgresStorage implements IStorage {
     return result[0];
   }
 
-  async getDriveFilesByFolder(folderId: number | null): Promise<DriveFileWithDetails[]> {
-    const whereClause = folderId === null 
-      ? sql`${driveFiles.folderId} IS NULL`
-      : eq(driveFiles.folderId, folderId);
+  async getDriveFilesByFolder(userId: number, folderId: number | null): Promise<DriveFileWithDetails[]> {
+    // Only return files in folders owned by the user
+    // If folderId is null, return files in root level that user uploaded
+    if (folderId === null) {
+      // Root level files - filter by uploader
+      const result = await db
+        .select({
+          id: driveFiles.id,
+          name: driveFiles.name,
+          originalName: driveFiles.originalName,
+          storagePath: driveFiles.storagePath,
+          mimeType: driveFiles.mimeType,
+          size: driveFiles.size,
+          folderId: driveFiles.folderId,
+          uploadedById: driveFiles.uploadedById,
+          uploadedAt: driveFiles.uploadedAt,
+          uploadedByName: users.name,
+        })
+        .from(driveFiles)
+        .innerJoin(users, eq(driveFiles.uploadedById, users.id))
+        .where(and(
+          sql`${driveFiles.folderId} IS NULL`,
+          eq(driveFiles.uploadedById, userId)
+        ))
+        .orderBy(desc(driveFiles.uploadedAt));
+      return result;
+    }
 
+    // Files in specific folder - verify folder ownership
     const result = await db
       .select({
         id: driveFiles.id,
@@ -1149,13 +1176,18 @@ export class PostgresStorage implements IStorage {
       })
       .from(driveFiles)
       .innerJoin(users, eq(driveFiles.uploadedById, users.id))
-      .where(whereClause)
+      .innerJoin(driveFolders, eq(driveFiles.folderId, driveFolders.id))
+      .where(and(
+        eq(driveFiles.folderId, folderId),
+        eq(driveFolders.createdById, userId)
+      ))
       .orderBy(desc(driveFiles.uploadedAt));
     
     return result;
   }
 
-  async getAllDriveFiles(): Promise<DriveFileWithDetails[]> {
+  async getAllDriveFiles(userId: number): Promise<DriveFileWithDetails[]> {
+    // Return all files owned by the user (in their folders or uploaded by them)
     const result = await db
       .select({
         id: driveFiles.id,
@@ -1171,6 +1203,13 @@ export class PostgresStorage implements IStorage {
       })
       .from(driveFiles)
       .innerJoin(users, eq(driveFiles.uploadedById, users.id))
+      .leftJoin(driveFolders, eq(driveFiles.folderId, driveFolders.id))
+      .where(
+        or(
+          sql`${driveFiles.folderId} IS NULL AND ${driveFiles.uploadedById} = ${userId}`,
+          eq(driveFolders.createdById, userId)
+        )
+      )
       .orderBy(desc(driveFiles.uploadedAt));
     
     return result;

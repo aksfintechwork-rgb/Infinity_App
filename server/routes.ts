@@ -1037,7 +1037,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const parentId = req.query.parentId ? parseInt(req.query.parentId as string) : null;
-      const folders = await storage.getAllDriveFolders(parentId);
+      const folders = await storage.getAllDriveFolders(req.userId, parentId);
       res.json(folders);
     } catch (error) {
       console.error("Get drive folders error:", error);
@@ -1092,6 +1092,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Folder not found" });
       }
 
+      // Check ownership - only the creator can delete their folder
+      if (folder.createdById !== req.userId) {
+        return res.status(403).json({ error: "You don't have permission to delete this folder" });
+      }
+
       await storage.deleteDriveFolder(folderId);
       res.json({ message: "Folder deleted successfully" });
       
@@ -1112,7 +1117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const folderId = req.query.folderId ? parseInt(req.query.folderId as string) : null;
-      const files = await storage.getDriveFilesByFolder(folderId);
+      const files = await storage.getDriveFilesByFolder(req.userId, folderId);
       res.json(files);
     } catch (error) {
       console.error("Get drive files error:", error);
@@ -1174,6 +1179,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "File not found" });
       }
 
+      // Check ownership - verify file is in user's folder or uploaded by user
+      if (file.folderId) {
+        const folder = await storage.getDriveFolderById(file.folderId);
+        if (!folder || folder.createdById !== req.userId) {
+          return res.status(403).json({ error: "You don't have permission to download this file" });
+        }
+      } else {
+        // Root level file - check uploader
+        if (file.uploadedById !== req.userId) {
+          return res.status(403).json({ error: "You don't have permission to download this file" });
+        }
+      }
+
       res.download(file.storagePath, file.originalName);
     } catch (error) {
       console.error("Download drive file error:", error);
@@ -1192,6 +1210,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!file) {
         return res.status(404).json({ error: "File not found" });
+      }
+
+      // Check ownership - verify file is in user's folder or uploaded by user
+      if (file.folderId) {
+        const folder = await storage.getDriveFolderById(file.folderId);
+        if (!folder || folder.createdById !== req.userId) {
+          return res.status(403).json({ error: "You don't have permission to delete this file" });
+        }
+      } else {
+        // Root level file - check uploader
+        if (file.uploadedById !== req.userId) {
+          return res.status(403).json({ error: "You don't have permission to delete this file" });
+        }
       }
 
       await storage.deleteDriveFile(fileId);
@@ -1727,6 +1758,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/projects/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Get current project to check permissions
+      const currentProject = await storage.getProjectById(parseInt(req.params.id));
+      if (!currentProject) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      // Get current user to check if admin
+      const currentUser = await storage.getUserById(req.userId);
+      if (!currentUser) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      // Only admin or responsible person can edit
+      const isAdmin = currentUser.role === 'admin';
+      const isResponsiblePerson = currentProject.responsiblePersonId === req.userId;
+
+      if (!isAdmin && !isResponsiblePerson) {
+        return res.status(403).json({ error: "You don't have permission to edit this project" });
+      }
+
       const validatedData = insertProjectSchema.partial().parse(req.body);
       const project = await storage.updateProject(parseInt(req.params.id), validatedData);
       if (!project) {
@@ -1744,8 +1799,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/projects/:id", authMiddleware, requireAdmin, async (req: AuthRequest, res) => {
+  app.delete("/api/projects/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Get current project to check permissions
+      const currentProject = await storage.getProjectById(parseInt(req.params.id));
+      if (!currentProject) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      // Get current user to check if admin
+      const currentUser = await storage.getUserById(req.userId);
+      if (!currentUser) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      // Only admin or responsible person can delete
+      const isAdmin = currentUser.role === 'admin';
+      const isResponsiblePerson = currentProject.responsiblePersonId === req.userId;
+
+      if (!isAdmin && !isResponsiblePerson) {
+        return res.status(403).json({ error: "You don't have permission to delete this project" });
+      }
+
       await storage.deleteProject(parseInt(req.params.id));
       res.json({ success: true });
       
@@ -1756,141 +1835,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete project error:", error);
       res.status(500).json({ error: "Failed to delete project" });
-    }
-  });
-
-  // Supremo Drive - Folder Routes
-  app.get("/api/drive/folders", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const parentId = req.query.parentId ? parseInt(req.query.parentId as string) : null;
-      const folders = await storage.getAllDriveFolders(parentId);
-      res.json(folders);
-    } catch (error) {
-      console.error("Get folders error:", error);
-      res.status(500).json({ error: "Failed to get folders" });
-    }
-  });
-
-  app.post("/api/drive/folders", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      if (!req.userId) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
-      const validatedData = insertDriveFolderSchema.parse({
-        ...req.body,
-        createdById: req.userId,
-      });
-      const folder = await storage.createDriveFolder(validatedData);
-      res.json(folder);
-      
-      broadcastUpdate({
-        type: 'drive_folder_created',
-        folder,
-      });
-    } catch (error) {
-      console.error("Create folder error:", error);
-      res.status(500).json({ error: "Failed to create folder" });
-    }
-  });
-
-  app.put("/api/drive/folders/:id", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const validatedData = insertDriveFolderSchema.partial().parse(req.body);
-      const folder = await storage.updateDriveFolder(parseInt(req.params.id), validatedData);
-      if (!folder) {
-        return res.status(404).json({ error: "Folder not found" });
-      }
-      res.json(folder);
-    } catch (error) {
-      console.error("Update folder error:", error);
-      res.status(500).json({ error: "Failed to update folder" });
-    }
-  });
-
-  app.delete("/api/drive/folders/:id", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const folderId = parseInt(req.params.id);
-      await storage.deleteDriveFolder(folderId);
-      res.json({ success: true });
-      
-      broadcastUpdate({
-        type: 'drive_folder_deleted',
-        folderId,
-      });
-    } catch (error) {
-      console.error("Delete folder error:", error);
-      res.status(500).json({ error: "Failed to delete folder" });
-    }
-  });
-
-  // Supremo Drive - File Routes
-  app.get("/api/drive/files", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const folderId = req.query.folderId ? parseInt(req.query.folderId as string) : null;
-      const files = await storage.getDriveFilesByFolder(folderId);
-      res.json(files);
-    } catch (error) {
-      console.error("Get files error:", error);
-      res.status(500).json({ error: "Failed to get files" });
-    }
-  });
-
-  app.post("/api/drive/upload", authMiddleware, upload.single('file'), async (req: AuthRequest, res) => {
-    try {
-      if (!req.userId) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
-      if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
-
-      const folderId = req.body.folderId ? parseInt(req.body.folderId) : null;
-      
-      const fileData = {
-        name: req.file.filename,
-        originalName: req.file.originalname,
-        storagePath: `/uploads/${req.file.filename}`,
-        mimeType: req.file.mimetype,
-        size: req.file.size,
-        folderId,
-        uploadedById: req.userId,
-      };
-
-      const file = await storage.createDriveFile(fileData);
-      res.json(file);
-      
-      broadcastUpdate({
-        type: 'drive_file_uploaded',
-        file,
-      });
-    } catch (error) {
-      console.error("Upload file error:", error);
-      res.status(500).json({ error: "Failed to upload file" });
-    }
-  });
-
-  app.get("/api/drive/files/:id", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      const file = await storage.getDriveFileById(parseInt(req.params.id));
-      if (!file) {
-        return res.status(404).json({ error: "File not found" });
-      }
-      res.json(file);
-    } catch (error) {
-      console.error("Get file error:", error);
-      res.status(500).json({ error: "Failed to get file" });
-    }
-  });
-
-  app.delete("/api/drive/files/:id", authMiddleware, async (req: AuthRequest, res) => {
-    try {
-      await storage.deleteDriveFile(parseInt(req.params.id));
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Delete file error:", error);
-      res.status(500).json({ error: "Failed to delete file" });
     }
   });
 
