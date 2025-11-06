@@ -47,6 +47,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   };
 
+  // Helper function to broadcast general updates (projects, drive, etc.) to all connected users
+  const broadcastUpdate = (message: any) => {
+    if (!wss) return;
+    wss.clients.forEach((client: WebSocketClient) => {
+      if (client.readyState === WebSocket.OPEN && client.userId) {
+        client.send(JSON.stringify(message));
+      }
+    });
+  };
+
   // One-time setup endpoint - creates initial admin user only if database is empty
   app.post("/api/setup/initialize", async (req, res) => {
     try {
@@ -1058,6 +1068,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const folder = await storage.createDriveFolder(validation.data);
       console.log("[DRIVE] Folder created successfully:", folder);
       res.json(folder);
+      
+      broadcastUpdate({
+        type: 'drive_folder_created',
+        folder,
+      });
     } catch (error) {
       console.error("[DRIVE] Create folder error:", error);
       res.status(500).json({ error: "Failed to create folder" });
@@ -1079,6 +1094,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.deleteDriveFolder(folderId);
       res.json({ message: "Folder deleted successfully" });
+      
+      broadcastUpdate({
+        type: 'drive_folder_deleted',
+        folderId,
+      });
     } catch (error) {
       console.error("Delete drive folder error:", error);
       res.status(500).json({ error: "Failed to delete folder" });
@@ -1130,6 +1150,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const file = await storage.createDriveFile(fileData);
       console.log("[DRIVE] File uploaded successfully:", file);
       res.json(file);
+      
+      broadcastUpdate({
+        type: 'drive_file_uploaded',
+        file,
+      });
     } catch (error) {
       console.error("[DRIVE] Upload file error:", error);
       res.status(500).json({ error: "Failed to upload file" });
@@ -1171,6 +1196,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.deleteDriveFile(fileId);
       res.json({ message: "File deleted successfully" });
+      
+      broadcastUpdate({
+        type: 'drive_file_deleted',
+        fileId,
+      });
     } catch (error) {
       console.error("Delete drive file error:", error);
       res.status(500).json({ error: "Failed to delete file" });

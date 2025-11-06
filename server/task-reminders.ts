@@ -1,6 +1,6 @@
 import { db } from './db';
 import { tasks, users, conversations, conversationMembers, messages } from '@shared/schema';
-import { eq, and, lte, gte, isNotNull, sql, or } from 'drizzle-orm';
+import { eq, and, lte, gte, isNotNull, sql, or, inArray } from 'drizzle-orm';
 
 interface TaskForReminder {
   id: number;
@@ -179,7 +179,7 @@ export class TaskReminderService {
     if (sharedConvIds.length > 0) {
       const directConv = await db.query.conversations.findFirst({
         where: and(
-          sql`${conversations.id} = ANY(${sharedConvIds})`,
+          inArray(conversations.id, sharedConvIds),
           eq(conversations.isGroup, false)
         )
       });

@@ -73,7 +73,7 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
 
   const createFolderMutation = useMutation({
     mutationFn: async (name: string) => {
-      return await apiRequest('/api/drive/folders', 'POST', {
+      return await apiRequest('POST', '/api/drive/folders', {
         name,
         parentId: currentFolderId,
       });
@@ -125,7 +125,7 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
 
   const deleteFolderMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/drive/folders/${id}`, 'DELETE');
+      return await apiRequest('DELETE', `/api/drive/folders/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/drive/folders'] });
@@ -138,7 +138,7 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
 
   const deleteFileMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/drive/files/${id}`, 'DELETE');
+      return await apiRequest('DELETE', `/api/drive/files/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/drive/files'] });

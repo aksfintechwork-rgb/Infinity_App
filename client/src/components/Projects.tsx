@@ -102,7 +102,7 @@ export default function Projects({ currentUser, allUsers, onOpenMobileMenu }: Pr
 
   const createMutation = useMutation({
     mutationFn: async (data: ProjectFormValues) => {
-      return await apiRequest('/api/projects', 'POST', data);
+      return await apiRequest('POST', '/api/projects', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
@@ -117,7 +117,7 @@ export default function Projects({ currentUser, allUsers, onOpenMobileMenu }: Pr
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<ProjectFormValues> }) => {
-      return await apiRequest(`/api/projects/${id}`, 'PUT', data);
+      return await apiRequest('PUT', `/api/projects/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
@@ -133,7 +133,7 @@ export default function Projects({ currentUser, allUsers, onOpenMobileMenu }: Pr
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/projects/${id}`, 'DELETE');
+      return await apiRequest('DELETE', `/api/projects/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });

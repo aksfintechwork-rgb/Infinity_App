@@ -53,3 +53,14 @@ Preferred communication style: Simple, everyday language.
 -   **Google Fonts**: Inter font family.
 -   **File Storage**: Local filesystem (`uploads/` directory).
 -   **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`, `xlsx`.
+
+## Recent Changes
+
+### November 6, 2025 - Critical Bug Fixes
+1. **Fixed API Parameter Order Bug**: Corrected `apiRequest()` calls throughout the frontend from `(url, method, data)` to proper `(method, url, data)` signature in Projects and Supremo Drive components. This resolved silent failures where create/update/delete mutations were not reaching the server.
+
+2. **Fixed TaskReminderService Database Error**: Replaced malformed SQL array literal usage `sql\`${conversations.id} = ANY(${sharedConvIds})\`` with proper Drizzle ORM `inArray(conversations.id, sharedConvIds)` in task-reminders.ts. This eliminated server crashes caused by "malformed array literal" PostgreSQL errors.
+
+3. **Added broadcastUpdate Function**: Implemented missing `broadcastUpdate()` WebSocket broadcast function in server/routes.ts to enable real-time project and drive updates across all connected clients. This fixed ReferenceError crashes that prevented project and folder creation.
+
+All core features (Project Tracker and Supremo Drive) are now fully operational with real-time WebSocket updates.
