@@ -396,7 +396,7 @@ export type ProjectWithDetails = Project & {
 export const driveFolders = pgTable("drive_folders", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: text("name").notNull(),
-  parentId: integer("parent_id").references(() => driveFolders.id, { onDelete: "cascade" }),
+  parentId: integer("parent_id"),
   createdById: integer("created_by_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

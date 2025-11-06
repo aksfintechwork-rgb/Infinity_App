@@ -27,6 +27,12 @@ import {
   type Project,
   type InsertProject,
   type ProjectWithDetails,
+  type DriveFolder,
+  type InsertDriveFolder,
+  type DriveFolderWithDetails,
+  type DriveFile,
+  type InsertDriveFile,
+  type DriveFileWithDetails,
   users,
   conversations,
   messages,
@@ -39,6 +45,8 @@ import {
   taskSupportRequests,
   dailyWorksheets,
   projects,
+  driveFolders,
+  driveFiles,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, inArray, sql, gte, lte } from "drizzle-orm";
@@ -118,6 +126,19 @@ export interface IStorage {
   getProjectsByResponsiblePerson(responsiblePersonId: number): Promise<ProjectWithDetails[]>;
   updateProject(id: number, updates: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: number): Promise<void>;
+  
+  createDriveFolder(folder: InsertDriveFolder): Promise<DriveFolder>;
+  getDriveFolderById(id: number): Promise<DriveFolder | undefined>;
+  getAllDriveFolders(parentId?: number | null): Promise<DriveFolderWithDetails[]>;
+  updateDriveFolder(id: number, updates: Partial<InsertDriveFolder>): Promise<DriveFolder | undefined>;
+  deleteDriveFolder(id: number): Promise<void>;
+  
+  createDriveFile(file: InsertDriveFile): Promise<DriveFile>;
+  getDriveFileById(id: number): Promise<DriveFileWithDetails | undefined>;
+  getDriveFilesByFolder(folderId: number | null): Promise<DriveFileWithDetails[]>;
+  getAllDriveFiles(): Promise<DriveFileWithDetails[]>;
+  updateDriveFile(id: number, updates: Partial<InsertDriveFile>): Promise<DriveFile | undefined>;
+  deleteDriveFile(id: number): Promise<void>;
 }
 
 export class PostgresStorage implements IStorage {
