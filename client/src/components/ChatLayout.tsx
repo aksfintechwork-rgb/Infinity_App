@@ -486,8 +486,8 @@ export default function ChatLayout({
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Open the room in new window and join immediately with user name
-      const callUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}`;
+      // Open the room in new window and join immediately with user name, video off by default
+      const callUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
       const callWindow = window.open(callUrl, '_blank', 'noopener,noreferrer');
       
       // Don't track window for incoming calls (we're not the caller)
@@ -549,8 +549,8 @@ export default function ChatLayout({
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Open the room in new window with user name - instant join!
-      const callUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}`;
+      // Open the room in new window with user name and video off by default - instant join!
+      const callUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
       const callWindow = window.open(callUrl, '_blank', 'noopener,noreferrer');
       
       // Store window reference to monitor when it's closed
