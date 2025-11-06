@@ -2,38 +2,41 @@
 
 ## Design Approach
 
-**Selected Approach:** Hybrid (Slack + Linear + Microsoft Teams)
-- **Primary Inspiration:** Slack's organizational clarity + Linear's modern polish + Microsoft Teams' professional credibility
-- **Rationale:** Internal business communication demands efficiency, trust, and professional polish for daily enterprise use.
+**Selected Approach:** Banking-inspired Professional Dashboard (ICICI-style)
+- **Primary Inspiration:** Modern banking interfaces with warm, professional aesthetics
+- **Rationale:** Internal business communication demands trust, efficiency, and a professional corporate feel inspired by premium banking applications.
 - **Key Principles:**
-  - Clean, business-focused interface with refined aesthetics
+  - Clean, professional banking interface with warm aesthetics
   - Solid colors with strategic subtle accents
-  - Professional blue palette conveying trust and stability
+  - Orange/coral primary palette conveying energy and professionalism
+  - Warm beige/cream backgrounds for comfortable extended use
   - Clear visual hierarchy through typography and spacing
   - Minimal, purposeful design elements
 
 ## Color System
 
 **Primary Palette:**
-- **Professional Blue:** Primary actions, brand elements (#2563EB)
-- **Deep Navy:** Header backgrounds, important elements (#1E3A8A)
-- **Light Blue:** Hover states, subtle accents (#DBEAFE)
-- **Neutral Gray:** Text, borders (#64748B, #94A3B8, #CBD5E1)
-- **Pure White:** Backgrounds, cards (#FFFFFF)
-- **Soft Gray:** Secondary backgrounds (#F8FAFC, #F1F5F9)
+- **Vibrant Orange:** Primary actions, brand elements (#F26122 / HSL 18° 95% 54%)
+- **Warm Beige:** Main background (#F5F0E8 / HSL 40° 40% 95%)
+- **Soft Cream:** Secondary backgrounds (#F8F3ED / HSL 40° 30% 92%)
+- **Warm Brown:** Text, important elements (#3A2F28 / HSL 25° 25% 15%)
+- **Light Beige:** Borders, dividers (#E8DFD4 / HSL 40° 25% 85%)
+- **Pure White:** Cards, elevated surfaces (#FFFFFF)
 
 **Accent Colors:**
 - **Success Green:** #10B981
 - **Warning Amber:** #F59E0B
 - **Error Red:** #EF4444
-- **Online Teal:** #14B8A6
+- **Chart Purple:** #B864E6 (for charts only)
 
 **Application Strategy:**
-- Primary buttons: Solid professional blue with subtle hover darkening
-- Active states: Light blue background (10% opacity)
-- Borders: Neutral gray with blue accent on focus
-- Shadows: Subtle, multi-layer for depth (never colored)
-- Text: Dark slate on light backgrounds, ensuring WCAG AAA
+- Primary buttons: Solid orange (#F26122) with white text, rounded corners
+- Active states: Orange background (8% opacity on warm beige)
+- Borders: Light beige with orange accent on focus
+- Shadows: Subtle, warm-toned shadows for depth
+- Text: Warm brown on light backgrounds, ensuring WCAG AAA
+- Sidebar: Darker orange background (#C1541E) with white icons and text for proper contrast
+- Charts: Solid orange and purple colors (NO gradients)
 
 ## Typography
 
@@ -67,7 +70,7 @@
 - Card elevation: shadow-sm (subtle)
 - Dropdowns/Modals: shadow-lg (pronounced)
 - Interactive hover: shadow-md (medium lift)
-- Active message: shadow-inner with blue tint
+- Active message: shadow-inner with orange tint
 
 **Grid Structure:**
 - Desktop: Sidebar (280px) | Conversation List (340px) | Chat Area (flex-1)
@@ -79,30 +82,30 @@
 ### Navigation & Structure
 
 **Top Bar (64px):**
-- Background: Deep navy (#1E3A8A)
-- Border-bottom: 1px solid rgba(255,255,255,0.1)
-- Left: "SUPREMO TRADERS LLP" white text (weight 700), circular logo (36px)
-- Center: Conversation title (white, weight 500) with member count badge
-- Right: Search icon (white, hover bg white/10), notification bell with badge, profile avatar (36px) with white ring
-- Box-shadow: shadow-md for depth
+- Background: White (#FFFFFF)
+- Border-bottom: 1px solid light beige (#E8DFD4)
+- Left: "SUPREMO TRADERS LLP" orange text (weight 700), circular logo (36px)
+- Center: Conversation title (warm brown, weight 500) with member count badge
+- Right: Search icon (warm brown, hover bg cream), notification bell with orange badge, profile avatar (36px) with orange ring
+- Box-shadow: shadow-sm for subtle depth
 
 **Sidebar (280px):**
-- Background: White with subtle shadow-sm
-- Header (72px): Deep navy background, white text
-- Section headers: Uppercase labels (12px, weight 500, text gray-500)
-- Conversation items: rounded-lg, hover bg gray-50, active bg light-blue with left blue accent (3px)
-- Create buttons: Full-width, rounded-lg, professional blue background
-- Presence indicators: 10px circles (online=teal, away=amber, offline=gray)
-- Dividers: 1px gray-200 between sections
+- Background: Darker orange (#C1541E / HSL 18° 75% 38%) with white text for WCAG compliance
+- Header (72px): Darker orange background, white text
+- Section headers: Uppercase labels (12px, weight 500, white text with 90% opacity)
+- Conversation items: rounded-lg, hover bg rgba(255,255,255,0.15), active bg rgba(255,255,255,0.2) with white accent
+- Create buttons: Full-width, rounded-lg, white background with orange text
+- Presence indicators: 10px circles (online=green, away=amber, offline=white/40)
+- Dividers: 1px rgba(255,255,255,0.2) between sections
 
 **Conversation List Panel (340px):**
-- Background: Soft gray (#F8FAFC)
-- Search bar: rounded-lg, white background, shadow-sm, blue border on focus
-- Conversation cards: White background, rounded-lg, padding p-4, border-l-3 blue accent for unread
-- Avatar: 48px with blue ring for unread conversations
-- Unread count: Professional blue circular badge, top-right
-- Last message: Truncated, gray-600 text
-- Active state: Light blue background, shadow-md, blue left-border
+- Background: Warm beige (#F5F0E8)
+- Search bar: rounded-lg, white background, shadow-sm, orange border on focus
+- Conversation cards: White background, rounded-lg, padding p-4, border-l-3 orange accent for unread
+- Avatar: 48px with orange ring for unread conversations
+- Unread count: Orange circular badge, top-right
+- Last message: Truncated, warm brown text with 70% opacity
+- Active state: Soft cream background, shadow-md, orange left-border
 
 ### Chat Interface
 
@@ -112,64 +115,64 @@
 - Date dividers: Centered text with gray-300 horizontal lines, gray-600 text
 
 **Message Bubbles:**
-- Avatar: 36px, blue ring for online users
-- Own messages: Professional blue background (#2563EB), white text, right-aligned, rounded-2xl (but square on sender side)
-- Other messages: Soft gray background (#F1F5F9), dark text, left-aligned, rounded-2xl (but square on sender side)
-- Sender name: Weight 600, gray-900
-- Timestamp: Gray-500, 13px
+- Avatar: 36px, orange ring for online users
+- Own messages: Vibrant orange background (#F26122), white text, right-aligned, rounded-2xl (but square on sender side)
+- Other messages: White background with light beige border, warm brown text, left-aligned, rounded-2xl (but square on sender side)
+- Sender name: Weight 600, warm brown
+- Timestamp: Warm brown with 60% opacity, 13px
 - Max-width: 600px
 - Padding: p-4, line-height 1.6
 - Shadow-sm on hover
 
 **Message Types:**
-- Text: Standard with blue links
-- Files: White card with gray border, file icon (24px), shadow-sm, rounded-lg
+- Text: Standard with orange links
+- Files: White card with light beige border, file icon (24px), shadow-sm, rounded-lg
 - Images: Max 500px, rounded-lg, shadow-md, lightbox on click
-- Code blocks: Gray-900 background with syntax highlighting, rounded-lg, p-4
-- Reactions: Gray-100 pill badges, rounded-full, blue text, border on hover
+- Code blocks: Warm brown background with syntax highlighting, rounded-lg, p-4
+- Reactions: Soft cream pill badges, rounded-full, orange text, border on hover
 
 **Message Input (80px height):**
-- White background, rounded-xl, shadow-lg, border gray-200
+- White background, rounded-xl, shadow-lg, border light beige
 - Textarea: p-4, auto-expand to 120px max
-- Toolbar: Gray icon buttons (20px) - attachment, emoji, formatting
-- Send button: Professional blue, rounded-lg, px-6, shadow-sm, hover shadow-md
-- Typing indicator: Blue animated dots above input
+- Toolbar: Warm brown icon buttons (20px) - attachment, emoji, formatting
+- Send button: Vibrant orange (#F26122), rounded-lg, px-6, shadow-sm, hover shadow-md
+- Typing indicator: Orange animated dots above input
 
 ### Modal Components
 
 **New Conversation Modal:**
 - Centered, max-width 520px, rounded-xl, shadow-2xl
-- White background with gray-50 header
-- Header: Deep navy text, border-bottom gray-200
+- White background with soft cream header
+- Header: Warm brown text, border-bottom light beige
 - Backdrop: Blur(12px) with dark overlay (rgba(0,0,0,0.4))
-- Member selection: Blue checkboxes, avatar list with presence indicators
-- Selected members: Blue pill chips, rounded-full, with remove icon
-- Footer: Border-top gray-200, primary button (blue), secondary (gray outline)
+- Member selection: Orange checkboxes, avatar list with presence indicators
+- Selected members: Orange pill chips, rounded-full, with remove icon
+- Footer: Border-top light beige, primary button (orange), secondary (beige outline)
 
 **Profile Dropdown:**
 - Width: 280px, rounded-lg, shadow-xl
-- White background, border gray-200
-- User section: Gray-50 background, avatar (48px, blue ring), padding p-4
-- Menu items: rounded-md hover bg gray-50, gray-700 text
+- White background, border light beige
+- User section: Soft cream background, avatar (48px, orange ring), padding p-4
+- Menu items: rounded-md hover bg soft cream, warm brown text
 - Presence selector: Colored circles with labels
-- Dividers: Gray-200
+- Dividers: Light beige
 
 ### Form Elements
 
 **Inputs:**
 - Height: h-11, rounded-lg
-- Border: 1px gray-300, focus blue with shadow-sm
+- Border: 1px light beige, focus orange with shadow-sm
 - Background: White
-- Placeholder: Gray-400
+- Placeholder: Warm brown with 50% opacity
 
 **Buttons:**
-- Primary: h-11, px-6, rounded-lg, professional blue, shadow-sm, hover shadow-md
-- Secondary: Same size, gray-200 border, gray-700 text, hover bg gray-50
-- Icon-only: w-11 h-11, rounded-lg, gray hover
+- Primary: h-11, px-6, rounded-lg, vibrant orange (#F26122), white text, shadow-sm, hover shadow-md
+- Secondary: Same size, light beige border, warm brown text, hover bg soft cream
+- Icon-only: w-11 h-11, rounded-lg, hover bg soft cream
 - Disabled: Opacity 40%
 
 **Toggle Switches:**
-- Track: 44px width, rounded-full, gray-200 inactive, blue active
+- Track: 44px width, rounded-full, light beige inactive, orange active
 - Thumb: 20px, white with shadow-sm
 
 ### Status & Feedback
@@ -182,13 +185,13 @@
 - Offline: Gray (#94A3B8)
 
 **Unread Badges:**
-- Professional blue background, white text
+- Vibrant orange background, white text
 - Min 22px, rounded-full, weight 600
 - Shadow-sm
 
 **Toast Notifications:**
 - Top-right, max-width 360px, rounded-lg, shadow-xl
-- White background, border-l-4 (success=green, error=red, info=blue)
+- White background, border-l-4 (success=green, error=red, info=orange)
 - Icon circle with colored background
 - Slide-in animation, auto-dismiss 4 seconds
 
@@ -202,8 +205,8 @@
 **Hero Image:** No large hero image - this is an internal communication tool focused on functional efficiency.
 
 **Avatar System:**
-- User avatars with colored ring when online (blue for general active state, teal for online)
-- Fallback: Blue background (#DBEAFE) with navy initials
+- User avatars with colored ring when online (orange for general active state, green for online)
+- Fallback: Soft cream background (#F8F3ED) with warm brown initials
 - Sizes: 32px (inline), 36px (messages), 48px (list), 56px (profile)
 
 **File Thumbnails:**
@@ -223,7 +226,7 @@
 ## Accessibility
 
 - Minimum 44px touch targets
-- Focus rings: 2px blue ring, 2px offset
+- Focus rings: 2px orange ring, 2px offset
 - ARIA labels on all icon buttons
 - Keyboard navigation throughout
 - WCAG AA contrast ratios minimum
@@ -236,4 +239,4 @@
 - Tablet (768-1023px): Two-column, sidebar overlay with backdrop
 - Mobile (<768px): Single stack, bottom navigation bar, full-screen chat view
 
-This design creates a professional, trustworthy communication platform where SUPREMO TRADERS LLP's team experiences clarity, efficiency, and business-grade polish in daily collaboration.
+This design creates a professional, trustworthy banking-inspired communication platform where SUPREMO TRADERS LLP's team experiences warmth, clarity, efficiency, and business-grade polish in daily collaboration. The orange/coral and warm beige color scheme conveys energy and professionalism while maintaining excellent readability and accessibility.
