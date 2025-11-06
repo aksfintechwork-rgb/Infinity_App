@@ -104,7 +104,7 @@ export default function ChatLayout({
   const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar' | 'tasks' | 'worksheet' | 'admin-worksheets' | 'projects'>('chat');
+  const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar' | 'tasks' | 'worksheet' | 'admin-worksheets' | 'projects' | 'drive'>('chat');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
