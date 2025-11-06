@@ -1029,6 +1029,165 @@ export class PostgresStorage implements IStorage {
   async deleteProject(id: number): Promise<void> {
     await db.delete(projects).where(eq(projects.id, id));
   }
+
+  async createDriveFolder(folder: InsertDriveFolder): Promise<DriveFolder> {
+    const result = await db
+      .insert(driveFolders)
+      .values({ ...folder, updatedAt: new Date() })
+      .returning();
+    return result[0];
+  }
+
+  async getDriveFolderById(id: number): Promise<DriveFolder | undefined> {
+    const result = await db.select().from(driveFolders).where(eq(driveFolders.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getAllDriveFolders(parentId?: number | null): Promise<DriveFolderWithDetails[]> {
+    const whereClause = parentId === undefined 
+      ? undefined 
+      : parentId === null 
+        ? sql`${driveFolders.parentId} IS NULL`
+        : eq(driveFolders.parentId, parentId);
+
+    const result = await db
+      .select({
+        id: driveFolders.id,
+        name: driveFolders.name,
+        parentId: driveFolders.parentId,
+        createdById: driveFolders.createdById,
+        createdAt: driveFolders.createdAt,
+        updatedAt: driveFolders.updatedAt,
+        createdByName: users.name,
+      })
+      .from(driveFolders)
+      .innerJoin(users, eq(driveFolders.createdById, users.id))
+      .where(whereClause)
+      .orderBy(driveFolders.name);
+
+    const foldersWithCounts = await Promise.all(
+      result.map(async (folder) => {
+        const fileCount = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(driveFiles)
+          .where(eq(driveFiles.folderId, folder.id));
+        
+        const subfolderCount = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(driveFolders)
+          .where(eq(driveFolders.parentId, folder.id));
+
+        return {
+          ...folder,
+          itemCount: Number(fileCount[0]?.count || 0) + Number(subfolderCount[0]?.count || 0),
+        };
+      })
+    );
+
+    return foldersWithCounts;
+  }
+
+  async updateDriveFolder(id: number, updates: Partial<InsertDriveFolder>): Promise<DriveFolder | undefined> {
+    const result = await db
+      .update(driveFolders)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(driveFolders.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteDriveFolder(id: number): Promise<void> {
+    await db.delete(driveFolders).where(eq(driveFolders.id, id));
+  }
+
+  async createDriveFile(file: InsertDriveFile): Promise<DriveFile> {
+    const result = await db
+      .insert(driveFiles)
+      .values(file)
+      .returning();
+    return result[0];
+  }
+
+  async getDriveFileById(id: number): Promise<DriveFileWithDetails | undefined> {
+    const result = await db
+      .select({
+        id: driveFiles.id,
+        name: driveFiles.name,
+        originalName: driveFiles.originalName,
+        storagePath: driveFiles.storagePath,
+        mimeType: driveFiles.mimeType,
+        size: driveFiles.size,
+        folderId: driveFiles.folderId,
+        uploadedById: driveFiles.uploadedById,
+        uploadedAt: driveFiles.uploadedAt,
+        uploadedByName: users.name,
+      })
+      .from(driveFiles)
+      .innerJoin(users, eq(driveFiles.uploadedById, users.id))
+      .where(eq(driveFiles.id, id))
+      .limit(1);
+    return result[0];
+  }
+
+  async getDriveFilesByFolder(folderId: number | null): Promise<DriveFileWithDetails[]> {
+    const whereClause = folderId === null 
+      ? sql`${driveFiles.folderId} IS NULL`
+      : eq(driveFiles.folderId, folderId);
+
+    const result = await db
+      .select({
+        id: driveFiles.id,
+        name: driveFiles.name,
+        originalName: driveFiles.originalName,
+        storagePath: driveFiles.storagePath,
+        mimeType: driveFiles.mimeType,
+        size: driveFiles.size,
+        folderId: driveFiles.folderId,
+        uploadedById: driveFiles.uploadedById,
+        uploadedAt: driveFiles.uploadedAt,
+        uploadedByName: users.name,
+      })
+      .from(driveFiles)
+      .innerJoin(users, eq(driveFiles.uploadedById, users.id))
+      .where(whereClause)
+      .orderBy(desc(driveFiles.uploadedAt));
+    
+    return result;
+  }
+
+  async getAllDriveFiles(): Promise<DriveFileWithDetails[]> {
+    const result = await db
+      .select({
+        id: driveFiles.id,
+        name: driveFiles.name,
+        originalName: driveFiles.originalName,
+        storagePath: driveFiles.storagePath,
+        mimeType: driveFiles.mimeType,
+        size: driveFiles.size,
+        folderId: driveFiles.folderId,
+        uploadedById: driveFiles.uploadedById,
+        uploadedAt: driveFiles.uploadedAt,
+        uploadedByName: users.name,
+      })
+      .from(driveFiles)
+      .innerJoin(users, eq(driveFiles.uploadedById, users.id))
+      .orderBy(desc(driveFiles.uploadedAt));
+    
+    return result;
+  }
+
+  async updateDriveFile(id: number, updates: Partial<InsertDriveFile>): Promise<DriveFile | undefined> {
+    const result = await db
+      .update(driveFiles)
+      .set(updates)
+      .where(eq(driveFiles.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteDriveFile(id: number): Promise<void> {
+    await db.delete(driveFiles).where(eq(driveFiles.id, id));
+  }
 }
 
 export const storage = new PostgresStorage();

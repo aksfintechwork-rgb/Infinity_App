@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { hashPassword, comparePassword, generateToken, authMiddleware, getCurrentUser, requireAdmin, type AuthRequest, verifyToken } from "./auth";
-import { insertUserSchema, insertConversationSchema, insertMessageSchema, updateMessageSchema, insertMeetingSchema, insertTaskSchema, insertSupportRequestSchema, insertProjectSchema } from "@shared/schema";
+import { insertUserSchema, insertConversationSchema, insertMessageSchema, updateMessageSchema, insertMeetingSchema, insertTaskSchema, insertSupportRequestSchema, insertProjectSchema, insertDriveFolderSchema, insertDriveFileSchema } from "@shared/schema";
 import { z } from "zod";
 import { upload, getFileUrl } from "./upload";
 import { WebSocketServer, WebSocket } from "ws";
@@ -1559,6 +1559,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete project error:", error);
       res.status(500).json({ error: "Failed to delete project" });
+    }
+  });
+
+  // Supremo Drive - Folder Routes
+  app.get("/api/drive/folders", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const parentId = req.query.parentId ? parseInt(req.query.parentId as string) : null;
+      const folders = await storage.getAllDriveFolders(parentId);
+      res.json(folders);
+    } catch (error) {
+      console.error("Get folders error:", error);
+      res.status(500).json({ error: "Failed to get folders" });
+    }
+  });
+
+  app.post("/api/drive/folders", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const validatedData = insertDriveFolderSchema.parse({
+        ...req.body,
+        createdById: req.user!.id,
+      });
+      const folder = await storage.createDriveFolder(validatedData);
+      res.json(folder);
+    } catch (error) {
+      console.error("Create folder error:", error);
+      res.status(500).json({ error: "Failed to create folder" });
+    }
+  });
+
+  app.put("/api/drive/folders/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const validatedData = insertDriveFolderSchema.partial().parse(req.body);
+      const folder = await storage.updateDriveFolder(parseInt(req.params.id), validatedData);
+      if (!folder) {
+        return res.status(404).json({ error: "Folder not found" });
+      }
+      res.json(folder);
+    } catch (error) {
+      console.error("Update folder error:", error);
+      res.status(500).json({ error: "Failed to update folder" });
+    }
+  });
+
+  app.delete("/api/drive/folders/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      await storage.deleteDriveFolder(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete folder error:", error);
+      res.status(500).json({ error: "Failed to delete folder" });
+    }
+  });
+
+  // Supremo Drive - File Routes
+  app.get("/api/drive/files", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const folderId = req.query.folderId ? parseInt(req.query.folderId as string) : null;
+      const files = await storage.getDriveFilesByFolder(folderId);
+      res.json(files);
+    } catch (error) {
+      console.error("Get files error:", error);
+      res.status(500).json({ error: "Failed to get files" });
+    }
+  });
+
+  app.post("/api/drive/upload", authMiddleware, upload.single('file'), async (req: AuthRequest, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const folderId = req.body.folderId ? parseInt(req.body.folderId) : null;
+      
+      const fileData = {
+        name: req.file.filename,
+        originalName: req.file.originalname,
+        storagePath: `/uploads/${req.file.filename}`,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+        folderId,
+        uploadedById: req.user!.id,
+      };
+
+      const file = await storage.createDriveFile(fileData);
+      res.json(file);
+    } catch (error) {
+      console.error("Upload file error:", error);
+      res.status(500).json({ error: "Failed to upload file" });
+    }
+  });
+
+  app.get("/api/drive/files/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const file = await storage.getDriveFileById(parseInt(req.params.id));
+      if (!file) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      res.json(file);
+    } catch (error) {
+      console.error("Get file error:", error);
+      res.status(500).json({ error: "Failed to get file" });
+    }
+  });
+
+  app.delete("/api/drive/files/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      await storage.deleteDriveFile(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete file error:", error);
+      res.status(500).json({ error: "Failed to delete file" });
     }
   });
 
