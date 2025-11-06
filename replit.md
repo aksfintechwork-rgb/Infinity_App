@@ -69,4 +69,11 @@ Preferred communication style: Simple, everyday language.
 
 6. **Video Calls Start with Camera Off**: Modified video call initiation in ChatLayout.tsx to add `&video=false` parameter to Daily.co room URL. Video calls now start with camera disabled by default, allowing users to enable video manually if needed. This provides better privacy and follows user expectations for video call behavior.
 
-All core features (Project Tracker, Supremo Drive, and Incoming Call Notifications) are now fully operational with real-time WebSocket updates and proper authentication.
+### November 6, 2025 - Access Control Implementation
+7. **Project Edit Access Control**: Implemented permission checks where only admin users or the assigned responsible person can edit or delete projects. Backend routes (PUT/DELETE `/api/projects/:id`) now validate that `req.user.role === 'admin' OR project.responsiblePersonId === req.userId` before allowing modifications. Frontend Projects component hides edit/delete buttons for unauthorized users. All users can still view all projects (read-only for non-authorized users).
+
+8. **Supremo Drive Private Folders**: Implemented complete privacy for Supremo Drive folders and files. Users now only see their own folders and files. Storage layer methods (`getAllDriveFolders`, `getDriveFilesByFolder`) filter results by `createdById` and `uploadedById`. Individual operations (folder delete, file download, file delete) all validate ownership before allowing access. This prevents ID enumeration attacks and ensures complete data privacy between users.
+
+9. **Security Hardening**: Added comprehensive ownership validation to all Supremo Drive endpoints to prevent unauthorized access via direct ID manipulation. Removed duplicate drive routes and consolidated all drive operations into a single, secure implementation with proper authentication and authorization checks throughout.
+
+All core features (Project Tracker, Supremo Drive, and Incoming Call Notifications) are now fully operational with real-time WebSocket updates, proper authentication, and comprehensive access control.
