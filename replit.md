@@ -1,7 +1,7 @@
 # SUPREMO TRADERS LLP Team Communication Platform
 
 ## Overview
-This project is an internal, real-time communication platform for SUPREMO TRADERS LLP. It features direct messaging, group chats, file attachments, and role-based access. Beyond core chat functionalities, it integrates a meeting calendar with AI summarization, video conferencing, comprehensive task management, and user profile management. The platform aims to be an efficient and professional communication tool, enhancing team collaboration and productivity with a focus on data preservation and integrity across all updates.
+This project is an internal, real-time communication platform for SUPREMO TRADERS LLP. It features direct messaging, group chats, file attachments, and role-based access. Beyond core chat functionalities, it integrates a meeting calendar with AI summarization, video conferencing, comprehensive task management, project tracking dashboard, and user profile management. The platform aims to be an efficient and professional communication tool, enhancing team collaboration and productivity with a focus on data preservation and integrity across all updates.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -18,8 +18,8 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Storage
 - **Database**: PostgreSQL via Neon serverless HTTP driver, managed with Drizzle ORM.
-- **Schema**: Includes tables for users, conversations, messages, meetings (with AI summaries), tasks, and associated entities.
-- **Data Preservation**: All existing data (tasks, messages, meetings, conversations, user data, file attachments) must be preserved across updates. Schema changes must be backward compatible and non-destructive.
+- **Schema**: Includes tables for users, conversations, messages, meetings (with AI summaries), tasks, projects (with tracking details), and associated entities.
+- **Data Preservation**: All existing data (tasks, messages, meetings, conversations, user data, file attachments, projects) must be preserved across updates. Schema changes must be backward compatible and non-destructive.
 
 ### Authentication & Authorization
 - **Authentication**: JWT tokens (7-day expiration), bcrypt hashing, localStorage for client tokens, case-insensitive login IDs.
@@ -43,6 +43,7 @@ Preferred communication style: Simple, everyday language.
 - **Password Management**: Self-service password change.
 - **User Profile & Settings**: View profile information and manage app preferences (dark mode, notifications, sound alerts).
 - **Daily Work Log**: Comprehensive daily planning and activity tracking system for all users with private to-do lists, priority levels, customizable working hours, hourly activity logging, auto-save, and admin team view (excluding private to-dos).
+- **Project Tracker Dashboard**: Full project lifecycle management with auto-generated IDs (PRJ-XXXXXX), detailed tracking of status, progress percentage, responsible persons, support teams, issues/risks, dependencies, next steps, target dates, and remarks. Features color-coded status indicators (green/yellow/red based on progress), priority levels, duration calculation, and comprehensive CRUD operations with real-time updates.
 
 ## External Dependencies
 
