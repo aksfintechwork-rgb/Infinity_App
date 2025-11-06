@@ -1037,7 +1037,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/drive/folders", authMiddleware, async (req: AuthRequest, res) => {
     try {
+      console.log("[DRIVE] Create folder request:", { body: req.body, userId: req.userId });
+      
       if (!req.userId) {
+        console.log("[DRIVE] No userId found");
         return res.status(401).json({ error: "Not authenticated" });
       }
 
@@ -1047,13 +1050,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!validation.success) {
+        console.log("[DRIVE] Validation failed:", validation.error);
         return res.status(400).json({ error: "Invalid input", details: validation.error });
       }
 
+      console.log("[DRIVE] Creating folder with data:", validation.data);
       const folder = await storage.createDriveFolder(validation.data);
+      console.log("[DRIVE] Folder created successfully:", folder);
       res.json(folder);
     } catch (error) {
-      console.error("Create drive folder error:", error);
+      console.error("[DRIVE] Create folder error:", error);
       res.status(500).json({ error: "Failed to create folder" });
     }
   });
@@ -1096,11 +1102,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/drive/files", authMiddleware, upload.single('file'), async (req: AuthRequest, res) => {
     try {
+      console.log("[DRIVE] Upload file request:", { body: req.body, userId: req.userId, file: req.file?.originalname });
+      
       if (!req.userId) {
+        console.log("[DRIVE] No userId found");
         return res.status(401).json({ error: "Not authenticated" });
       }
 
       if (!req.file) {
+        console.log("[DRIVE] No file uploaded");
         return res.status(400).json({ error: "No file uploaded" });
       }
 
@@ -1116,10 +1126,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         uploadedById: req.userId,
       };
 
+      console.log("[DRIVE] Creating file with data:", fileData);
       const file = await storage.createDriveFile(fileData);
+      console.log("[DRIVE] File uploaded successfully:", file);
       res.json(file);
     } catch (error) {
-      console.error("Upload drive file error:", error);
+      console.error("[DRIVE] Upload file error:", error);
       res.status(500).json({ error: "Failed to upload file" });
     }
   });
