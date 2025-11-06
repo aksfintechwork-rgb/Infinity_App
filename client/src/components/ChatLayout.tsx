@@ -273,7 +273,7 @@ export default function ChatLayout({
     }
   };
 
-  // Smart auto-scroll: scroll to bottom on conversation switch or when user is near bottom
+  // Auto-scroll to bottom: always on conversation switch, or when user is near bottom
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
     if (!scrollContainer) return;
@@ -282,7 +282,7 @@ export default function ChatLayout({
     const hasConversationChanged = lastConversationIdRef.current !== activeConversationId;
     if (hasConversationChanged) {
       lastConversationIdRef.current = activeConversationId;
-      // Use double requestAnimationFrame to ensure messages have fully rendered
+      // Always scroll to bottom when switching conversations
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (scrollContainer) {
@@ -293,13 +293,21 @@ export default function ChatLayout({
       return;
     }
 
-    // Check if user is near the bottom (within 150px)
-    const isNearBottom = 
-      scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 150;
+    // Check if user is near the bottom (generous 300px threshold)
+    // This ensures chat stays at latest by default, but respects user scrolling up
+    const distanceFromBottom = 
+      scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight;
+    const isNearBottom = distanceFromBottom < 300;
 
-    // Only auto-scroll if user is near the bottom
+    // Auto-scroll to bottom if user is near bottom (they want to see latest messages)
     if (isNearBottom) {
-      scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (scrollContainer) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+          }
+        });
+      });
     }
   }, [activeMessages, activeConversationId]);
 
