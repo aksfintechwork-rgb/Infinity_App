@@ -2345,9 +2345,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   conversationId,
                   callType,
                   roomName,
-                  from: from.id,
-                  callerName: from.name,
-                  callerAvatar: from.avatar
+                  from,
                 },
               }));
             }
