@@ -465,6 +465,30 @@ export default function ChatLayout({
     setEditingMessage(null);
   };
 
+  const handleDeleteMessage = async (messageId: number) => {
+    if (!window.confirm('Are you sure you want to delete this message?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/messages/${messageId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete message');
+      }
+
+      // WebSocket listener in App.tsx will handle updating message state
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+    }
+  };
+
   // Handle inviting user to active call
   const handleSendCallInvite = (userId: number) => {
     if (!outgoingCall || !ws?.isConnected) return;
@@ -1239,6 +1263,7 @@ export default function ChatLayout({
                     onEdit={handleEditMessage}
                     onForward={handleForwardMessage}
                     onReply={handleReply}
+                    onDelete={handleDeleteMessage}
                   />
                 ))}
                 {isTyping && <TypingIndicator userName="Someone" />}

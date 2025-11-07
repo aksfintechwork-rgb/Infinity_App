@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
-import { FileText, Download, MoreVertical, Edit2, Forward, Reply } from 'lucide-react';
+import { FileText, Download, MoreVertical, Edit2, Forward, Reply, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -27,6 +27,7 @@ interface MessageProps {
   onEdit?: (messageId: number, currentBody: string) => void;
   onForward?: (messageId: number) => void;
   onReply?: (messageId: number, senderName: string) => void;
+  onDelete?: (messageId: number) => void;
 }
 
 export default function Message({
@@ -43,6 +44,7 @@ export default function Message({
   onEdit,
   onForward,
   onReply,
+  onDelete,
 }: MessageProps) {
   const initials = senderName
     .split(' ')
@@ -115,6 +117,16 @@ export default function Message({
                   <Forward className="mr-2 h-4 w-4" />
                   Forward
                 </DropdownMenuItem>
+                {isCurrentUser && (
+                  <DropdownMenuItem
+                    onClick={() => onDelete?.(id)}
+                    className="text-destructive focus:text-destructive"
+                    data-testid={`button-delete-message-${id}`}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
