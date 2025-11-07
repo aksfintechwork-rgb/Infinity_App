@@ -7,6 +7,7 @@ import { z } from "zod";
 import { upload, getFileUrl } from "./upload";
 import { WebSocketServer, WebSocket } from "ws";
 import { generateMeetingSummary } from "./openai";
+import webpush from "web-push";
 
 interface WebSocketClient extends WebSocket {
   userId?: number;
@@ -14,6 +15,55 @@ interface WebSocketClient extends WebSocket {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Configure web-push with VAPID keys (strip any surrounding quotes)
+  const vapidPublicKey = process.env.VAPID_PUBLIC_KEY?.replace(/^"|"$/g, '');
+  const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY?.replace(/^"|"$/g, '');
+  
+  if (vapidPublicKey && vapidPrivateKey) {
+    webpush.setVapidDetails(
+      'mailto:admin@supremotraders.com',
+      vapidPublicKey,
+      vapidPrivateKey
+    );
+    console.log('[WebPush] VAPID keys configured');
+  } else {
+    console.warn('[WebPush] WARNING: VAPID keys not found, push notifications will not work');
+  }
+
+  // Helper function to send push notification
+  const sendPushNotification = async (userId: number, payload: any) => {
+    try {
+      const subscriptions = await storage.getUserPushSubscriptions(userId);
+      
+      const pushPromises = subscriptions.map(async (sub) => {
+        try {
+          await webpush.sendNotification(
+            {
+              endpoint: sub.endpoint,
+              keys: {
+                p256dh: sub.p256dhKey,
+                auth: sub.authKey,
+              },
+            },
+            JSON.stringify(payload)
+          );
+        } catch (error: any) {
+          // Remove invalid subscriptions
+          if (error.statusCode === 410 || error.statusCode === 404) {
+            console.log(`[WebPush] Removing invalid subscription for user ${userId}`);
+            await storage.deletePushSubscription(sub.endpoint);
+          } else {
+            console.error(`[WebPush] Error sending push to user ${userId}:`, error.message);
+          }
+        }
+      });
+      
+      await Promise.all(pushPromises);
+    } catch (error) {
+      console.error('[WebPush] Error sending push notifications:', error);
+    }
+  };
+
   // WebSocket server will be assigned after HTTP server is created
   let wss: WebSocketServer | null = null;
 
@@ -2355,8 +2405,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const memberIds = members.map(m => m.id);
           
           // Broadcast to all members (they will filter out their own call on the client)
+          const connectedUserIds: number[] = [];
           wss.clients.forEach((client: any) => {
             if (client.readyState === WebSocket.OPEN && memberIds.includes(client.userId)) {
+              connectedUserIds.push(client.userId);
               client.send(JSON.stringify({
                 type: 'incoming_call',
                 data: {
@@ -2368,6 +2420,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }));
             }
           });
+          
+          // Send push notifications to offline members
+          const offlineUserIds = memberIds.filter(id => !connectedUserIds.includes(id) && id !== from.id);
+          for (const userId of offlineUserIds) {
+            await sendPushNotification(userId, {
+              title: `Incoming ${callType === 'video' ? 'Video' : 'Audio'} Call`,
+              body: `${from.name} is calling...`,
+              url: `/?conversation=${conversationId}`,
+              callData: { conversationId, roomName, callType, from },
+            });
+          }
+          
           return;
         }
         
@@ -2396,7 +2460,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           
           if (!foundClient) {
-            console.log(`[invite_to_call] WARNING: No active WebSocket connection found for user ${userId}`);
+            console.log(`[invite_to_call] No active WebSocket connection for user ${userId}, sending push notification`);
+            // Send push notification to offline user
+            await sendPushNotification(userId, {
+              title: `Incoming ${callType === 'video' ? 'Video' : 'Audio'} Call`,
+              body: `${from.name} invited you to a call`,
+              url: `/?conversation=${conversationId}`,
+              callData: { conversationId, roomName, callType, from },
+            });
           }
           return;
         }

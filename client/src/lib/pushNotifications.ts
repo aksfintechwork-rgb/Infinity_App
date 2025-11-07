@@ -27,7 +27,8 @@ export async function registerPushNotifications(userId: number): Promise<boolean
     const registration = await navigator.serviceWorker.register('/sw.js');
     await navigator.serviceWorker.ready;
 
-    const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+    // Strip any surrounding quotes from the VAPID key
+    const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY?.replace(/^"|"$/g, '');
     if (!vapidPublicKey) {
       console.error('VAPID public key not found');
       return false;
