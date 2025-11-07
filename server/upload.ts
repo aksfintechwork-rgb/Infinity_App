@@ -43,7 +43,6 @@ export const upload = multer({
       'image/gif',
       'image/webp',
       'image/bmp',
-      'image/svg+xml',
       // Documents
       'application/pdf',
       'application/msword',
