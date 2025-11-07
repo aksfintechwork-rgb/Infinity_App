@@ -133,6 +133,13 @@ export default function ChatLayout({
     calledName: string;
   } | null>(null);
 
+  // Active call state (persists after call is answered)
+  const [activeCall, setActiveCall] = useState<{
+    conversationId: number;
+    callType: 'audio' | 'video';
+    roomName: string;
+  } | null>(null);
+
   // Edit and forward message state
   const [editingMessage, setEditingMessage] = useState<{ id: number; body: string } | null>(null);
   const [forwardingMessageId, setForwardingMessageId] = useState<number | null>(null);
@@ -365,6 +372,14 @@ export default function ChatLayout({
     const unsubscribeAnswered = ws.on('call_answered', (data: any) => {
       // Stop outgoing ringtone if this is my call
       if (outgoingCall && data.conversationId === outgoingCall.conversationId) {
+        // Set active call state to keep Invite button visible
+        setActiveCall({
+          conversationId: outgoingCall.conversationId,
+          callType: outgoingCall.callType,
+          roomName: outgoingCall.callType === 'video' 
+            ? `supremo-video-${outgoingCall.conversationId}`
+            : `supremo-audio-${outgoingCall.conversationId}`
+        });
         setOutgoingCall(null);
       }
     });
@@ -416,15 +431,16 @@ export default function ChatLayout({
     };
   }, [outgoingCall, toast]);
 
-  // Monitor call window - stop ringtone when window is closed
+  // Monitor call window - clear call state when window is closed
   useEffect(() => {
-    if (!outgoingCall || !callWindowRef.current) return;
+    if ((!outgoingCall && !activeCall) || !callWindowRef.current) return;
 
     // Check if window is closed every 500ms
     windowCheckIntervalRef.current = setInterval(() => {
       if (callWindowRef.current && callWindowRef.current.closed) {
-        // Window was closed - stop outgoing ringtone
+        // Window was closed - clear all call states
         setOutgoingCall(null);
+        setActiveCall(null);
         callWindowRef.current = null;
         
         if (windowCheckIntervalRef.current) {
@@ -440,7 +456,7 @@ export default function ChatLayout({
         windowCheckIntervalRef.current = null;
       }
     };
-  }, [outgoingCall]);
+  }, [outgoingCall, activeCall]);
 
   // Edit and forward message handlers
   const handleEditMessage = (messageId: number, currentBody: string) => {
@@ -485,23 +501,27 @@ export default function ChatLayout({
 
   // Handle inviting user to active call
   const handleSendCallInvite = (userId: number) => {
-    if (!outgoingCall || !ws?.isConnected) return;
+    // Use activeCall if available, otherwise use outgoingCall
+    const callInfo = activeCall || outgoingCall;
+    if (!callInfo || !ws?.isConnected) return;
 
     const user = allUsers.find(u => u.id === userId);
     if (!user) return;
 
     // Generate the room name based on conversation and call type
-    const roomName = outgoingCall.callType === 'video' 
-      ? `supremo-video-${outgoingCall.conversationId}`
-      : `supremo-audio-${outgoingCall.conversationId}`;
+    const roomName = activeCall 
+      ? activeCall.roomName 
+      : (outgoingCall!.callType === 'video' 
+          ? `supremo-video-${outgoingCall!.conversationId}`
+          : `supremo-audio-${outgoingCall!.conversationId}`);
 
     // Send invitation via WebSocket
     ws.send({
       type: 'invite_to_call',
       data: {
         userId,
-        conversationId: outgoingCall.conversationId,
-        callType: outgoingCall.callType,
+        conversationId: callInfo.conversationId,
+        callType: callInfo.callType,
         roomName,
         from: {
           id: currentUser.id,
@@ -540,8 +560,15 @@ export default function ChatLayout({
       const callUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
       const callWindow = window.open(callUrl, '_blank', 'noopener,noreferrer');
       
-      // Don't track window for incoming calls (we're not the caller)
-      // callWindowRef.current = callWindow;
+      // Track window to detect when call ends
+      callWindowRef.current = callWindow;
+      
+      // Set active call state to keep Invite button visible
+      setActiveCall({
+        conversationId: incomingCall.conversationId,
+        callType: incomingCall.callType,
+        roomName: incomingCall.roomName
+      });
 
       toast({
         title: 'Joined call',
@@ -617,6 +644,13 @@ export default function ChatLayout({
       
       // Store window reference to monitor when it's closed
       callWindowRef.current = callWindow;
+      
+      // Set active call state to keep Invite button visible
+      setActiveCall({
+        conversationId: activeConversation.id,
+        callType: 'video',
+        roomName
+      });
       
       // Send incoming call notification to other members via WebSocket
       if (ws?.isConnected) {
@@ -766,6 +800,13 @@ export default function ChatLayout({
       
       // Store window reference to monitor when it's closed
       callWindowRef.current = callWindow;
+      
+      // Set active call state to keep Invite button visible
+      setActiveCall({
+        conversationId: activeConversation.id,
+        callType: 'audio',
+        roomName
+      });
       
       // Send incoming call notification to other members via WebSocket
       if (ws?.isConnected) {
@@ -1084,65 +1125,69 @@ export default function ChatLayout({
               </div>
               <div className="flex items-center gap-2">
                 {/* Show invite and cancel buttons if call is active, otherwise show call buttons */}
-                {outgoingCall ? (
+                {(outgoingCall || activeCall) ? (
                   <>
-                    {/* Cancel Call Button - Desktop */}
+                    {/* Cancel/End Call Button - Desktop */}
                     <Button
                       variant="destructive"
                       size="sm"
                       onClick={() => {
-                        // Send WebSocket event to notify receiver that call was cancelled
-                        if (ws?.send && outgoingCall) {
+                        const conversationId = outgoingCall?.conversationId || activeCall?.conversationId;
+                        // Send WebSocket event to notify receiver that call was cancelled/ended
+                        if (ws?.send && conversationId) {
                           ws.send({
                             type: 'call_cancelled',
                             data: {
-                              conversationId: outgoingCall.conversationId,
+                              conversationId,
                             },
                           });
                         }
                         
                         setOutgoingCall(null);
+                        setActiveCall(null);
                         if (callWindowRef.current && !callWindowRef.current.closed) {
                           callWindowRef.current.close();
                         }
                         toast({
-                          title: 'Call cancelled',
-                          description: 'You ended the call',
+                          title: activeCall ? 'Call ended' : 'Call cancelled',
+                          description: activeCall ? 'You left the call' : 'You ended the call',
                         });
                       }}
                       className="hidden md:flex"
                       data-testid="button-cancel-call"
                     >
                       <PhoneOff className="w-4 h-4 mr-2" />
-                      Cancel Call
+                      {activeCall ? 'End Call' : 'Cancel Call'}
                     </Button>
-                    {/* Cancel Call Button - Mobile */}
+                    {/* Cancel/End Call Button - Mobile */}
                     <Button
                       variant="destructive"
                       size="icon"
                       onClick={() => {
-                        // Send WebSocket event to notify receiver that call was cancelled
-                        if (ws?.send && outgoingCall) {
+                        const conversationId = outgoingCall?.conversationId || activeCall?.conversationId;
+                        // Send WebSocket event to notify receiver that call was cancelled/ended
+                        if (ws?.send && conversationId) {
                           ws.send({
                             type: 'call_cancelled',
                             data: {
-                              conversationId: outgoingCall.conversationId,
+                              conversationId,
                             },
                           });
                         }
                         
                         setOutgoingCall(null);
+                        setActiveCall(null);
                         if (callWindowRef.current && !callWindowRef.current.closed) {
                           callWindowRef.current.close();
                         }
                         toast({
-                          title: 'Call cancelled',
-                          description: 'You ended the call',
+                          title: activeCall ? 'Call ended' : 'Call cancelled',
+                          description: activeCall ? 'You left the call' : 'You ended the call',
                         });
                       }}
                       className="md:hidden h-9 w-9"
                       data-testid="button-cancel-call-mobile"
-                      title="Cancel call"
+                      title={activeCall ? "End call" : "Cancel call"}
                     >
                       <PhoneOff className="w-4 h-4" />
                     </Button>
@@ -1621,20 +1666,22 @@ export default function ChatLayout({
       />
 
       {/* Invite to Call Dialog */}
-      {outgoingCall && (
+      {(outgoingCall || activeCall) && (
         <InviteToCallDialog
           isOpen={isInviteToCallOpen}
           onClose={() => setIsInviteToCallOpen(false)}
           currentUserId={currentUser.id}
-          conversationId={outgoingCall.conversationId}
-          callType={outgoingCall.callType}
-          roomName={outgoingCall.callType === 'video' 
-            ? `supremo-video-${outgoingCall.conversationId}`
-            : `supremo-audio-${outgoingCall.conversationId}`
+          conversationId={outgoingCall?.conversationId || activeCall!.conversationId}
+          callType={outgoingCall?.callType || activeCall!.callType}
+          roomName={outgoingCall 
+            ? (outgoingCall.callType === 'video' 
+                ? `supremo-video-${outgoingCall.conversationId}`
+                : `supremo-audio-${outgoingCall.conversationId}`)
+            : activeCall!.roomName
           }
           allUsers={allUsers}
           conversationMemberIds={
-            conversations.find(c => c.id === outgoingCall.conversationId)?.memberIds || []
+            conversations.find(c => c.id === (outgoingCall?.conversationId || activeCall!.conversationId))?.memberIds || []
           }
           onSendInvite={handleSendCallInvite}
         />
