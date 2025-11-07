@@ -247,14 +247,18 @@ function App() {
 
     // Listen for new conversation created events
     const unsubscribeConversationCreated = ws.on('conversation_created', (data: { conversation: Conversation }) => {
+      console.log('[WS] conversation_created event received:', data.conversation.id);
       setConversations((prev) => {
+        const exists = prev.some((c) => c.id === data.conversation.id);
+        console.log('[WS] Conversation exists in state:', exists, 'Current count:', prev.length);
         // Deduplication: only add if conversation doesn't already exist
-        if (prev.some((c) => c.id === data.conversation.id)) {
+        if (exists) {
+          console.log('[WS] Skipping add - conversation already exists');
           return prev;
         }
+        console.log('[WS] Adding conversation to state');
         return [data.conversation, ...prev];
       });
-      console.log('New conversation created:', data.conversation.id);
     });
 
     return () => {
@@ -374,12 +378,17 @@ function App() {
   const handleCreateConversation = async (title: string, memberIds: number[]) => {
     try {
       const newConv = await api.createConversation(token!, title, memberIds);
+      console.log('[CreateConv] API returned conversation:', newConv.id);
       
       // Only add to state if conversation doesn't already exist (prevents duplicates)
       setConversations((prev) => {
-        if (prev.some(c => c.id === newConv.id)) {
+        const exists = prev.some(c => c.id === newConv.id);
+        console.log('[CreateConv] Conversation exists in state:', exists, 'Current count:', prev.length);
+        if (exists) {
+          console.log('[CreateConv] Skipping add - conversation already exists');
           return prev;
         }
+        console.log('[CreateConv] Adding conversation to state');
         return [newConv, ...prev];
       });
       

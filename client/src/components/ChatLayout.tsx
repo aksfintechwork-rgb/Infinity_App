@@ -1419,9 +1419,10 @@ export default function ChatLayout({
         conversationTitle={activeConversation?.title || activeConversation?.members || 'Group'}
       />
 
-      <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-        <SheetContent side="left" className="w-[90vw] max-w-sm p-0 bg-background">
-          <div className="flex flex-col h-full">
+      {isMobileMenuOpen && (
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetContent side="left" className="w-[90vw] max-w-sm p-0 bg-background">
+            <div className="flex flex-col h-full">
             <div className="min-h-[72px] border-b border-border flex items-center justify-between px-4 py-3 bg-secondary">
               <div className="flex items-center gap-3">
                 <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-10 h-10 object-contain rounded" />
@@ -1584,9 +1585,10 @@ export default function ChatLayout({
               </Button>
               <UserMenu user={currentUser} onLogout={onLogout} />
             </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
 
       {/* Incoming Call Modal */}
       {incomingCall && (
