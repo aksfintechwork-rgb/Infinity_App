@@ -39,6 +39,13 @@ interface Message {
   body?: string;
   attachmentUrl?: string;
   createdAt: string;
+  replyToId?: number;
+  repliedToMessage?: {
+    id: number;
+    senderName: string;
+    body?: string;
+    attachmentUrl?: string;
+  };
 }
 
 function App() {
