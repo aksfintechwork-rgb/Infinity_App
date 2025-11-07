@@ -2033,6 +2033,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
         
+        if (message.type === 'call_cancelled') {
+          // Broadcast call cancelled notification to stop incoming ringtone for receiver
+          const { conversationId } = message.data;
+          
+          // Validate conversationId
+          if (typeof conversationId !== 'number') {
+            ws.send(JSON.stringify({ type: 'error', error: 'Invalid conversationId' }));
+            return;
+          }
+          
+          // Verify user belongs to this conversation
+          const userConvIds = await storage.getUserConversationIds(ws.userId!);
+          if (!userConvIds.includes(conversationId)) {
+            ws.send(JSON.stringify({ type: 'error', error: 'Access denied' }));
+            return;
+          }
+          
+          // Get conversation members
+          const members = await storage.getConversationMembers(conversationId);
+          if (!members || members.length === 0) return;
+          
+          // Extract member IDs
+          const memberIds = members.map(m => m.id);
+          
+          // Get caller info to include in notification
+          const caller = await storage.getUserById(ws.userId!);
+          
+          // Broadcast to all conversation members (receiver will stop ringtone and see missed call)
+          wss.clients.forEach((client: any) => {
+            if (client.readyState === ws.OPEN && memberIds.includes(client.userId)) {
+              client.send(JSON.stringify({
+                type: 'call_cancelled',
+                data: { 
+                  conversationId,
+                  callerName: caller?.name || 'Someone',
+                },
+              }));
+            }
+          });
+          return;
+        }
+        
         if (message.type === 'new_message') {
           const validation = insertMessageSchema.extend({
             conversationId: z.number(),
