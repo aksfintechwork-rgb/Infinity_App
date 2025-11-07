@@ -193,7 +193,7 @@ function App() {
               const mostRecentMessage = convMessages[convMessages.length - 1];
               return {
                 ...conv,
-                lastMessage: mostRecentMessage?.body || null,
+                lastMessage: mostRecentMessage?.body,
               };
             }
             return conv;

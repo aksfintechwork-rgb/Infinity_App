@@ -81,7 +81,7 @@ export default function Message({
             </span>
           )}
           
-          <div className="invisible group-hover:visible">
+          <div className="ml-auto opacity-50 group-hover:opacity-100 transition-opacity">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

@@ -471,13 +471,7 @@ export default function ChatLayout({
     }
 
     try {
-      const response = await fetch(`/api/messages/${messageId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
+      const response = await apiRequest('DELETE', `/api/messages/${messageId}`);
 
       if (!response.ok) {
         throw new Error('Failed to delete message');
