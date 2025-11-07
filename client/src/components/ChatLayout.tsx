@@ -561,6 +561,18 @@ export default function ChatLayout({
         throw new Error(data.error || 'Failed to create room');
       }
       
+      // Register the call in the database
+      try {
+        await apiRequest('POST', '/api/calls', {
+          roomName,
+          roomUrl: data.url,
+          conversationId: activeConversation.id,
+          callType: 'video',
+        });
+      } catch (dbError) {
+        console.error('Failed to register call in database:', dbError);
+      }
+      
       // Open the room in new window with user name and video off by default - instant join!
       const callUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
       const callWindow = window.open(callUrl, '_blank', 'noopener,noreferrer');
@@ -624,6 +636,18 @@ export default function ChatLayout({
         throw new Error(data.error || 'Failed to create room');
       }
       
+      // Register the call in the database
+      try {
+        await apiRequest('POST', '/api/calls', {
+          roomName,
+          roomUrl: data.url,
+          conversationId,
+          callType: 'audio',
+        });
+      } catch (dbError) {
+        console.error('Failed to register call in database:', dbError);
+      }
+      
       // Open the room in new window with video disabled and user name for audio calls
       const audioCallUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
       const callWindow = window.open(audioCallUrl, '_blank', 'noopener,noreferrer');
@@ -684,6 +708,18 @@ export default function ChatLayout({
       
       if (!data.success) {
         throw new Error(data.error || 'Failed to create room');
+      }
+      
+      // Register the call in the database
+      try {
+        await apiRequest('POST', '/api/calls', {
+          roomName,
+          roomUrl: data.url,
+          conversationId: activeConversation.id,
+          callType: 'audio',
+        });
+      } catch (dbError) {
+        console.error('Failed to register call in database:', dbError);
       }
       
       // Open the room in new window with video disabled and user name for audio calls - instant join!
