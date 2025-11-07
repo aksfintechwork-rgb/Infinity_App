@@ -1838,6 +1838,218 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/calls/active", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const activeCalls = await storage.getAllActiveCalls();
+      res.json(activeCalls);
+    } catch (error) {
+      console.error("Get active calls error:", error);
+      res.status(500).json({ error: "Failed to get active calls" });
+    }
+  });
+
+  app.get("/api/calls/conversation/:conversationId", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const conversationId = parseInt(req.params.conversationId);
+      const activeCall = await storage.getActiveCallByConversation(conversationId);
+      res.json(activeCall || null);
+    } catch (error) {
+      console.error("Get conversation call error:", error);
+      res.status(500).json({ error: "Failed to get conversation call" });
+    }
+  });
+
+  app.post("/api/calls", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { roomName, roomUrl, conversationId, callType } = req.body;
+      
+      if (!roomName || !roomUrl) {
+        return res.status(400).json({ error: "Room name and URL are required" });
+      }
+
+      const call = await storage.createActiveCall({
+        roomName,
+        roomUrl,
+        conversationId: conversationId || null,
+        hostId: req.userId,
+        callType: callType || 'video',
+        status: 'active',
+      });
+
+      await storage.addCallParticipant({
+        callId: call.id,
+        userId: req.userId,
+      });
+
+      res.json(call);
+    } catch (error) {
+      console.error("Create call error:", error);
+      res.status(500).json({ error: "Failed to create call" });
+    }
+  });
+
+  app.post("/api/calls/:id/invite", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const callId = parseInt(req.params.id);
+      const { userIds } = req.body;
+
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: "User IDs are required" });
+      }
+
+      const call = await storage.getActiveCallById(callId);
+      if (!call) {
+        return res.status(404).json({ error: "Call not found" });
+      }
+
+      if (call.status !== 'active') {
+        return res.status(400).json({ error: "Call is not active" });
+      }
+
+      const isParticipant = await storage.isUserInCall(callId, req.userId);
+      if (!isParticipant) {
+        return res.status(403).json({ error: "You must be in the call to invite others" });
+      }
+
+      const inviter = await storage.getUserById(req.userId);
+      if (!inviter) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      wss.clients.forEach((client: any) => {
+        if (client.readyState === WebSocket.OPEN && userIds.includes(client.userId)) {
+          client.send(JSON.stringify({
+            type: 'call_invitation',
+            data: {
+              callId: call.id,
+              roomName: call.roomName,
+              roomUrl: call.roomUrl,
+              callType: call.callType,
+              inviterName: inviter.name,
+              conversationId: call.conversationId,
+            },
+          }));
+        }
+      });
+
+      res.json({ success: true, invitedCount: userIds.length });
+    } catch (error) {
+      console.error("Invite to call error:", error);
+      res.status(500).json({ error: "Failed to invite users" });
+    }
+  });
+
+  app.post("/api/calls/:id/join", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const callId = parseInt(req.params.id);
+      
+      const call = await storage.getActiveCallById(callId);
+      if (!call) {
+        return res.status(404).json({ error: "Call not found" });
+      }
+
+      if (call.status !== 'active') {
+        return res.status(400).json({ error: "Call is not active" });
+      }
+
+      const isAlreadyInCall = await storage.isUserInCall(callId, req.userId);
+      if (isAlreadyInCall) {
+        return res.json({ success: true, message: "Already in call" });
+      }
+
+      await storage.addCallParticipant({
+        callId,
+        userId: req.userId,
+      });
+
+      const updatedCall = await storage.getActiveCallById(callId);
+
+      broadcastUpdate({
+        type: 'call_participant_joined',
+        callId,
+        userId: req.userId,
+        participantCount: updatedCall?.participantCount || 0,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Join call error:", error);
+      res.status(500).json({ error: "Failed to join call" });
+    }
+  });
+
+  app.post("/api/calls/:id/leave", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const callId = parseInt(req.params.id);
+      
+      await storage.removeCallParticipant(callId, req.userId);
+
+      const call = await storage.getActiveCallById(callId);
+
+      broadcastUpdate({
+        type: 'call_participant_left',
+        callId,
+        userId: req.userId,
+        participantCount: call?.participantCount || 0,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Leave call error:", error);
+      res.status(500).json({ error: "Failed to leave call" });
+    }
+  });
+
+  app.post("/api/calls/:id/end", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const callId = parseInt(req.params.id);
+      
+      const call = await storage.getActiveCallById(callId);
+      if (!call) {
+        return res.status(404).json({ error: "Call not found" });
+      }
+
+      if (call.hostId !== req.userId) {
+        const user = await storage.getUserById(req.userId);
+        if (user?.role !== 'admin') {
+          return res.status(403).json({ error: "Only the host or admin can end the call" });
+        }
+      }
+
+      await storage.endCall(callId);
+
+      broadcastUpdate({
+        type: 'call_ended',
+        callId,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("End call error:", error);
+      res.status(500).json({ error: "Failed to end call" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   wss = new WebSocketServer({ server: httpServer, path: '/ws' });
