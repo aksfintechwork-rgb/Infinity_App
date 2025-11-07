@@ -994,6 +994,16 @@ export default function ChatLayout({
                       variant="destructive"
                       size="sm"
                       onClick={() => {
+                        // Send WebSocket event to notify receiver that call was cancelled
+                        if (ws?.send && outgoingCall) {
+                          ws.send({
+                            type: 'call_cancelled',
+                            data: {
+                              conversationId: outgoingCall.conversationId,
+                            },
+                          });
+                        }
+                        
                         setOutgoingCall(null);
                         if (callWindowRef.current && !callWindowRef.current.closed) {
                           callWindowRef.current.close();
@@ -1014,6 +1024,16 @@ export default function ChatLayout({
                       variant="destructive"
                       size="icon"
                       onClick={() => {
+                        // Send WebSocket event to notify receiver that call was cancelled
+                        if (ws?.send && outgoingCall) {
+                          ws.send({
+                            type: 'call_cancelled',
+                            data: {
+                              conversationId: outgoingCall.conversationId,
+                            },
+                          });
+                        }
+                        
                         setOutgoingCall(null);
                         if (callWindowRef.current && !callWindowRef.current.closed) {
                           callWindowRef.current.close();
