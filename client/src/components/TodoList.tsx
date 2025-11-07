@@ -5,11 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Check, Menu } from 'lucide-react';
+import { Plus, Trash2, Check, Menu, Calendar, Clock, Bell } from 'lucide-react';
 import type { Todo } from '@shared/schema';
+import { format } from 'date-fns';
 
 interface User {
   id: number;
@@ -32,6 +35,9 @@ const PRIORITY_COLORS = {
 export default function TodoList({ currentUser, onOpenMobileMenu }: TodoListProps) {
   const [newTodoText, setNewTodoText] = useState('');
   const [newTodoPriority, setNewTodoPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
+  const [newTodoDate, setNewTodoDate] = useState('');
+  const [newTodoTime, setNewTodoTime] = useState('');
+  const [newTodoReminderEnabled, setNewTodoReminderEnabled] = useState(false);
   const { toast } = useToast();
 
   const { data: todos = [], isLoading } = useQuery<Todo[]>({
@@ -39,13 +45,22 @@ export default function TodoList({ currentUser, onOpenMobileMenu }: TodoListProp
   });
 
   const createTodoMutation = useMutation({
-    mutationFn: async (data: { task: string; priority: string }) => {
+    mutationFn: async (data: { 
+      task: string; 
+      priority: string;
+      targetDate?: string | null;
+      targetTime?: string | null;
+      reminderEnabled?: boolean;
+    }) => {
       return await apiRequest('POST', '/api/todos', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/todos'] });
       setNewTodoText('');
       setNewTodoPriority('medium');
+      setNewTodoDate('');
+      setNewTodoTime('');
+      setNewTodoReminderEnabled(false);
       toast({
         title: 'Success',
         description: 'To-do item added successfully',
@@ -106,9 +121,22 @@ export default function TodoList({ currentUser, onOpenMobileMenu }: TodoListProp
       return;
     }
 
+    // If reminder is enabled but no date is set, show validation error
+    if (newTodoReminderEnabled && !newTodoDate) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please set a target date to enable reminders',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     createTodoMutation.mutate({
       task: newTodoText,
       priority: newTodoPriority,
+      targetDate: newTodoDate || null,
+      targetTime: newTodoTime || null,
+      reminderEnabled: newTodoReminderEnabled,
     });
   };
 
@@ -125,8 +153,8 @@ export default function TodoList({ currentUser, onOpenMobileMenu }: TodoListProp
 
   const sortedTodos = [...todos].sort((a, b) => {
     if (a.completed !== b.completed) return a.completed ? 1 : -1;
-    const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
-    return priorityOrder[a.priority] - priorityOrder[b.priority];
+    const priorityOrder: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
+    return (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2);
   });
 
   return (
@@ -155,37 +183,74 @@ export default function TodoList({ currentUser, onOpenMobileMenu }: TodoListProp
             </Badge>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Add a new task..."
-                value={newTodoText}
-                onChange={(e) => setNewTodoText(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddTodo()}
-                className="flex-1"
-                data-testid="input-new-todo"
-              />
-              <Select
-                value={newTodoPriority}
-                onValueChange={(value: 'low' | 'medium' | 'high' | 'urgent') => setNewTodoPriority(value)}
-              >
-                <SelectTrigger className="w-[130px]" data-testid="select-priority">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                onClick={handleAddTodo}
-                disabled={createTodoMutation.isPending}
-                data-testid="button-add-todo"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add
-              </Button>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add a new task..."
+                  value={newTodoText}
+                  onChange={(e) => setNewTodoText(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddTodo()}
+                  className="flex-1"
+                  data-testid="input-new-todo"
+                />
+                <Select
+                  value={newTodoPriority}
+                  onValueChange={(value: 'low' | 'medium' | 'high' | 'urgent') => setNewTodoPriority(value)}
+                >
+                  <SelectTrigger className="w-[130px]" data-testid="select-priority">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  onClick={handleAddTodo}
+                  disabled={createTodoMutation.isPending}
+                  data-testid="button-add-todo"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add
+                </Button>
+              </div>
+              
+              <div className="flex flex-wrap gap-3 items-center">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="date"
+                    value={newTodoDate}
+                    onChange={(e) => setNewTodoDate(e.target.value)}
+                    className="w-[160px]"
+                    data-testid="input-todo-date"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="time"
+                    value={newTodoTime}
+                    onChange={(e) => setNewTodoTime(e.target.value)}
+                    className="w-[140px]"
+                    data-testid="input-todo-time"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="reminder-toggle"
+                    checked={newTodoReminderEnabled}
+                    onCheckedChange={setNewTodoReminderEnabled}
+                    data-testid="toggle-reminder"
+                  />
+                  <Label htmlFor="reminder-toggle" className="flex items-center gap-1 cursor-pointer">
+                    <Bell className="h-4 w-4" />
+                    <span className="text-sm">Reminder</span>
+                  </Label>
+                </div>
+              </div>
             </div>
 
             {isLoading ? (
@@ -231,9 +296,36 @@ export default function TodoList({ currentUser, onOpenMobileMenu }: TodoListProp
                       >
                         {todo.task}
                       </p>
+                      {(todo.targetDate || todo.targetTime || todo.reminderEnabled) && (
+                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          {todo.targetDate && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {format(new Date(todo.targetDate), 'MMM dd, yyyy')}
+                            </span>
+                          )}
+                          {todo.targetTime && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {todo.targetTime}
+                            </span>
+                          )}
+                          {todo.reminderEnabled && !todo.reminderSent && (
+                            <Badge variant="outline" className="h-5 px-1 text-xs">
+                              <Bell className="h-3 w-3 mr-1" />
+                              Reminder
+                            </Badge>
+                          )}
+                          {todo.reminderSent && (
+                            <Badge variant="secondary" className="h-5 px-1 text-xs">
+                              Reminded
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <Badge
-                      className={`${PRIORITY_COLORS[todo.priority]} shrink-0`}
+                      className={`${PRIORITY_COLORS[todo.priority as keyof typeof PRIORITY_COLORS] || PRIORITY_COLORS.medium} shrink-0`}
                       data-testid={`badge-priority-${todo.id}`}
                     >
                       {todo.priority}
