@@ -520,6 +520,10 @@ export const todos = pgTable("todos", {
   task: text("task").notNull(),
   priority: text("priority").notNull().default("medium"),
   completed: boolean("completed").notNull().default(false),
+  targetDate: timestamp("target_date"),
+  targetTime: text("target_time"),
+  reminderEnabled: boolean("reminder_enabled").notNull().default(false),
+  reminderSent: boolean("reminder_sent").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -527,6 +531,9 @@ export const todos = pgTable("todos", {
 const _baseTodoSchema = createInsertSchema(todos, {
   task: z.string().min(1, "Task is required"),
   priority: todoPriorityEnum.default("medium"),
+  targetDate: z.string().optional().or(z.date().optional()),
+  targetTime: z.string().optional(),
+  reminderEnabled: z.boolean().default(false),
 });
 
 export const insertTodoSchema = _baseTodoSchema.omit({
