@@ -6,9 +6,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Send, Paperclip, Smile, FileText, Image as ImageIcon, File } from 'lucide-react';
 
 interface MessageInputProps {
-  onSendMessage: (body: string, attachmentUrl?: string) => void;
+  onSendMessage: (body: string, attachmentUrl?: string, replyToId?: number) => void;
   onTyping: (isTyping: boolean) => void;
   onFileUpload: (file: File) => Promise<string>;
+  replyingTo?: { id: number; senderName: string; body?: string } | null;
+  onCancelReply?: () => void;
 }
 
 const EMOJI_GROUPS = {
@@ -19,11 +21,11 @@ const EMOJI_GROUPS = {
   'Symbols': ['✅', '❌', '⭐', '🌟', '💯', '🔥', '⚡', '💥', '✨', '🎉', '🎊', '🎈', '🎁', '🏆', '🥇', '🥈', '🥉', '⚠️', '🚫', '🔴', '🟢', '🔵', '⚪', '⚫', '🟣', '🟡', '🟠'],
 };
 
-export default function MessageInput({ onSendMessage, onTyping, onFileUpload }: MessageInputProps) {
+export default function MessageInput({ onSendMessage, onTyping, onFileUpload, replyingTo, onCancelReply }: MessageInputProps) {
   const [message, setMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isEmojiOpen, setIsEmojiOpen] = useState(false);
-  const [pendingAttachment, setPendingAttachment] = useState<{ url: string; name: string; type: string } | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<{ url: string; name: string; type: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -44,9 +46,10 @@ export default function MessageInput({ onSendMessage, onTyping, onFileUpload }: 
 
   const handleSend = () => {
     if (message.trim()) {
-      onSendMessage(message);
+      onSendMessage(message, undefined, replyingTo?.id);
       setMessage('');
       onTyping(false);
+      onCancelReply?.();
     }
   };
 
@@ -58,18 +61,22 @@ export default function MessageInput({ onSendMessage, onTyping, onFileUpload }: 
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setIsUploading(true);
     try {
-      const url = await onFileUpload(file);
-      // Store the attachment and show confirmation dialog
-      setPendingAttachment({
-        url,
-        name: file.name,
-        type: file.type
-      });
+      const uploadedFiles = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const url = await onFileUpload(file);
+        uploadedFiles.push({
+          url,
+          name: file.name,
+          type: file.type
+        });
+      }
+      setPendingAttachments(uploadedFiles);
     } catch (error) {
       console.error('Upload failed:', error);
     } finally {
@@ -81,14 +88,17 @@ export default function MessageInput({ onSendMessage, onTyping, onFileUpload }: 
   };
 
   const handleConfirmAttachment = () => {
-    if (pendingAttachment) {
-      onSendMessage('', pendingAttachment.url);
-      setPendingAttachment(null);
+    if (pendingAttachments.length > 0) {
+      pendingAttachments.forEach((attachment) => {
+        onSendMessage('', attachment.url, replyingTo?.id);
+      });
+      setPendingAttachments([]);
+      onCancelReply?.();
     }
   };
 
   const handleCancelAttachment = () => {
-    setPendingAttachment(null);
+    setPendingAttachments([]);
   };
 
   const getFileIcon = (type: string) => {
@@ -122,6 +132,30 @@ export default function MessageInput({ onSendMessage, onTyping, onFileUpload }: 
 
   return (
     <div className="border-t border-border bg-background p-3 md:p-4">
+      {replyingTo && (
+        <div className="mb-2 px-3 py-2 bg-muted/50 rounded-lg flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-semibold text-primary mb-0.5">
+              Replying to @{replyingTo.senderName}
+            </div>
+            {replyingTo.body && (
+              <div className="text-xs text-muted-foreground truncate">
+                {replyingTo.body}
+              </div>
+            )}
+          </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onCancelReply}
+            className="h-6 w-6 flex-shrink-0"
+            data-testid="button-cancel-reply"
+          >
+            <span className="text-lg leading-none">&times;</span>
+          </Button>
+        </div>
+      )}
+      
       <div className="flex gap-2 mb-2">
         <Button
           size="icon"
@@ -196,32 +230,37 @@ export default function MessageInput({ onSendMessage, onTyping, onFileUpload }: 
         type="file"
         className="hidden"
         onChange={handleFileSelect}
-        accept="image/*,.pdf,.doc,.docx,.txt"
+        accept="image/*,video/*,.pdf,.doc,.docx,.txt,.xlsx,.xls,.csv"
+        multiple
       />
 
-      <Dialog open={!!pendingAttachment} onOpenChange={(open) => !open && handleCancelAttachment()}>
+      <Dialog open={pendingAttachments.length > 0} onOpenChange={(open) => !open && handleCancelAttachment()}>
         <DialogContent data-testid="dialog-confirm-attachment">
           <DialogHeader>
-            <DialogTitle>Send Attachment?</DialogTitle>
+            <DialogTitle>Send {pendingAttachments.length} {pendingAttachments.length === 1 ? 'Attachment' : 'Attachments'}?</DialogTitle>
             <DialogDescription>
-              Do you want to post this file to the chat?
+              Do you want to post {pendingAttachments.length === 1 ? 'this file' : 'these files'} to the chat?
             </DialogDescription>
           </DialogHeader>
           
-          {pendingAttachment && (
-            <div className="flex flex-col items-center gap-4 py-4">
-              <div className="p-4 bg-accent/50 rounded-lg">
-                {getFileIcon(pendingAttachment.type)}
+          <div className="max-h-64 overflow-y-auto space-y-3 py-4">
+            {pendingAttachments.map((attachment, index) => (
+              <div key={index} className="flex items-center gap-3 p-3 bg-accent/20 rounded-lg">
+                <div className="flex-shrink-0">
+                  {getFileIcon(attachment.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-foreground text-sm truncate">{attachment.name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {attachment.type.split('/')[0] === 'image' ? 'Image' : 
+                     attachment.type.split('/')[0] === 'video' ? 'Video' :
+                     attachment.type.includes('pdf') ? 'PDF Document' :
+                     attachment.type.includes('sheet') || attachment.type.includes('excel') ? 'Excel File' : 'Document'}
+                  </p>
+                </div>
               </div>
-              <div className="text-center">
-                <p className="font-semibold text-foreground">{pendingAttachment.name}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {pendingAttachment.type.split('/')[0] === 'image' ? 'Image' : 
-                   pendingAttachment.type.includes('pdf') ? 'PDF Document' : 'Document'}
-                </p>
-              </div>
-            </div>
-          )}
+            ))}
+          </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button

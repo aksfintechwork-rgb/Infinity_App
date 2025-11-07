@@ -132,6 +132,7 @@ export const messages = pgTable("messages", {
   attachmentUrl: text("attachment_url"),
   editedAt: timestamp("edited_at"),
   forwardedFromId: integer("forwarded_from_id"),
+  replyToId: integer("reply_to_id").references(() => messages.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

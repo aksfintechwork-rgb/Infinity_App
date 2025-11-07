@@ -129,6 +129,9 @@ export default function ChatLayout({
   const [editingMessage, setEditingMessage] = useState<{ id: number; body: string } | null>(null);
   const [forwardingMessageId, setForwardingMessageId] = useState<number | null>(null);
 
+  // Reply to message state
+  const [replyingTo, setReplyingTo] = useState<{ id: number; senderName: string; body?: string } | null>(null);
+
   // Invite to call state
   const [isInviteToCallOpen, setIsInviteToCallOpen] = useState(false);
 
@@ -438,6 +441,15 @@ export default function ChatLayout({
 
   const handleForwardMessage = (messageId: number) => {
     setForwardingMessageId(messageId);
+  };
+
+  const handleReply = (messageId: number, senderName: string) => {
+    const message = messages.find(m => m.id === messageId);
+    setReplyingTo({
+      id: messageId,
+      senderName,
+      body: message?.body
+    });
   };
 
   const handleMessageEdited = (messageId: number, newBody: string, editedAt: Date) => {
@@ -1207,6 +1219,7 @@ export default function ChatLayout({
                     isCurrentUser={msg.senderId === currentUser.id}
                     onEdit={handleEditMessage}
                     onForward={handleForwardMessage}
+                    onReply={handleReply}
                   />
                 ))}
                 {isTyping && <TypingIndicator userName="Someone" />}
@@ -1216,12 +1229,14 @@ export default function ChatLayout({
 
             <div className="flex-shrink-0">
               <MessageInput
-                onSendMessage={(body, attachmentUrl) =>
+                onSendMessage={(body, attachmentUrl, replyToId) =>
                   activeConversationId &&
                   onSendMessage(activeConversationId, body, attachmentUrl)
                 }
                 onTyping={setIsTyping}
                 onFileUpload={onFileUpload}
+                replyingTo={replyingTo}
+                onCancelReply={() => setReplyingTo(null)}
               />
             </div>
           </>
