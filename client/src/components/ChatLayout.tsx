@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone, PhoneOff, Folder, HardDrive } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone, PhoneOff, Folder, HardDrive, ListChecks } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
@@ -14,6 +14,7 @@ import UserMenu from './UserMenu';
 import AdminPanel from './AdminPanel';
 import Calendar from './Calendar';
 import Tasks from './Tasks';
+import TodoList from './TodoList';
 import DailyWorksheet from './DailyWorksheet';
 import AdminWorksheets from './AdminWorksheets';
 import Projects from './Projects';
@@ -111,7 +112,7 @@ export default function ChatLayout({
   const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar' | 'tasks' | 'worksheet' | 'admin-worksheets' | 'projects' | 'drive'>('chat');
+  const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar' | 'tasks' | 'todo' | 'worksheet' | 'admin-worksheets' | 'projects' | 'drive'>('chat');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -822,6 +823,15 @@ export default function ChatLayout({
               <span className="truncate">Tasks</span>
             </Button>
             <Button
+              variant={currentView === 'todo' ? 'default' : 'ghost'}
+              onClick={() => setCurrentView('todo')}
+              data-testid="button-view-todo"
+              className="h-11 justify-start font-medium text-sm"
+            >
+              <ListChecks className="w-4 h-4 mr-2 flex-shrink-0" />
+              <span className="truncate">To-Do</span>
+            </Button>
+            <Button
               variant={currentView === 'calendar' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('calendar')}
               data-testid="button-view-calendar"
@@ -979,6 +989,8 @@ export default function ChatLayout({
           <Calendar currentUser={currentUser} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
         ) : currentView === 'tasks' ? (
           <Tasks currentUser={currentUser} allUsers={allUsers} ws={ws} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
+        ) : currentView === 'todo' ? (
+          <TodoList currentUser={currentUser} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
         ) : currentView === 'worksheet' ? (
           <DailyWorksheet currentUser={currentUser} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
         ) : currentView === 'admin-worksheets' ? (
@@ -1420,6 +1432,15 @@ export default function ChatLayout({
                 >
                   <CheckCircle2 className="w-4 h-4 mr-1.5" />
                   Tasks
+                </Button>
+                <Button
+                  variant={currentView === 'todo' ? 'default' : 'ghost'}
+                  onClick={() => { setCurrentView('todo'); setIsMobileMenuOpen(false); }}
+                  data-testid="button-view-todo-mobile"
+                  className="h-11 text-sm font-semibold rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
+                >
+                  <ListChecks className="w-4 h-4 mr-1.5" />
+                  To-Do
                 </Button>
                 <Button
                   variant={currentView === 'calendar' ? 'default' : 'ghost'}
