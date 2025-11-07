@@ -33,6 +33,11 @@ import {
   type DriveFile,
   type InsertDriveFile,
   type DriveFileWithDetails,
+  type ActiveCall,
+  type InsertActiveCall,
+  type ActiveCallWithDetails,
+  type ActiveCallParticipant,
+  type InsertActiveCallParticipant,
   users,
   conversations,
   messages,
@@ -47,6 +52,8 @@ import {
   projects,
   driveFolders,
   driveFiles,
+  activeCalls,
+  activeCallParticipants,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, inArray, sql, gte, lte } from "drizzle-orm";
@@ -139,6 +146,18 @@ export interface IStorage {
   getAllDriveFiles(userId: number): Promise<DriveFileWithDetails[]>;
   updateDriveFile(id: number, updates: Partial<InsertDriveFile>): Promise<DriveFile | undefined>;
   deleteDriveFile(id: number): Promise<void>;
+  
+  createActiveCall(call: InsertActiveCall): Promise<ActiveCall>;
+  getActiveCallById(id: number): Promise<ActiveCallWithDetails | undefined>;
+  getActiveCallByRoomName(roomName: string): Promise<ActiveCallWithDetails | undefined>;
+  getActiveCallByConversation(conversationId: number): Promise<ActiveCallWithDetails | undefined>;
+  getAllActiveCalls(): Promise<ActiveCallWithDetails[]>;
+  endCall(id: number): Promise<void>;
+  
+  addCallParticipant(participant: InsertActiveCallParticipant): Promise<ActiveCallParticipant>;
+  getCallParticipants(callId: number): Promise<User[]>;
+  removeCallParticipant(callId: number, userId: number): Promise<void>;
+  isUserInCall(callId: number, userId: number): Promise<boolean>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -1226,6 +1245,202 @@ export class PostgresStorage implements IStorage {
 
   async deleteDriveFile(id: number): Promise<void> {
     await db.delete(driveFiles).where(eq(driveFiles.id, id));
+  }
+
+  async createActiveCall(call: InsertActiveCall): Promise<ActiveCall> {
+    const result = await db.insert(activeCalls).values(call).returning();
+    return result[0];
+  }
+
+  async getActiveCallById(id: number): Promise<ActiveCallWithDetails | undefined> {
+    const result = await db
+      .select({
+        id: activeCalls.id,
+        roomName: activeCalls.roomName,
+        roomUrl: activeCalls.roomUrl,
+        conversationId: activeCalls.conversationId,
+        hostId: activeCalls.hostId,
+        callType: activeCalls.callType,
+        status: activeCalls.status,
+        startedAt: activeCalls.startedAt,
+        endedAt: activeCalls.endedAt,
+        hostName: users.name,
+        participantCount: sql<number>`COUNT(DISTINCT ${activeCallParticipants.userId})::int`,
+        participants: sql<string[]>`ARRAY_AGG(DISTINCT ${users.name})`,
+      })
+      .from(activeCalls)
+      .innerJoin(users, eq(activeCalls.hostId, users.id))
+      .leftJoin(activeCallParticipants, and(
+        eq(activeCallParticipants.callId, activeCalls.id),
+        sql`${activeCallParticipants.leftAt} IS NULL`
+      ))
+      .where(eq(activeCalls.id, id))
+      .groupBy(activeCalls.id, users.name)
+      .limit(1);
+    
+    return result[0];
+  }
+
+  async getActiveCallByRoomName(roomName: string): Promise<ActiveCallWithDetails | undefined> {
+    const result = await db
+      .select({
+        id: activeCalls.id,
+        roomName: activeCalls.roomName,
+        roomUrl: activeCalls.roomUrl,
+        conversationId: activeCalls.conversationId,
+        hostId: activeCalls.hostId,
+        callType: activeCalls.callType,
+        status: activeCalls.status,
+        startedAt: activeCalls.startedAt,
+        endedAt: activeCalls.endedAt,
+        hostName: users.name,
+        participantCount: sql<number>`COUNT(DISTINCT ${activeCallParticipants.userId})::int`,
+        participants: sql<string[]>`ARRAY_AGG(DISTINCT ${users.name}) FILTER (WHERE ${users.name} IS NOT NULL)`,
+      })
+      .from(activeCalls)
+      .innerJoin(users, eq(activeCalls.hostId, users.id))
+      .leftJoin(activeCallParticipants, and(
+        eq(activeCallParticipants.callId, activeCalls.id),
+        sql`${activeCallParticipants.leftAt} IS NULL`
+      ))
+      .where(eq(activeCalls.roomName, roomName))
+      .groupBy(activeCalls.id, users.name)
+      .limit(1);
+    
+    return result[0];
+  }
+
+  async getActiveCallByConversation(conversationId: number): Promise<ActiveCallWithDetails | undefined> {
+    const result = await db
+      .select({
+        id: activeCalls.id,
+        roomName: activeCalls.roomName,
+        roomUrl: activeCalls.roomUrl,
+        conversationId: activeCalls.conversationId,
+        hostId: activeCalls.hostId,
+        callType: activeCalls.callType,
+        status: activeCalls.status,
+        startedAt: activeCalls.startedAt,
+        endedAt: activeCalls.endedAt,
+        hostName: users.name,
+        participantCount: sql<number>`COUNT(DISTINCT ${activeCallParticipants.userId})::int`,
+        participants: sql<string[]>`ARRAY_AGG(DISTINCT ${users.name}) FILTER (WHERE ${users.name} IS NOT NULL)`,
+      })
+      .from(activeCalls)
+      .innerJoin(users, eq(activeCalls.hostId, users.id))
+      .leftJoin(activeCallParticipants, and(
+        eq(activeCallParticipants.callId, activeCalls.id),
+        sql`${activeCallParticipants.leftAt} IS NULL`
+      ))
+      .where(and(
+        eq(activeCalls.conversationId, conversationId),
+        eq(activeCalls.status, 'active')
+      ))
+      .groupBy(activeCalls.id, users.name)
+      .limit(1);
+    
+    return result[0];
+  }
+
+  async getAllActiveCalls(): Promise<ActiveCallWithDetails[]> {
+    const result = await db
+      .select({
+        id: activeCalls.id,
+        roomName: activeCalls.roomName,
+        roomUrl: activeCalls.roomUrl,
+        conversationId: activeCalls.conversationId,
+        hostId: activeCalls.hostId,
+        callType: activeCalls.callType,
+        status: activeCalls.status,
+        startedAt: activeCalls.startedAt,
+        endedAt: activeCalls.endedAt,
+        hostName: users.name,
+        participantCount: sql<number>`COUNT(DISTINCT ${activeCallParticipants.userId})::int`,
+        participants: sql<string[]>`ARRAY_AGG(DISTINCT ${users.name}) FILTER (WHERE ${users.name} IS NOT NULL)`,
+      })
+      .from(activeCalls)
+      .innerJoin(users, eq(activeCalls.hostId, users.id))
+      .leftJoin(activeCallParticipants, and(
+        eq(activeCallParticipants.callId, activeCalls.id),
+        sql`${activeCallParticipants.leftAt} IS NULL`
+      ))
+      .where(eq(activeCalls.status, 'active'))
+      .groupBy(activeCalls.id, users.name)
+      .orderBy(desc(activeCalls.startedAt));
+    
+    return result;
+  }
+
+  async endCall(id: number): Promise<void> {
+    await db
+      .update(activeCalls)
+      .set({
+        status: 'ended',
+        endedAt: new Date(),
+      })
+      .where(eq(activeCalls.id, id));
+    
+    // Mark all participants as left
+    await db
+      .update(activeCallParticipants)
+      .set({ leftAt: new Date() })
+      .where(and(
+        eq(activeCallParticipants.callId, id),
+        sql`${activeCallParticipants.leftAt} IS NULL`
+      ));
+  }
+
+  async addCallParticipant(participant: InsertActiveCallParticipant): Promise<ActiveCallParticipant> {
+    const result = await db.insert(activeCallParticipants).values(participant).returning();
+    return result[0];
+  }
+
+  async getCallParticipants(callId: number): Promise<User[]> {
+    const result = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        loginId: users.loginId,
+        email: users.email,
+        password: users.password,
+        role: users.role,
+        avatar: users.avatar,
+        lastSeenAt: users.lastSeenAt,
+        createdAt: users.createdAt,
+      })
+      .from(activeCallParticipants)
+      .innerJoin(users, eq(activeCallParticipants.userId, users.id))
+      .where(and(
+        eq(activeCallParticipants.callId, callId),
+        sql`${activeCallParticipants.leftAt} IS NULL`
+      ));
+    
+    return result;
+  }
+
+  async removeCallParticipant(callId: number, userId: number): Promise<void> {
+    await db
+      .update(activeCallParticipants)
+      .set({ leftAt: new Date() })
+      .where(and(
+        eq(activeCallParticipants.callId, callId),
+        eq(activeCallParticipants.userId, userId),
+        sql`${activeCallParticipants.leftAt} IS NULL`
+      ));
+  }
+
+  async isUserInCall(callId: number, userId: number): Promise<boolean> {
+    const result = await db
+      .select({ id: activeCallParticipants.id })
+      .from(activeCallParticipants)
+      .where(and(
+        eq(activeCallParticipants.callId, callId),
+        eq(activeCallParticipants.userId, userId),
+        sql`${activeCallParticipants.leftAt} IS NULL`
+      ))
+      .limit(1);
+    
+    return result.length > 0;
   }
 }
 
