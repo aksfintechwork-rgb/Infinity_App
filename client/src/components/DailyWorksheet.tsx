@@ -28,7 +28,6 @@ interface Worksheet {
   id: number;
   userId: number;
   date: string;
-  todos: string;
   hourlyLogs: string;
   status: string;
   submittedAt?: string;
@@ -127,7 +126,6 @@ export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyW
   const createWorksheetMutation = useMutation({
     mutationFn: async () => {
       return await apiRequest('POST', '/api/worksheets', {
-        todos: '[]',
         hourlyLogs: JSON.stringify(hourlyLogs),
       });
     },
@@ -145,7 +143,6 @@ export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyW
     mutationFn: async () => {
       if (!worksheet) return;
       return await apiRequest('PATCH', `/api/worksheets/${worksheet.id}`, {
-        todos: '[]',
         hourlyLogs: JSON.stringify(hourlyLogs),
       });
     },
