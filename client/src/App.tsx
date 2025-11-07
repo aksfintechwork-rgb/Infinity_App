@@ -245,6 +245,18 @@ function App() {
       console.log('User offline:', data.userId);
     });
 
+    // Listen for new conversation created events
+    const unsubscribeConversationCreated = ws.on('conversation_created', (data: { conversation: Conversation }) => {
+      setConversations((prev) => {
+        // Deduplication: only add if conversation doesn't already exist
+        if (prev.some((c) => c.id === data.conversation.id)) {
+          return prev;
+        }
+        return [data.conversation, ...prev];
+      });
+      console.log('New conversation created:', data.conversation.id);
+    });
+
     return () => {
       unsubscribeMessage();
       unsubscribeMessageEdited();
@@ -254,6 +266,7 @@ function App() {
       unsubscribeOnlineUsers();
       unsubscribeUserOnline();
       unsubscribeUserOffline();
+      unsubscribeConversationCreated();
     };
   }, [ws.isConnected, ws.on, currentUser, activeConversationId, conversations]);
 

@@ -401,10 +401,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const otherMembers = members.filter(m => m.id !== req.userId);
       const memberNames = otherMembers.map(m => m.name.split(' ')[0]).join(', ');
 
-      res.status(201).json({
+      const conversationData = {
         ...conversation,
         members: memberNames,
         memberCount: members.length,
+        memberIds: members.map(m => m.id),
+      };
+
+      res.status(201).json(conversationData);
+
+      // Broadcast new conversation to all members
+      broadcastToUsers(members.map(m => m.id), {
+        type: 'conversation_created',
+        conversation: conversationData,
       });
     } catch (error) {
       console.error("Create conversation error:", error);
