@@ -180,6 +180,30 @@ function App() {
       });
     });
 
+    // Listen for message deleted events
+    const unsubscribeMessageDeleted = ws.on('message_deleted', (data: { messageId: number; conversationId: number }) => {
+      setMessages((prev) => {
+        const filteredMessages = prev.filter(msg => msg.id !== data.messageId);
+        
+        // Update conversation last message if needed
+        setConversations((prevConvs) =>
+          prevConvs.map((conv) => {
+            if (conv.id === data.conversationId) {
+              const convMessages = filteredMessages.filter(m => m.conversationId === conv.id);
+              const mostRecentMessage = convMessages[convMessages.length - 1];
+              return {
+                ...conv,
+                lastMessage: mostRecentMessage?.body || null,
+              };
+            }
+            return conv;
+          })
+        );
+        
+        return filteredMessages;
+      });
+    });
+
     // Listen for user creation events
     const unsubscribeUserCreated = ws.on('user_created', (user: User) => {
       setAllUsers((prev) => {
@@ -224,6 +248,7 @@ function App() {
     return () => {
       unsubscribeMessage();
       unsubscribeMessageEdited();
+      unsubscribeMessageDeleted();
       unsubscribeUserCreated();
       unsubscribeUserDeleted();
       unsubscribeOnlineUsers();

@@ -740,7 +740,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "You can only delete your own messages" });
       }
 
+      const conversationId = existingMessage.conversationId;
       await storage.deleteMessage(messageId);
+
+      // Broadcast message deletion to all conversation members via WebSocket
+      if (wss) {
+        const members = await storage.getConversationMembers(conversationId);
+        const memberIds = members.map(m => m.id);
+
+        wss.clients.forEach((client: WebSocketClient) => {
+          if (client.readyState === WebSocket.OPEN && 
+              client.userId && 
+              memberIds.includes(client.userId)) {
+            client.send(JSON.stringify({
+              type: 'message_deleted',
+              data: { messageId, conversationId },
+            }));
+          }
+        });
+      }
+
       res.json({ success: true, messageId });
     } catch (error) {
       console.error("Delete message error:", error);
