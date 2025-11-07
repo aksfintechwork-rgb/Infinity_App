@@ -540,3 +540,24 @@ export const insertTodoSchema = _baseTodoSchema.omit({
 
 export type InsertTodo = z.infer<typeof insertTodoSchema>;
 export type Todo = typeof todos.$inferSelect;
+
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  endpoint: text("endpoint").notNull(),
+  p256dhKey: text("p256dh_key").notNull(),
+  authKey: text("auth_key").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+const _basePushSubscriptionSchema = createInsertSchema(pushSubscriptions, {});
+
+export const insertPushSubscriptionSchema = _basePushSubscriptionSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  createdAt: true,
+});
+
+export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema>;
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
