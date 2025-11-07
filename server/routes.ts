@@ -720,6 +720,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/messages/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const messageId = parseInt(req.params.id);
+      if (isNaN(messageId)) {
+        return res.status(400).json({ error: "Invalid message ID" });
+      }
+
+      const existingMessage = await storage.getMessageById(messageId);
+      if (!existingMessage) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+
+      if (existingMessage.senderId !== req.userId) {
+        return res.status(403).json({ error: "You can only delete your own messages" });
+      }
+
+      await storage.deleteMessage(messageId);
+      res.json({ success: true, messageId });
+    } catch (error) {
+      console.error("Delete message error:", error);
+      res.status(500).json({ error: "Failed to delete message" });
+    }
+  });
+
   app.post("/api/messages/forward", authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (!req.userId) {
