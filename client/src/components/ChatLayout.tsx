@@ -370,11 +370,23 @@ export default function ChatLayout({
       }
     });
 
+    const unsubscribeCancelled = ws.on('call_cancelled', (data: any) => {
+      // Stop incoming ringtone if caller cancelled the call
+      if (incomingCall && data.conversationId === incomingCall.conversationId) {
+        setIncomingCall(null);
+        toast({
+          title: 'Missed call',
+          description: `${data.callerName} cancelled the call`,
+        });
+      }
+    });
+
     return () => {
       unsubscribeAnswered();
       unsubscribeRejected();
+      unsubscribeCancelled();
     };
-  }, [ws, outgoingCall, toast]);
+  }, [ws, outgoingCall, incomingCall, toast]);
 
   // Auto-timeout for outgoing call after 30 seconds
   useEffect(() => {
