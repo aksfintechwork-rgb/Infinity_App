@@ -94,6 +94,7 @@ export interface IStorage {
   getMessagesByConversationId(conversationId: number): Promise<Message[]>;
   getLastMessageByConversationId(conversationId: number): Promise<Message | undefined>;
   updateMessage(id: number, updates: { body?: string; attachmentUrl?: string | null }): Promise<Message | undefined>;
+  deleteMessage(id: number): Promise<void>;
   
   markConversationAsRead(userId: number, conversationId: number, lastMessageId: number | null): Promise<void>;
   getUnreadCount(userId: number, conversationId: number): Promise<number>;
@@ -421,6 +422,10 @@ export class PostgresStorage implements IStorage {
       .where(eq(messages.id, id))
       .returning();
     return result[0];
+  }
+
+  async deleteMessage(id: number): Promise<void> {
+    await db.delete(messages).where(eq(messages.id, id));
   }
 
   async getLastMessageByConversationId(conversationId: number): Promise<Message | undefined> {
