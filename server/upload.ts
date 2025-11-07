@@ -32,24 +32,45 @@ const storage = multer.diskStorage({
 export const upload = multer({
   storage,
   limits: {
-    fileSize: 10 * 1024 * 1024,
+    fileSize: 50 * 1024 * 1024, // 50MB to support videos
   },
   fileFilter: (req, file, cb) => {
     const allowedMimes = [
+      // Images
       'image/jpeg',
+      'image/jpg',
       'image/png',
       'image/gif',
       'image/webp',
+      'image/bmp',
+      'image/svg+xml',
+      // Documents
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'text/plain',
+      'text/csv',
+      // Excel files
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      // Videos
+      'video/mp4',
+      'video/mpeg',
+      'video/quicktime',
+      'video/x-msvideo',
+      'video/x-ms-wmv',
+      'video/webm',
+      // Audio
+      'audio/mpeg',
+      'audio/wav',
+      'audio/webm',
+      'audio/ogg',
     ];
 
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only images, PDFs, and documents are allowed.'));
+      cb(new Error(`Invalid file type: ${file.mimetype}. Please upload images, videos, documents, or Excel files.`));
     }
   },
 });
