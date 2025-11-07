@@ -38,6 +38,8 @@ import {
   type ActiveCallWithDetails,
   type ActiveCallParticipant,
   type InsertActiveCallParticipant,
+  type Todo,
+  type InsertTodo,
   users,
   conversations,
   messages,
@@ -54,6 +56,7 @@ import {
   driveFiles,
   activeCalls,
   activeCallParticipants,
+  todos,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, inArray, sql, gte, lte } from "drizzle-orm";
@@ -158,6 +161,12 @@ export interface IStorage {
   getCallParticipants(callId: number): Promise<User[]>;
   removeCallParticipant(callId: number, userId: number): Promise<void>;
   isUserInCall(callId: number, userId: number): Promise<boolean>;
+  
+  getAllTodos(userId: number): Promise<Todo[]>;
+  getTodoById(id: number): Promise<Todo | undefined>;
+  createTodo(todo: InsertTodo): Promise<Todo>;
+  updateTodo(id: number, updates: Partial<InsertTodo>): Promise<Todo | undefined>;
+  deleteTodo(id: number): Promise<void>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -1441,6 +1450,42 @@ export class PostgresStorage implements IStorage {
       .limit(1);
     
     return result.length > 0;
+  }
+
+  async getAllTodos(userId: number): Promise<Todo[]> {
+    const result = await db
+      .select()
+      .from(todos)
+      .where(eq(todos.userId, userId))
+      .orderBy(desc(todos.createdAt));
+    return result;
+  }
+
+  async getTodoById(id: number): Promise<Todo | undefined> {
+    const result = await db
+      .select()
+      .from(todos)
+      .where(eq(todos.id, id))
+      .limit(1);
+    return result[0];
+  }
+
+  async createTodo(todo: InsertTodo): Promise<Todo> {
+    const result = await db.insert(todos).values(todo).returning();
+    return result[0];
+  }
+
+  async updateTodo(id: number, updates: Partial<InsertTodo>): Promise<Todo | undefined> {
+    const result = await db
+      .update(todos)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(todos.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteTodo(id: number): Promise<void> {
+    await db.delete(todos).where(eq(todos.id, id));
   }
 }
 

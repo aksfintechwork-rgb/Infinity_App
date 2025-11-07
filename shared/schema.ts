@@ -510,3 +510,33 @@ export const insertActiveCallParticipantSchema = _baseActiveCallParticipantSchem
 
 export type InsertActiveCallParticipant = z.infer<typeof insertActiveCallParticipantSchema>;
 export type ActiveCallParticipant = typeof activeCallParticipants.$inferSelect;
+
+export const todoPriorityEnum = z.enum(["low", "medium", "high", "urgent"]);
+export type TodoPriority = z.infer<typeof todoPriorityEnum>;
+
+export const todos = pgTable("todos", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  task: text("task").notNull(),
+  priority: text("priority").notNull().default("medium"),
+  completed: boolean("completed").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+const _baseTodoSchema = createInsertSchema(todos, {
+  task: z.string().min(1, "Task is required"),
+  priority: todoPriorityEnum.default("medium"),
+});
+
+export const insertTodoSchema = _baseTodoSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  createdAt: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  updatedAt: true,
+});
+
+export type InsertTodo = z.infer<typeof insertTodoSchema>;
+export type Todo = typeof todos.$inferSelect;
