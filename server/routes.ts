@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { hashPassword, comparePassword, generateToken, authMiddleware, getCurrentUser, requireAdmin, type AuthRequest, verifyToken } from "./auth";
-import { insertUserSchema, insertConversationSchema, insertMessageSchema, updateMessageSchema, insertMeetingSchema, insertTaskSchema, insertSupportRequestSchema, insertProjectSchema, insertDriveFolderSchema, insertDriveFileSchema } from "@shared/schema";
+import { insertUserSchema, insertConversationSchema, insertMessageSchema, updateMessageSchema, insertMeetingSchema, insertTaskSchema, insertSupportRequestSchema, insertProjectSchema, insertDriveFolderSchema, insertDriveFileSchema, insertTodoSchema } from "@shared/schema";
 import { z } from "zod";
 import { upload, getFileUrl } from "./upload";
 import { WebSocketServer, WebSocket } from "ws";
@@ -1610,6 +1610,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get support requests error:", error);
       res.status(500).json({ error: "Failed to fetch support requests" });
+    }
+  });
+
+  // Todos
+  app.get("/api/todos", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const todos = await storage.getAllTodos(req.userId);
+      res.json(todos);
+    } catch (error) {
+      console.error("Get todos error:", error);
+      res.status(500).json({ error: "Failed to fetch todos" });
+    }
+  });
+
+  app.post("/api/todos", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const validation = insertTodoSchema.safeParse({
+        ...req.body,
+        userId: req.userId,
+      });
+
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid input", details: validation.error });
+      }
+
+      const todo = await storage.createTodo(validation.data);
+      res.status(201).json(todo);
+    } catch (error) {
+      console.error("Create todo error:", error);
+      res.status(500).json({ error: "Failed to create todo" });
+    }
+  });
+
+  app.patch("/api/todos/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const todoId = parseInt(req.params.id);
+      const existingTodo = await storage.getTodoById(todoId);
+
+      if (!existingTodo) {
+        return res.status(404).json({ error: "Todo not found" });
+      }
+
+      if (existingTodo.userId !== req.userId) {
+        return res.status(403).json({ error: "You can only update your own todos" });
+      }
+
+      const todo = await storage.updateTodo(todoId, req.body);
+      res.json(todo);
+    } catch (error) {
+      console.error("Update todo error:", error);
+      res.status(500).json({ error: "Failed to update todo" });
+    }
+  });
+
+  app.delete("/api/todos/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const todoId = parseInt(req.params.id);
+      const existingTodo = await storage.getTodoById(todoId);
+
+      if (!existingTodo) {
+        return res.status(404).json({ error: "Todo not found" });
+      }
+
+      if (existingTodo.userId !== req.userId) {
+        return res.status(403).json({ error: "You can only delete your own todos" });
+      }
+
+      await storage.deleteTodo(todoId);
+      res.json({ message: "Todo deleted successfully" });
+    } catch (error) {
+      console.error("Delete todo error:", error);
+      res.status(500).json({ error: "Failed to delete todo" });
     }
   });
 
