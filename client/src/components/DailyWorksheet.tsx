@@ -19,13 +19,6 @@ interface User {
   role: string;
 }
 
-interface Todo {
-  id: string;
-  task: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  completed: boolean;
-}
-
 interface HourlyLog {
   hour: string;
   activity: string;
@@ -74,10 +67,7 @@ export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyW
   const [tempStartHour, setTempStartHour] = useState<number>(8);
   const [tempEndHour, setTempEndHour] = useState<number>(18);
   
-  const [todos, setTodos] = useState<Todo[]>([]);
   const [hourlyLogs, setHourlyLogs] = useState<HourlyLog[]>([]);
-  const [newTodoText, setNewTodoText] = useState('');
-  const [newTodoPriority, setNewTodoPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const { toast } = useToast();
 
   // Load work hours from localStorage on mount
@@ -112,9 +102,7 @@ export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyW
   useEffect(() => {
     if (worksheet) {
       try {
-        const parsedTodos = JSON.parse(worksheet.todos || '[]');
         const parsedLogs = JSON.parse(worksheet.hourlyLogs || '[]');
-        setTodos(parsedTodos);
         
         // Merge saved logs with current work hours template AND current in-memory state
         if (parsedLogs.length > 0) {
@@ -139,7 +127,7 @@ export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyW
   const createWorksheetMutation = useMutation({
     mutationFn: async () => {
       return await apiRequest('POST', '/api/worksheets', {
-        todos: JSON.stringify(todos),
+        todos: '[]',
         hourlyLogs: JSON.stringify(hourlyLogs),
       });
     },
@@ -157,7 +145,7 @@ export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyW
     mutationFn: async () => {
       if (!worksheet) return;
       return await apiRequest('PATCH', `/api/worksheets/${worksheet.id}`, {
-        todos: JSON.stringify(todos),
+        todos: '[]',
         hourlyLogs: JSON.stringify(hourlyLogs),
       });
     },
@@ -185,30 +173,6 @@ export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyW
     },
   });
 
-  const handleAddTodo = () => {
-    if (!newTodoText.trim()) return;
-
-    const newTodo: Todo = {
-      id: Date.now().toString(),
-      task: newTodoText,
-      priority: newTodoPriority,
-      completed: false,
-    };
-
-    setTodos([...todos, newTodo]);
-    setNewTodoText('');
-    setNewTodoPriority('medium');
-  };
-
-  const handleToggleTodo = (id: string) => {
-    setTodos(todos.map(todo => 
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    ));
-  };
-
-  const handleDeleteTodo = (id: string) => {
-    setTodos(todos.filter(todo => todo.id !== id));
-  };
 
   const handleUpdateHourlyLog = (hour: string, activity: string) => {
     setHourlyLogs(hourlyLogs.map(log => 
@@ -410,88 +374,6 @@ export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyW
 
       <ScrollArea className="flex-1">
         <div className="max-w-6xl mx-auto p-4 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Today's To-Do List</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!isSubmitted && (
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add a task..."
-                    value={newTodoText}
-                    onChange={(e) => setNewTodoText(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddTodo()}
-                    disabled={isSubmitted}
-                    data-testid="input-new-todo"
-                  />
-                  <Select
-                    value={newTodoPriority}
-                    onValueChange={(value: any) => setNewTodoPriority(value)}
-                    disabled={isSubmitted}
-                  >
-                    <SelectTrigger className="w-32" data-testid="select-priority">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button onClick={handleAddTodo} disabled={isSubmitted} data-testid="button-add-todo">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                {todos.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    No tasks added yet. Start planning your day!
-                  </p>
-                ) : (
-                  todos.map((todo) => (
-                    <div
-                      key={todo.id}
-                      className="flex items-center gap-3 p-3 rounded-md border bg-card"
-                      data-testid={`todo-${todo.id}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={todo.completed}
-                        onChange={() => handleToggleTodo(todo.id)}
-                        disabled={isSubmitted}
-                        className="h-5 w-5 rounded border-2"
-                        data-testid={`checkbox-todo-${todo.id}`}
-                      />
-                      <span
-                        className={`flex-1 ${todo.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}
-                      >
-                        {todo.task}
-                      </span>
-                      <Badge className={PRIORITY_COLORS[todo.priority]}>
-                        {todo.priority}
-                      </Badge>
-                      {!isSubmitted && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteTodo(todo.id)}
-                          className="h-8 w-8"
-                          data-testid={`button-delete-todo-${todo.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
