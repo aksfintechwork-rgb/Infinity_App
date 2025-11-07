@@ -42,3 +42,8 @@ Preferred communication style: Simple, everyday language.
 -   **Google Fonts**: Inter font family.
 -   **File Storage**: Local filesystem (`uploads/` directory).
 -   **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`, `xlsx`.
+
+## Recent Changes
+
+### November 7, 2025 - File Upload Enhancement
+**Fixed chat attachment uploads for Excel, images, and videos**: Updated `server/upload.ts` to support all common file types requested by users. Expanded allowed MIME types to include Excel files (.xls, .xlsx), all common image formats (JPEG, PNG, GIF, WebP, BMP), and video formats (MP4, MPEG, QuickTime, AVI, WMV, WebM). Also added audio support (MP3, WAV, WebM, OGG). Increased file size limit from 10MB to 50MB to accommodate video uploads. Removed SVG support for security (prevents stored XSS attacks). Users can now attach Excel spreadsheets, images, and videos in chat conversations without errors.
