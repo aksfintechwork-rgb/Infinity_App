@@ -2336,9 +2336,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Send call invitation to specific user
           const { userId, conversationId, callType, roomName, from } = message.data;
           
+          console.log(`[invite_to_call] Sending invitation to user ${userId} from ${from.name} for ${callType} call in conversation ${conversationId}`);
+          
           // Find the WebSocket connection for the invited user
+          let foundClient = false;
           wss.clients.forEach((client: any) => {
             if (client.readyState === ws.OPEN && client.userId === userId) {
+              foundClient = true;
+              console.log(`[invite_to_call] Found WebSocket connection for user ${userId}, sending incoming_call event`);
               client.send(JSON.stringify({
                 type: 'incoming_call',
                 data: {
@@ -2350,6 +2355,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }));
             }
           });
+          
+          if (!foundClient) {
+            console.log(`[invite_to_call] WARNING: No active WebSocket connection found for user ${userId}`);
+          }
           return;
         }
         

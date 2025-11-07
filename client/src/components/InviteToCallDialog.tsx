@@ -48,9 +48,9 @@ export default function InviteToCallDialog({
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
 
-  // Filter users: exclude current user and existing conversation members
+  // Filter users: exclude only current user (allow inviting anyone to the call)
   const availableUsers = allUsers.filter(
-    (user) => user.id !== currentUserId && !conversationMemberIds.includes(user.id)
+    (user) => user.id !== currentUserId
   );
 
   const toggleUser = (userId: number) => {
