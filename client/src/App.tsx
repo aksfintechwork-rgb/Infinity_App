@@ -9,6 +9,7 @@ import ChatLayout from './components/ChatLayout';
 import * as api from './lib/api';
 import { useWebSocket } from './lib/websocket';
 import { requestNotificationPermission, notifyNewMessage, initializeAudio } from './lib/notifications';
+import { registerPushNotifications } from './lib/pushNotifications';
 
 interface User {
   id: number;
@@ -310,6 +311,9 @@ function App() {
 
       // Request notification permission after successful login
       requestNotificationPermission();
+      
+      // Register push notifications for incoming calls even when app is not focused
+      registerPushNotifications(user.id);
     } catch (error) {
       console.error('Failed to load user data:', error);
       // Toast removed to fix React hook error
