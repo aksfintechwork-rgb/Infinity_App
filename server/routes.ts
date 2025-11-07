@@ -411,10 +411,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(conversationData);
 
       // Broadcast new conversation to all members
-      broadcastToUsers(members.map(m => m.id), {
-        type: 'conversation_created',
-        conversation: conversationData,
-      });
+      if (wss) {
+        const memberIds = members.map(m => m.id);
+        wss.clients.forEach((client: WebSocketClient) => {
+          if (client.readyState === WebSocket.OPEN && client.userId && memberIds.includes(client.userId)) {
+            client.send(JSON.stringify({
+              type: 'conversation_created',
+              data: { conversation: conversationData },
+            }));
+          }
+        });
+      }
     } catch (error) {
       console.error("Create conversation error:", error);
       res.status(500).json({ error: "Failed to create conversation" });
