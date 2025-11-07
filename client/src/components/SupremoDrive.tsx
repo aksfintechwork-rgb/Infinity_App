@@ -98,7 +98,7 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
       }
 
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/drive/upload', {
+      const response = await fetch('/api/drive/files', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
