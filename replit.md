@@ -87,3 +87,12 @@ Preferred communication style: Simple, everyday language.
 12. **Updated Design Guidelines**: Completely revised design_guidelines.md to reflect new banking-inspired aesthetic. Removed all blue color references, documented orange/beige color palette, specified no gradients or emojis policy, and added accessibility compliance documentation.
 
 All core features (Project Tracker, Supremo Drive, and Incoming Call Notifications) are now fully operational with real-time WebSocket updates, proper authentication, comprehensive access control, and a production-ready WCAG AA compliant banking-inspired theme.
+
+### November 7, 2025 - Add Team Members to Live Calls Feature
+13. **Active Call Management Infrastructure**: Implemented complete backend infrastructure to track active calls and enable adding team members to ongoing calls. Created `active_calls` and `active_call_participants` database tables to track call metadata (room name, URL, host, conversation, type, status) and participant join/leave timestamps. All video/audio call initiation functions now automatically register calls in the database when started.
+
+14. **Call Invitation API**: Added comprehensive REST API endpoints for call management: POST `/api/calls` (create call), GET `/api/calls/:id` (get call details), POST `/api/calls/:id/invite` (invite users to call), POST `/api/calls/:id/join` (mark user joined), POST `/api/calls/:id/leave` (mark user left), DELETE `/api/calls/:id/end` (end call). Invite endpoint automatically sends `call_invitation` WebSocket events to invited users with room URL and caller information.
+
+15. **Storage Methods**: Implemented 10 new storage interface methods: `createActiveCall`, `getActiveCallById`, `getActiveCallByRoomName`, `endActiveCall`, `addCallParticipant`, `removeCallParticipant`, `getCallParticipants`, `getActiveCallsByConversation`, `getActiveCallsByUserId`, and `getUserActiveConversations`. These methods provide complete CRUD operations for managing calls and participants with proper error handling and validation.
+
+16. **Frontend Integration**: Updated all three call initiation functions (`handleStartCall`, `handleQuickAudioCall`, `handleStartAudioCall`) in ChatLayout.tsx to automatically register calls in the database immediately after creating the Daily.co room. This ensures all calls are tracked with proper metadata for subsequent invitation and participant management operations.
