@@ -44,10 +44,10 @@ export function useOutgoingRingtone(isPlaying: boolean) {
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
 
-        // Single tone at 440Hz (A note) - clear and distinctive
-        oscillator.frequency.value = 440;
+        // Single tone at 523Hz (C5 note) - soft and pleasant
+        oscillator.frequency.value = 523;
         oscillator.type = 'sine';
-        gainNode.gain.value = 0.8; // LOUD volume
+        gainNode.gain.value = 0.25; // Soft, pleasant volume
 
         oscillator.start();
         

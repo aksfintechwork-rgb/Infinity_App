@@ -35,7 +35,7 @@ export async function playNotificationSound() {
 
     const now = audioContext.currentTime;
     
-    // Play a LOUD triple-beep pattern for maximum noticeability
+    // Play a soft, pleasant triple-beep pattern
     const playBeep = (startTime: number, frequency: number, duration: number, volume: number) => {
       const oscillator = audioContext!.createOscillator();
       const gainNode = audioContext!.createGain();
@@ -53,10 +53,10 @@ export async function playNotificationSound() {
       oscillator.stop(startTime + duration);
     };
     
-    // LOUD triple beep: maximum volume, pleasant frequencies
-    playBeep(now, 880, 0.2, 0.8);           // First beep (A5) - LOUDER
-    playBeep(now + 0.25, 1046.5, 0.2, 0.85);  // Second beep (C6) - LOUDER
-    playBeep(now + 0.5, 1318.5, 0.25, 0.9);   // Third beep (E6) - LOUDEST & longer
+    // Soft triple beep: gentle volume, harmonious frequencies
+    playBeep(now, 523, 0.15, 0.2);           // First beep (C5) - gentle
+    playBeep(now + 0.2, 659, 0.15, 0.22);    // Second beep (E5) - slightly higher
+    playBeep(now + 0.4, 784, 0.18, 0.25);    // Third beep (G5) - pleasant ending
   } catch (error) {
     console.error('Failed to play notification sound:', error);
   }

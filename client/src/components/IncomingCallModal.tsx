@@ -34,7 +34,7 @@ export default function IncomingCallModal({
     if (isOpen && !hasStartedRef.current) {
       hasStartedRef.current = true;
       
-      // Create LOUD dual-tone ringtone
+      // Create soft, pleasant dual-tone ringtone
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       audioContextRef.current = audioContext;
       
@@ -50,10 +50,10 @@ export default function IncomingCallModal({
       oscillator2.connect(gainNode);
       gainNode.connect(audioContext.destination);
       
-      // Dual-tone ringtone (like phone ringing)
-      oscillator1.frequency.value = 480; // Hz
-      oscillator2.frequency.value = 620; // Hz
-      gainNode.gain.value = 0.8; // LOUD volume
+      // Soft dual-tone ringtone (pleasant frequencies)
+      oscillator1.frequency.value = 523; // C5 - gentle tone
+      oscillator2.frequency.value = 659; // E5 - harmonious interval
+      gainNode.gain.value = 0.3; // Soft, pleasant volume
       oscillator1.type = 'sine';
       oscillator2.type = 'sine';
       
