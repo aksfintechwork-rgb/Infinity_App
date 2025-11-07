@@ -451,3 +451,61 @@ export type DriveFile = typeof driveFiles.$inferSelect;
 export type DriveFileWithDetails = DriveFile & {
   uploadedByName: string;
 };
+
+export const callStatusEnum = z.enum(["active", "ended"]);
+export type CallStatus = z.infer<typeof callStatusEnum>;
+
+export const callTypeEnum = z.enum(["audio", "video"]);
+export type CallType = z.infer<typeof callTypeEnum>;
+
+export const activeCalls = pgTable("active_calls", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  roomName: text("room_name").notNull().unique(),
+  roomUrl: text("room_url").notNull(),
+  conversationId: integer("conversation_id").references(() => conversations.id, { onDelete: "cascade" }),
+  hostId: integer("host_id").notNull().references(() => users.id),
+  callType: text("call_type").notNull().default("video"),
+  status: text("status").notNull().default("active"),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  endedAt: timestamp("ended_at"),
+});
+
+const _baseActiveCallSchema = createInsertSchema(activeCalls, {
+  callType: callTypeEnum.default("video"),
+  status: callStatusEnum.default("active"),
+});
+
+export const insertActiveCallSchema = _baseActiveCallSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  startedAt: true,
+});
+
+export type InsertActiveCall = z.infer<typeof insertActiveCallSchema>;
+export type ActiveCall = typeof activeCalls.$inferSelect;
+export type ActiveCallWithDetails = ActiveCall & {
+  hostName: string;
+  participantCount: number;
+  participants: string[];
+};
+
+export const activeCallParticipants = pgTable("active_call_participants", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  callId: integer("call_id").notNull().references(() => activeCalls.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  joinedAt: timestamp("joined_at").notNull().defaultNow(),
+  leftAt: timestamp("left_at"),
+});
+
+const _baseActiveCallParticipantSchema = createInsertSchema(activeCallParticipants, {});
+
+export const insertActiveCallParticipantSchema = _baseActiveCallParticipantSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  joinedAt: true,
+});
+
+export type InsertActiveCallParticipant = z.infer<typeof insertActiveCallParticipantSchema>;
+export type ActiveCallParticipant = typeof activeCallParticipants.$inferSelect;
