@@ -2156,6 +2156,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.userId,
       });
 
+      // Broadcast incoming call notification to conversation members
+      if (conversationId) {
+        const caller = await storage.getUserById(req.userId);
+        if (caller) {
+          const members = await storage.getConversationMembers(conversationId);
+          if (members && members.length > 0) {
+            const memberIds = members.map(m => m.id);
+            
+            console.log(`[POST /api/calls] Broadcasting incoming_call to conversation ${conversationId} members:`, memberIds);
+            
+            // Broadcast to all members except the caller
+            const connectedUserIds: number[] = [];
+            if (wss) {
+              wss.clients.forEach((client: any) => {
+                if (client.readyState === WebSocket.OPEN && memberIds.includes(client.userId) && client.userId !== req.userId) {
+                  connectedUserIds.push(client.userId);
+                  console.log(`[POST /api/calls] Sending incoming_call to user ${client.userId}`);
+                  client.send(JSON.stringify({
+                    type: 'incoming_call',
+                    data: {
+                      conversationId,
+                      callType: callType || 'video',
+                      roomName,
+                      from: {
+                        id: caller.id,
+                        name: caller.name,
+                        avatar: caller.avatar,
+                      },
+                    },
+                  }));
+                }
+              });
+            }
+            
+            // Send push notifications to offline members
+            const offlineUserIds = memberIds.filter(id => !connectedUserIds.includes(id) && id !== req.userId);
+            console.log(`[POST /api/calls] Sending push notifications to offline users:`, offlineUserIds);
+            const finalCallType = callType || 'video';
+            for (const userId of offlineUserIds) {
+              await sendPushNotification(userId, {
+                title: `Incoming ${finalCallType === 'video' ? 'Video' : 'Audio'} Call`,
+                body: `${caller.name} is calling...`,
+                url: `/?conversation=${conversationId}`,
+                callData: { conversationId, roomName, callType: finalCallType, from: { id: caller.id, name: caller.name, avatar: caller.avatar } },
+              });
+            }
+          }
+        }
+      }
+
       res.json(call);
     } catch (error) {
       console.error("Create call error:", error);

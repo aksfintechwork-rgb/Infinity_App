@@ -30,6 +30,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { formatLastSeen } from '@/lib/utils';
+import { nanoid } from 'nanoid';
 
 interface User {
   id: number;
@@ -613,8 +614,8 @@ export default function ChatLayout({
   const handleStartCall = async () => {
     if (!activeConversation) return;
     
-    // Generate a deterministic room name for Daily.co
-    const roomName = `supremo-video-${activeConversation.id}`;
+    // Generate a unique room name for Daily.co with nanoid suffix to prevent duplicates
+    const roomName = `supremo-video-${activeConversation.id}-${nanoid(8)}`;
     
     try {
       // Create room first via backend API
@@ -695,8 +696,8 @@ export default function ChatLayout({
     const conversation = conversations.find(c => c.id === conversationId);
     if (!conversation) return;
 
-    // Generate a deterministic room name for Daily.co
-    const roomName = `supremo-audio-${conversationId}`;
+    // Generate a unique room name for Daily.co with nanoid suffix to prevent duplicates
+    const roomName = `supremo-audio-${conversationId}-${nanoid(8)}`;
     
     try {
       // Create room first via backend API
