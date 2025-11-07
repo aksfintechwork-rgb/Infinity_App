@@ -374,7 +374,14 @@ function App() {
   const handleCreateConversation = async (title: string, memberIds: number[]) => {
     try {
       const newConv = await api.createConversation(token!, title, memberIds);
-      setConversations((prev) => [newConv, ...prev]);
+      
+      // Only add to state if conversation doesn't already exist (prevents duplicates)
+      setConversations((prev) => {
+        if (prev.some(c => c.id === newConv.id)) {
+          return prev;
+        }
+        return [newConv, ...prev];
+      });
       
       // Toast removed to fix React hook error
     } catch (error: any) {
