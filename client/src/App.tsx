@@ -310,7 +310,7 @@ function App() {
   };
 
   const handleSendMessage = useCallback(
-    (conversationId: number, body: string, attachmentUrl?: string) => {
+    (conversationId: number, body: string, attachmentUrl?: string, replyToId?: number) => {
       if (!body && !attachmentUrl) return;
 
       ws.send({
@@ -319,6 +319,7 @@ function App() {
           conversationId,
           body,
           attachmentUrl,
+          replyToId,
         },
       });
     },

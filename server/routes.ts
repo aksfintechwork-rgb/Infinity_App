@@ -595,10 +595,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messagesWithSenderInfo = await Promise.all(
         messages.map(async (msg) => {
           const sender = await storage.getUserById(msg.senderId);
+          let repliedToMessage = null;
+          
+          if (msg.replyToId) {
+            const replyMsg = await storage.getMessageById(msg.replyToId);
+            if (replyMsg) {
+              const replySender = await storage.getUserById(replyMsg.senderId);
+              repliedToMessage = {
+                id: replyMsg.id,
+                senderName: replySender?.name || 'Unknown',
+                body: replyMsg.body,
+                attachmentUrl: replyMsg.attachmentUrl
+              };
+            }
+          }
+          
           return {
             ...msg,
             senderName: sender?.name || 'Unknown',
             senderAvatar: sender?.avatar,
+            repliedToMessage,
           };
         })
       );
@@ -636,10 +652,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const message = await storage.createMessage(validation.data);
       const sender = await storage.getUserById(message.senderId);
 
+      let repliedToMessage = null;
+      if (message.replyToId) {
+        const replyMsg = await storage.getMessageById(message.replyToId);
+        if (replyMsg) {
+          const replySender = await storage.getUserById(replyMsg.senderId);
+          repliedToMessage = {
+            id: replyMsg.id,
+            senderName: replySender?.name || 'Unknown',
+            body: replyMsg.body,
+            attachmentUrl: replyMsg.attachmentUrl
+          };
+        }
+      }
+
       res.status(201).json({
         ...message,
         senderName: sender?.name || 'Unknown',
         senderAvatar: sender?.avatar,
+        repliedToMessage,
       });
     } catch (error) {
       console.error("Create message error:", error);
@@ -2310,10 +2341,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const newMessage = await storage.createMessage(validation.data);
           const sender = await storage.getUserById(newMessage.senderId);
 
+          let repliedToMessage = null;
+          if (newMessage.replyToId) {
+            const replyMsg = await storage.getMessageById(newMessage.replyToId);
+            if (replyMsg) {
+              const replySender = await storage.getUserById(replyMsg.senderId);
+              repliedToMessage = {
+                id: replyMsg.id,
+                senderName: replySender?.name || 'Unknown',
+                body: replyMsg.body,
+                attachmentUrl: replyMsg.attachmentUrl
+              };
+            }
+          }
+
           const messageWithSender = {
             ...newMessage,
             senderName: sender?.name || 'Unknown',
             senderAvatar: sender?.avatar,
+            repliedToMessage,
           };
 
           const members = await storage.getConversationMembers(validation.data.conversationId);

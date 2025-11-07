@@ -61,6 +61,13 @@ interface MessageType {
   body?: string;
   attachmentUrl?: string;
   createdAt: string;
+  replyToId?: number;
+  repliedToMessage?: {
+    id: number;
+    senderName: string;
+    body?: string;
+    attachmentUrl?: string;
+  };
 }
 
 interface ChatLayoutProps {
@@ -69,7 +76,7 @@ interface ChatLayoutProps {
   allUsers: User[];
   onlineUserIds: number[];
   messages: MessageType[];
-  onSendMessage: (conversationId: number, body: string, attachmentUrl?: string) => void;
+  onSendMessage: (conversationId: number, body: string, attachmentUrl?: string, replyToId?: number) => void;
   onCreateConversation: (title: string, memberIds: number[]) => void;
   onFileUpload: (file: File) => Promise<string>;
   onLogout: () => void;
@@ -1229,10 +1236,12 @@ export default function ChatLayout({
 
             <div className="flex-shrink-0">
               <MessageInput
-                onSendMessage={(body, attachmentUrl, replyToId) =>
-                  activeConversationId &&
-                  onSendMessage(activeConversationId, body, attachmentUrl)
-                }
+                onSendMessage={(body, attachmentUrl, replyToId) => {
+                  if (activeConversationId) {
+                    onSendMessage(activeConversationId, body, attachmentUrl, replyToId);
+                    setReplyingTo(null);
+                  }
+                }}
                 onTyping={setIsTyping}
                 onFileUpload={onFileUpload}
                 replyingTo={replyingTo}
