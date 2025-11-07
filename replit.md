@@ -24,7 +24,7 @@ Preferred communication style: Simple, everyday language.
 - **Data Preservation**: All existing data must be preserved across updates; schema changes must be backward compatible and non-destructive.
 
 ### Core Features
-- **Real-time Communication**: Direct messages, group chats, file sharing, presence tracking, enhanced desktop notifications.
+- **Real-time Communication**: Direct messages, group chats, file sharing, presence tracking, enhanced desktop notifications, message replies with mentions, and message deletion (sender-only with confirmation).
 - **Meeting Management**: Meeting calendar with scheduling, recurring meetings, auto-generated Daily.co links, reminders, one-click "Start Meeting Now," and "Quick Join" functionality.
 - **AI Integration**: GPT-4o for structured, multi-language AI meeting summaries.
 - **Video Conferencing**: Instant one-click audio/video calls using Daily.co, direct join (no lobby), robust incoming/outgoing call notifications, and active call management with participant tracking and invitation system.
@@ -47,3 +47,6 @@ Preferred communication style: Simple, everyday language.
 
 ### November 7, 2025 - File Upload Enhancement
 **Fixed chat attachment uploads for Excel, images, and videos**: Updated `server/upload.ts` to support all common file types requested by users. Expanded allowed MIME types to include Excel files (.xls, .xlsx), all common image formats (JPEG, PNG, GIF, WebP, BMP), and video formats (MP4, MPEG, QuickTime, AVI, WMV, WebM). Also added audio support (MP3, WAV, WebM, OGG). Increased file size limit from 10MB to 50MB to accommodate video uploads. Removed SVG support for security (prevents stored XSS attacks). Users can now attach Excel spreadsheets, images, and videos in chat conversations without errors.
+
+### November 7, 2025 - Message Deletion Feature
+**Implemented message deletion with ownership validation and real-time updates**: Users can now delete their own chat messages through a dropdown menu (three-dot icon) accessible from each message. The delete button is visible only for messages sent by the current user, with a semi-transparent menu that becomes fully visible on hover (better accessibility). Upon clicking delete, a browser confirmation dialog prevents accidental deletions. The backend validates message ownership via JWT authentication and broadcasts deletion events through WebSocket to all conversation members for instant UI updates. The DELETE /api/messages/:id endpoint uses `apiRequest` helper to attach auth tokens, and the UI correctly recomputes conversation's lastMessage after deletion. Message menu visibility enhanced from invisible to opacity-based (opacity-50 default, opacity-100 on hover) for improved mobile and testing accessibility.
