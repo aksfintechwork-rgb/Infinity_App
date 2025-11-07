@@ -22,7 +22,12 @@ export function useWebSocket(token: string | null) {
     if (!token) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host || `${window.location.hostname}:${window.location.port || 5000}`;
+    // Construct host carefully to avoid :undefined in URL
+    let host = window.location.host;
+    if (!host || host.includes('undefined')) {
+      // Fallback for local dev or when port is undefined
+      host = `${window.location.hostname || 'localhost'}:${window.location.port || '5000'}`;
+    }
     const wsUrl = `${protocol}//${host}/ws?token=${encodeURIComponent(token)}`;
 
     console.log('Connecting to WebSocket:', wsUrl.replace(/token=[^&]+/, 'token=***'));
