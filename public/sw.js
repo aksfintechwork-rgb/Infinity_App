@@ -44,15 +44,42 @@ self.addEventListener('notificationclick', (event) => {
   }
 });
 
-self.addEventListener('pushsubscriptionchange', (event) => {
+self.addEventListener('pushsubscriptionchange', async (event) => {
   event.waitUntil(
-    self.registration.pushManager.subscribe(event.oldSubscription.options)
-      .then((subscription) => {
-        return fetch('/api/push-subscription', {
+    (async () => {
+      try {
+        const newSubscription = await self.registration.pushManager.subscribe(
+          event.oldSubscription.options
+        );
+        
+        const subscriptionJSON = newSubscription.toJSON();
+        
+        const userId = await caches.match('/_userId').then(r => r ? r.text() : null);
+        const token = await caches.match('/_authToken').then(r => r ? r.text() : null);
+        
+        if (!userId || !token) {
+          console.error('Cannot re-subscribe: missing userId or auth token');
+          return;
+        }
+        
+        await fetch('/api/push-subscription', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(subscription)
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            userId: parseInt(userId),
+            endpoint: subscriptionJSON.endpoint,
+            p256dhKey: subscriptionJSON.keys?.p256dh,
+            authKey: subscriptionJSON.keys?.auth,
+          })
         });
-      })
+        
+        console.log('Push subscription renewed successfully');
+      } catch (error) {
+        console.error('Failed to renew push subscription:', error);
+      }
+    })()
   );
 });

@@ -27,6 +27,14 @@ export async function registerPushNotifications(userId: number): Promise<boolean
     const registration = await navigator.serviceWorker.register('/sw.js');
     await navigator.serviceWorker.ready;
 
+    // Store userId and auth token in cache for service worker access
+    const cache = await caches.open('auth-cache');
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      await cache.put('/_authToken', new Response(token));
+      await cache.put('/_userId', new Response(userId.toString()));
+    }
+
     // Strip any surrounding quotes from the VAPID key
     const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY?.replace(/^"|"$/g, '');
     if (!vapidPublicKey) {
@@ -78,6 +86,11 @@ export async function unregisterPushNotifications(): Promise<void> {
         }),
       });
     }
+    
+    // Clean up cached auth data
+    const cache = await caches.open('auth-cache');
+    await cache.delete('/_authToken');
+    await cache.delete('/_userId');
   } catch (error) {
     console.error('Error unregistering push notifications:', error);
   }
