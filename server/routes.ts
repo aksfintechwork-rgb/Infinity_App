@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { hashPassword, comparePassword, generateToken, authMiddleware, getCurrentUser, requireAdmin, type AuthRequest, verifyToken } from "./auth";
-import { insertUserSchema, insertConversationSchema, insertMessageSchema, updateMessageSchema, insertMeetingSchema, insertTaskSchema, insertSupportRequestSchema, insertProjectSchema, insertDriveFolderSchema, insertDriveFileSchema, insertTodoSchema } from "@shared/schema";
+import { insertUserSchema, insertConversationSchema, insertMessageSchema, updateMessageSchema, insertMeetingSchema, insertTaskSchema, insertSupportRequestSchema, insertProjectSchema, insertDriveFolderSchema, insertDriveFileSchema, insertTodoSchema, insertPushSubscriptionSchema } from "@shared/schema";
 import { z } from "zod";
 import { upload, getFileUrl } from "./upload";
 import { WebSocketServer, WebSocket } from "ws";
@@ -1761,6 +1761,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete todo error:", error);
       res.status(500).json({ error: "Failed to delete todo" });
+    }
+  });
+
+  // Push Notifications
+  app.post("/api/push-subscription", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const validation = insertPushSubscriptionSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid subscription data", details: validation.error });
+      }
+
+      const subscription = await storage.savePushSubscription(validation.data);
+      res.status(201).json(subscription);
+    } catch (error) {
+      console.error("Save push subscription error:", error);
+      res.status(500).json({ error: "Failed to save push subscription" });
+    }
+  });
+
+  app.delete("/api/push-subscription", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { endpoint } = req.body;
+      if (!endpoint) {
+        return res.status(400).json({ error: "Endpoint required" });
+      }
+
+      await storage.deletePushSubscription(endpoint);
+      res.json({ message: "Subscription deleted" });
+    } catch (error) {
+      console.error("Delete push subscription error:", error);
+      res.status(500).json({ error: "Failed to delete push subscription" });
     }
   });
 

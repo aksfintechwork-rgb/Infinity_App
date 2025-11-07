@@ -40,6 +40,8 @@ import {
   type InsertActiveCallParticipant,
   type Todo,
   type InsertTodo,
+  type PushSubscription,
+  type InsertPushSubscription,
   users,
   conversations,
   messages,
@@ -57,6 +59,7 @@ import {
   activeCalls,
   activeCallParticipants,
   todos,
+  pushSubscriptions,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, inArray, sql, gte, lte } from "drizzle-orm";
@@ -168,6 +171,10 @@ export interface IStorage {
   createTodo(todo: InsertTodo): Promise<Todo>;
   updateTodo(id: number, updates: Partial<InsertTodo>): Promise<Todo | undefined>;
   deleteTodo(id: number): Promise<void>;
+  
+  savePushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription>;
+  getUserPushSubscriptions(userId: number): Promise<PushSubscription[]>;
+  deletePushSubscription(endpoint: string): Promise<void>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -1491,6 +1498,43 @@ export class PostgresStorage implements IStorage {
 
   async deleteTodo(id: number): Promise<void> {
     await db.delete(todos).where(eq(todos.id, id));
+  }
+
+  async savePushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription> {
+    const existing = await db
+      .select()
+      .from(pushSubscriptions)
+      .where(and(
+        eq(pushSubscriptions.userId, subscription.userId),
+        eq(pushSubscriptions.endpoint, subscription.endpoint)
+      ))
+      .limit(1);
+
+    if (existing.length > 0) {
+      const result = await db
+        .update(pushSubscriptions)
+        .set({
+          p256dhKey: subscription.p256dhKey,
+          authKey: subscription.authKey,
+        })
+        .where(eq(pushSubscriptions.id, existing[0].id))
+        .returning();
+      return result[0];
+    }
+
+    const result = await db.insert(pushSubscriptions).values(subscription).returning();
+    return result[0];
+  }
+
+  async getUserPushSubscriptions(userId: number): Promise<PushSubscription[]> {
+    return db
+      .select()
+      .from(pushSubscriptions)
+      .where(eq(pushSubscriptions.userId, userId));
+  }
+
+  async deletePushSubscription(endpoint: string): Promise<void> {
+    await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
   }
 }
 
