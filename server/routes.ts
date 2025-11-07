@@ -1756,7 +1756,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid input", details: validation.error });
       }
 
-      const todo = await storage.createTodo(validation.data);
+      // Convert targetDate string to Date object if provided
+      const todoData: any = {
+        ...validation.data,
+        targetDate: (validation.data as any).targetDate 
+          ? new Date((validation.data as any).targetDate) 
+          : null,
+      };
+
+      const todo = await storage.createTodo(todoData);
       res.status(201).json(todo);
     } catch (error) {
       console.error("Create todo error:", error);
@@ -1781,7 +1789,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "You can only update your own todos" });
       }
 
-      const todo = await storage.updateTodo(todoId, req.body);
+      // Handle targetDate conversion:
+      // - If targetDate is a string, convert to Date
+      // - If targetDate is explicitly null, keep it null (to clear the field)
+      // - If targetDate is undefined, omit it (don't change existing value)
+      const updateData: any = { ...req.body };
+      
+      if ('targetDate' in req.body) {
+        if (req.body.targetDate === null || req.body.targetDate === '') {
+          updateData.targetDate = null;
+        } else if (req.body.targetDate) {
+          updateData.targetDate = new Date(req.body.targetDate as string);
+        }
+      }
+      
+      // Handle targetTime: explicit null/empty string should clear the field
+      if ('targetTime' in req.body) {
+        if (req.body.targetTime === null || req.body.targetTime === '') {
+          updateData.targetTime = null;
+        }
+      }
+
+      const todo = await storage.updateTodo(todoId, updateData);
       res.json(todo);
     } catch (error) {
       console.error("Update todo error:", error);

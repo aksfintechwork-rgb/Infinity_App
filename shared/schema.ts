@@ -531,8 +531,8 @@ export const todos = pgTable("todos", {
 const _baseTodoSchema = createInsertSchema(todos, {
   task: z.string().min(1, "Task is required"),
   priority: todoPriorityEnum.default("medium"),
-  targetDate: z.string().optional().or(z.date().optional()),
-  targetTime: z.string().optional(),
+  targetDate: z.union([z.string(), z.date(), z.null()]).optional().nullable().transform(val => val || null),
+  targetTime: z.string().optional().nullable().transform(val => val || null),
   reminderEnabled: z.boolean().default(false),
 });
 

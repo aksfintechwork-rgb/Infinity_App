@@ -62,7 +62,7 @@ import {
   pushSubscriptions,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, inArray, sql, gte, lte } from "drizzle-orm";
+import { eq, and, or, desc, inArray, sql, gte, lte, isNotNull } from "drizzle-orm";
 
 export interface IStorage {
   getUserById(id: number): Promise<User | undefined>;
