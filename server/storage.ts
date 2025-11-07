@@ -171,6 +171,7 @@ export interface IStorage {
   createTodo(todo: InsertTodo): Promise<Todo>;
   updateTodo(id: number, updates: Partial<InsertTodo>): Promise<Todo | undefined>;
   deleteTodo(id: number): Promise<void>;
+  getTodosNeedingReminders(): Promise<Array<Todo & { userName: string }>>;
   
   savePushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription>;
   getUserPushSubscriptions(userId: number): Promise<PushSubscription[]>;
@@ -1498,6 +1499,40 @@ export class PostgresStorage implements IStorage {
 
   async deleteTodo(id: number): Promise<void> {
     await db.delete(todos).where(eq(todos.id, id));
+  }
+
+  async getTodosNeedingReminders(): Promise<Array<Todo & { userName: string }>> {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const result = await db
+      .select({
+        id: todos.id,
+        userId: todos.userId,
+        task: todos.task,
+        priority: todos.priority,
+        completed: todos.completed,
+        targetDate: todos.targetDate,
+        targetTime: todos.targetTime,
+        reminderEnabled: todos.reminderEnabled,
+        reminderSent: todos.reminderSent,
+        createdAt: todos.createdAt,
+        updatedAt: todos.updatedAt,
+        userName: users.name,
+      })
+      .from(todos)
+      .leftJoin(users, eq(todos.userId, users.id))
+      .where(
+        and(
+          eq(todos.reminderEnabled, true),
+          eq(todos.reminderSent, false),
+          eq(todos.completed, false),
+          isNotNull(todos.targetDate)
+        )
+      );
+
+    return result as Array<Todo & { userName: string }>;
   }
 
   async savePushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription> {

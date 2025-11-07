@@ -6,6 +6,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./seed";
 import { taskReminderService } from "./task-reminders";
 import { meetingReminderService } from "./meeting-reminders";
+import { todoReminderService } from "./todo-reminders";
 
 const app = express();
 
@@ -119,5 +120,10 @@ app.use((req, res, next) => {
     meetingReminderService.start(1)
       .then(() => log('Meeting reminder service started'))
       .catch((err) => log(`Meeting reminder service error: ${err.message}`));
+    
+    // Start todo reminder service (checks every 60 minutes) (non-blocking)
+    todoReminderService.start(60)
+      .then(() => log('Todo reminder service started'))
+      .catch((err) => log(`Todo reminder service error: ${err.message}`));
   });
 })();
