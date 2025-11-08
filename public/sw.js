@@ -7,8 +7,13 @@ self.addEventListener('push', (event) => {
   if (notificationType === 'message') {
     // Message notification
     title = data.title || 'New Message';
+    // Defensive truncation to prevent sensitive data exposure
+    let messageBody = data.body || 'You have a new message';
+    if (messageBody.length > 120) {
+      messageBody = messageBody.substring(0, 120) + '...';
+    }
     options = {
-      body: data.body || 'You have a new message',
+      body: messageBody,
       icon: '/favicon.ico',
       badge: '/favicon.ico',
       tag: `message-${data.conversationId || 'default'}`,
