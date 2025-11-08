@@ -132,6 +132,7 @@ export default function ChatLayout({
     conversationId: number;
     callType: 'audio' | 'video';
     calledName: string;
+    roomName: string;
   } | null>(null);
 
   // Active call state (persists after call is answered)
@@ -374,12 +375,11 @@ export default function ChatLayout({
       // Stop outgoing ringtone if this is my call
       if (outgoingCall && data.conversationId === outgoingCall.conversationId) {
         // Set active call state to keep Invite button visible
+        // Use roomName from server (includes nanoid suffix), fallback to outgoingCall roomName
         setActiveCall({
           conversationId: outgoingCall.conversationId,
-          callType: outgoingCall.callType,
-          roomName: outgoingCall.callType === 'video' 
-            ? `supremo-video-${outgoingCall.conversationId}`
-            : `supremo-audio-${outgoingCall.conversationId}`
+          callType: data.callType || outgoingCall.callType,
+          roomName: data.roomName || outgoingCall.roomName
         });
         setOutgoingCall(null);
       }
@@ -675,6 +675,7 @@ export default function ChatLayout({
         conversationId: activeConversation.id,
         callType: 'video',
         calledName: activeConversation.title || activeConversation.members,
+        roomName,
       });
       
       toast({
@@ -751,6 +752,7 @@ export default function ChatLayout({
         conversationId: conversationId,
         callType: 'audio',
         calledName: displayName,
+        roomName,
       });
       
       toast({
