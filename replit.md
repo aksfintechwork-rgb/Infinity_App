@@ -29,6 +29,7 @@ Preferred communication style: Simple, everyday language.
 - **Video Conferencing**: Instant one-click audio/video calls using Daily.co with camera off by default (privacy-first), direct join, robust incoming/outgoing call notifications, active call management with participant tracking, invitation system with shareable meeting links. All meeting URLs include `video=false` parameter to ensure cameras start disabled. Supports Web Push Notifications with sound and vibration for both incoming calls AND new messages on mobile/desktop, even when app is closed or in background. Notifications only sent to offline users.
 - **Task Management**: Start/target dates, status tracking, progress bars, real-time updates, automated reminders, and admin-only Excel import/export.
 - **Project Tracking Dashboard**: Full project lifecycle management with auto-generated IDs, detailed tracking (status, progress, responsible persons, issues, dependencies, target dates), color-coded indicators, and CRUD operations with real-time updates.
+- **Performance Dashboard**: Admin-only analytics dashboard with comprehensive visualizations including overall statistics cards (total tasks, completion rate, active projects, team size), task completion trend charts, user performance bar charts, task distribution pie charts, detailed user statistics table, and project performance tracking. Features period-based filtering (week, month, quarter, year) with empty state handling and banking theme-aligned chart colors.
 - **User Productivity Tools**: Daily Work Log and a standalone private To-Do List with priority levels, completion tracking, and reminder system.
 - **User Management**: Admin tools for user deletion and task oversight.
 - **Security & Access**: Role-based access control, secure file management with ownership validation, and self-service password change.
@@ -39,4 +40,4 @@ Preferred communication style: Simple, everyday language.
 - **Daily.co**: Video conferencing platform.
 - **Google Fonts**: Inter font family.
 - **File Storage**: Local filesystem (`uploads/` directory).
-- **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`, `xlsx`, `web-push`, `nanoid`.
+- **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`, `xlsx`, `web-push`, `nanoid`, `recharts`.

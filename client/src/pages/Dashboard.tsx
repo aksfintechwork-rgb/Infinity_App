@@ -3,26 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, TrendingDown, Users, CheckCircle, Clock, AlertTriangle, Briefcase } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, CheckCircle, Clock, AlertTriangle, Briefcase, BarChart3 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 
-const COLORS = ['#C54E1F', '#F5A623', '#7ED321', '#4A90E2', '#9013FE', '#50E3C2'];
+const COLORS = ['#C54E1F', '#D97633', '#8B4513', '#A0522D', '#CD853F', '#DEB887'];
 
 export default function Dashboard() {
   const [period, setPeriod] = useState('week');
 
   const { data: analytics, isLoading } = useQuery({
     queryKey: ['/api/dashboard/analytics', period],
-    queryFn: async () => {
-      const response = await fetch(`/api/dashboard/analytics?period=${period}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch analytics');
-      return response.json();
-    },
   });
 
   if (isLoading) {
@@ -39,10 +30,10 @@ export default function Dashboard() {
     );
   }
 
-  const overall = analytics?.overall || {};
-  const userStats = analytics?.userStats || [];
-  const trends = analytics?.trends || [];
-  const projectStats = analytics?.projectStats || [];
+  const overall = (analytics as any)?.overall || {};
+  const userStats = (analytics as any)?.userStats || [];
+  const trends = (analytics as any)?.trends || [];
+  const projectStats = (analytics as any)?.projectStats || [];
 
   // Prepare data for user performance pie chart
   const userPieData = userStats
@@ -132,17 +123,24 @@ export default function Dashboard() {
             <CardDescription>Daily task completion over the selected period</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={trends}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="completedTasks" stroke="#22c55e" name="Completed" strokeWidth={2} />
-                <Line type="monotone" dataKey="totalTasks" stroke="#C54E1F" name="Total" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+            {trends.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <BarChart3 className="w-12 h-12 text-muted-foreground mb-3" />
+                <p className="text-sm text-muted-foreground">No trend data available for this period</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={trends}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                  <YAxis className="text-muted-foreground" />
+                  <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
+                  <Legend />
+                  <Line type="monotone" dataKey="completedTasks" stroke="#22c55e" name="Completed" strokeWidth={2} />
+                  <Line type="monotone" dataKey="totalTasks" stroke="#C54E1F" name="Total" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -154,17 +152,24 @@ export default function Dashboard() {
               <CardDescription>Tasks completed per team member in selected period</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={userStats}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="userName" tick={{ fontSize: 11 }} />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="periodCompleted" fill="#C54E1F" name="Completed" />
-                  <Bar dataKey="pendingTasks" fill="#F5A623" name="Pending" />
-                </BarChart>
-              </ResponsiveContainer>
+              {userStats.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <Users className="w-12 h-12 text-muted-foreground mb-3" />
+                  <p className="text-sm text-muted-foreground">No user performance data available</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={userStats}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="userName" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                    <YAxis className="text-muted-foreground" />
+                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
+                    <Legend />
+                    <Bar dataKey="periodCompleted" fill="#C54E1F" name="Completed" />
+                    <Bar dataKey="pendingTasks" fill="#D97633" name="Pending" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
 
@@ -175,25 +180,32 @@ export default function Dashboard() {
               <CardDescription>Completed tasks per user in selected period</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={userPieData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {userPieData.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              {userPieData.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <CheckCircle className="w-12 h-12 text-muted-foreground mb-3" />
+                  <p className="text-sm text-muted-foreground">No completed tasks in this period</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={userPieData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {userPieData.map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -205,45 +217,52 @@ export default function Dashboard() {
             <CardDescription>Comprehensive breakdown of each team member's performance</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 font-semibold">User</th>
-                    <th className="text-center p-3 font-semibold">Total Tasks</th>
-                    <th className="text-center p-3 font-semibold">Completed</th>
-                    <th className="text-center p-3 font-semibold">Pending</th>
-                    <th className="text-center p-3 font-semibold">Overdue</th>
-                    <th className="text-center p-3 font-semibold">Completion Rate</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {userStats.map((user: any) => (
-                    <tr key={user.userId} className="border-b hover:bg-accent/50">
-                      <td className="p-3 font-medium">{user.userName}</td>
-                      <td className="p-3 text-center">{user.totalTasks}</td>
-                      <td className="p-3 text-center text-green-600">{user.completedTasks}</td>
-                      <td className="p-3 text-center text-blue-600">{user.pendingTasks}</td>
-                      <td className="p-3 text-center">
-                        {user.overdueTasks > 0 ? (
-                          <Badge variant="destructive" className="gap-1">
-                            <AlertTriangle className="w-3 h-3" />
-                            {user.overdueTasks}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">0</span>
-                        )}
-                      </td>
-                      <td className="p-3 text-center">
-                        <Badge variant={user.completionRate >= 70 ? "default" : "secondary"}>
-                          {user.completionRate}%
-                        </Badge>
-                      </td>
+            {userStats.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <Users className="w-12 h-12 text-muted-foreground mb-3" />
+                <p className="text-sm text-muted-foreground">No user statistics available</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3 font-semibold">User</th>
+                      <th className="text-center p-3 font-semibold">Total Tasks</th>
+                      <th className="text-center p-3 font-semibold">Completed</th>
+                      <th className="text-center p-3 font-semibold">Pending</th>
+                      <th className="text-center p-3 font-semibold">Overdue</th>
+                      <th className="text-center p-3 font-semibold">Completion Rate</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {userStats.map((user: any) => (
+                      <tr key={user.userId} className="border-b hover:bg-accent/50">
+                        <td className="p-3 font-medium">{user.userName}</td>
+                        <td className="p-3 text-center">{user.totalTasks}</td>
+                        <td className="p-3 text-center text-green-600">{user.completedTasks}</td>
+                        <td className="p-3 text-center text-blue-600">{user.pendingTasks}</td>
+                        <td className="p-3 text-center">
+                          {user.overdueTasks > 0 ? (
+                            <Badge variant="destructive" className="gap-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              {user.overdueTasks}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">0</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-center">
+                          <Badge variant={user.completionRate >= 70 ? "default" : "secondary"}>
+                            {user.completionRate}%
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone, PhoneOff, Folder, HardDrive, ListChecks } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone, PhoneOff, Folder, HardDrive, ListChecks, BarChart3 } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
@@ -19,6 +19,7 @@ import DailyWorksheet from './DailyWorksheet';
 import AdminWorksheets from './AdminWorksheets';
 import Projects from './Projects';
 import SupremoDrive from './SupremoDrive';
+import Dashboard from '../pages/Dashboard';
 import { UpcomingMeetings } from './UpcomingMeetings';
 import IncomingCallModal from './IncomingCallModal';
 import EditMessageDialog from './EditMessageDialog';
@@ -113,7 +114,7 @@ export default function ChatLayout({
   const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar' | 'tasks' | 'todo' | 'worksheet' | 'admin-worksheets' | 'projects' | 'drive'>('chat');
+  const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar' | 'tasks' | 'todo' | 'worksheet' | 'admin-worksheets' | 'projects' | 'drive' | 'dashboard'>('chat');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -948,6 +949,15 @@ export default function ChatLayout({
                   <span className="truncate">Admin</span>
                 </Button>
                 <Button
+                  variant={currentView === 'dashboard' ? 'default' : 'ghost'}
+                  onClick={() => setCurrentView('dashboard')}
+                  data-testid="button-view-dashboard"
+                  className="h-11 justify-start font-medium text-sm"
+                >
+                  <BarChart3 className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">Dashboard</span>
+                </Button>
+                <Button
                   variant={currentView === 'admin-worksheets' ? 'default' : 'ghost'}
                   onClick={() => setCurrentView('admin-worksheets')}
                   data-testid="button-view-admin-worksheets"
@@ -1068,6 +1078,8 @@ export default function ChatLayout({
           <Projects currentUser={currentUser} allUsers={allUsers} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
         ) : currentView === 'drive' ? (
           <SupremoDrive currentUser={currentUser} onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
+        ) : currentView === 'dashboard' ? (
+          <Dashboard />
         ) : activeConversation ? (
           <>
             <div className="min-h-[64px] md:h-16 border-b border-border flex items-center justify-between px-3 md:px-6 flex-shrink-0">
@@ -1563,6 +1575,15 @@ export default function ChatLayout({
                     >
                       <Shield className="w-4 h-4 mr-1.5" />
                       Admin Panel
+                    </Button>
+                    <Button
+                      variant={currentView === 'dashboard' ? 'default' : 'ghost'}
+                      onClick={() => { setCurrentView('dashboard'); setIsMobileMenuOpen(false); }}
+                      data-testid="button-view-dashboard-mobile"
+                      className="h-11 text-sm font-semibold col-span-2 rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
+                    >
+                      <BarChart3 className="w-4 h-4 mr-1.5" />
+                      Dashboard
                     </Button>
                     <Button
                       variant={currentView === 'admin-worksheets' ? 'default' : 'outline'}
