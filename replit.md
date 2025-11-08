@@ -1,69 +1,42 @@
 # SUPREMO TRADERS LLP Team Communication Platform
 
 ## Overview
-This project is an internal, real-time communication platform designed to enhance collaboration and productivity for SUPREMO TRADERS LLP. It provides core communication features such as direct messaging, group chats, and file sharing, complemented by advanced tools like a meeting calendar with AI summarization, robust video conferencing, comprehensive task management, and a project tracking dashboard. The platform prioritizes data preservation and integrity across all updates.
+This project is an internal, real-time communication platform for SUPREMO TRADERS LLP, designed to enhance collaboration and productivity. It provides core communication features like direct messaging, group chats, and file sharing, alongside advanced tools such as a meeting calendar with AI summarization, robust video conferencing, comprehensive task management, and a project tracking dashboard. The platform prioritizes data preservation and integrity across all updates.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
-
 ### Frontend
 - **Technology Stack**: React with TypeScript, Vite, Radix UI (shadcn/ui), Tailwind CSS, TanStack React Query, WebSocket client.
-- **Design**: Component-based architecture, custom design system, three-column desktop layout, mobile-responsive with sheet-based navigation. Features a professional UI with an ICICI Bank-inspired banking aesthetic using orange/coral primary colors (#C54E1F) and warm beige backgrounds (#F5F0E8). Adheres to a "NO gradients, NO emojis" policy and meets WCAG AA accessibility standards (4.5:1 contrast minimum).
+- **Design**: Component-based architecture, custom design system, three-column desktop layout, mobile-responsive with sheet-based navigation. Features a professional UI with an ICICI Bank-inspired banking aesthetic using orange/coral primary colors (#C54E1F) and warm beige backgrounds (#F5F0E8). Adheres to a "NO gradients, NO emojis" policy and meets WCAG AA accessibility standards.
 
 ### Backend
 - **Technology Stack**: Node.js with TypeScript, Express.js, WebSocket Server (ws), Drizzle ORM.
 - **API Structure**: RESTful endpoints and WebSocket for real-time communication.
 - **Authentication**: JWT tokens (7-day expiration), bcrypt hashing, localStorage for client tokens, case-insensitive login IDs.
-- **Authorization**: Role-Based Access Control (`admin` and `user` roles) with distinct access privileges and secure environment variables for secrets.
+- **Authorization**: Role-Based Access Control (`admin` and `user` roles).
 
 ### Data Storage
 - **Database**: PostgreSQL via Neon serverless HTTP driver, managed with Drizzle ORM.
-- **Schema**: Comprehensive schema for users, conversations, messages, meetings (with AI summaries), tasks, projects (with tracking details), active calls, and standalone to-dos.
-- **Data Preservation**: All existing data must be preserved across updates; schema changes must be backward compatible and non-destructive.
+- **Schema**: Comprehensive schema for users, conversations, messages, meetings (with AI summaries), tasks, projects, active calls, and standalone to-dos.
+- **Data Preservation**: All existing data must be preserved; schema changes must be backward compatible and non-destructive.
 
 ### Core Features
-- **Real-time Communication**: Direct messages, group chats, file sharing, presence tracking, enhanced desktop notifications, message replies with mentions, and message deletion (sender-only with confirmation).
-- **Meeting Management**: Meeting calendar with scheduling, recurring meetings, auto-generated Daily.co links, reminders, one-click "Start Meeting Now," and "Quick Join" functionality.
+- **Real-time Communication**: Direct messages, group chats, file sharing (Excel, images, video, audio up to 50MB), presence tracking, enhanced desktop notifications, message replies, and sender-only message deletion. Automatic URL detection and clickable links in chat messages.
+- **Meeting Management**: Meeting calendar with scheduling, recurring meetings, auto-generated Daily.co links, reminders, one-click "Start Meeting Now," "Quick Join," and shareable meeting links for external guests.
 - **AI Integration**: GPT-4o for structured, multi-language AI meeting summaries.
-- **Video Conferencing**: Instant one-click audio/video calls using Daily.co, direct join (no lobby), robust incoming/outgoing call notifications, and active call management with participant tracking and invitation system.
+- **Video Conferencing**: Instant one-click audio/video calls using Daily.co, direct join, robust incoming/outgoing call notifications, active call management with participant tracking, and an invitation system. Supports Web Push Notifications for mobile call alerts.
 - **Task Management**: Start/target dates, status tracking, progress bars, real-time updates, automated reminders, and admin-only Excel import/export.
 - **Project Tracking Dashboard**: Full project lifecycle management with auto-generated IDs, detailed tracking (status, progress, responsible persons, issues, dependencies, target dates), color-coded indicators, and CRUD operations with real-time updates.
-- **User Productivity Tools**: Daily Work Log for activity tracking (excluding private to-dos), and a standalone private To-Do List with priority levels and completion tracking.
+- **User Productivity Tools**: Daily Work Log and a standalone private To-Do List with priority levels, completion tracking, and reminder system.
 - **User Management**: Admin tools for user deletion and task oversight.
 - **Security & Access**: Role-based access control, secure file management with ownership validation, and self-service password change.
 
 ## External Dependencies
-
--   **Neon Database**: Serverless PostgreSQL hosting.
--   **OpenAI via Replit AI Integrations**: GPT-4o for AI meeting summarization.
--   **Daily.co**: Video conferencing platform.
--   **Google Fonts**: Inter font family.
--   **File Storage**: Local filesystem (`uploads/` directory).
--   **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`, `xlsx`.
-
-## Recent Changes
-
-### November 7, 2025 - File Upload Enhancement
-**Fixed chat attachment uploads for Excel, images, and videos**: Updated `server/upload.ts` to support all common file types requested by users. Expanded allowed MIME types to include Excel files (.xls, .xlsx), all common image formats (JPEG, PNG, GIF, WebP, BMP), and video formats (MP4, MPEG, QuickTime, AVI, WMV, WebM). Also added audio support (MP3, WAV, WebM, OGG). Increased file size limit from 10MB to 50MB to accommodate video uploads. Removed SVG support for security (prevents stored XSS attacks). Users can now attach Excel spreadsheets, images, and videos in chat conversations without errors.
-
-### November 7, 2025 - Message Deletion Feature
-**Implemented message deletion with ownership validation and real-time updates**: Users can now delete their own chat messages through a dropdown menu (three-dot icon) accessible from each message. The delete button is visible only for messages sent by the current user, with a semi-transparent menu that becomes fully visible on hover (better accessibility). Upon clicking delete, a browser confirmation dialog prevents accidental deletions. The backend validates message ownership via JWT authentication and broadcasts deletion events through WebSocket to all conversation members for instant UI updates. The DELETE /api/messages/:id endpoint uses `apiRequest` helper to attach auth tokens, and the UI correctly recomputes conversation's lastMessage after deletion. Message menu visibility enhanced from invisible to opacity-based (opacity-50 default, opacity-100 on hover) for improved mobile and testing accessibility.
-
-### November 7, 2025 - Enhanced Call Invitation System
-**Enabled inviting team members during active calls**: Implemented active call state tracking to persist call information after a call is answered, allowing the "Invite to Call" button and dialog to remain functional throughout the entire call duration (not just during the outgoing phase). Added separate `activeCall` state that persists after `outgoingCall` is cleared when a call is answered. Updated call lifecycle to set `activeCall` when starting calls, accepting calls, or receiving call_answered WebSocket events. Modified `handleSendCallInvite` to derive call context from either `activeCall` or `outgoingCall`, ensuring invitations work both before and after a call is answered. Call window monitoring now clears both states on close. UI conditionals updated to show Invite button when either state is active, with appropriate "End Call" vs "Cancel Call" button text. Successfully tested end-to-end with automated tests confirming invite dialog opens, users can be selected, and invitations are sent via WebSocket during active calls.
-
-**Bug fix - Incoming call notifications for invited users**: Fixed critical bug where invited users weren't receiving incoming call notifications when added to an active call. Root cause was the backend WebSocket handler sending incorrect data format for the `from` field in `invite_to_call` events - it was sending just the user ID number (`from: from.id`) instead of the full user object. Frontend expected `data.from.id` to check caller identity but received a primitive number, causing the notification check to fail silently. Updated `server/routes.ts` to send the complete `from` object (`{ id, name, avatar }`) matching the format used by regular incoming call broadcasts. Invited users now properly receive incoming call notifications with caller details and can accept/decline the invitation.
-
-### November 7, 2025 - Web Push Notifications for Mobile Call Alerts
-**Implemented Web Push Notifications for incoming calls on mobile devices**: Added comprehensive Web Push API integration to enable push notifications for incoming calls even when the app is closed on mobile devices. Generated VAPID (Voluntary Application Server Identification) keys using `web-push` library for secure push authentication. Created `push_subscriptions` database table to store user device subscriptions with endpoints, keys, and authentication tokens. Implemented Service Worker (`public/sw.js`) to handle background push notifications and display system notifications with call details. Added push notification utilities (`client/src/lib/pushNotifications.ts`) for subscription management, including permission requests and subscription lifecycle. Created backend API endpoints (`/api/push/subscribe`, `/api/push/unsubscribe`) for CRUD operations on push subscriptions. Enhanced incoming call WebSocket logic to send Web Push notifications as fallback when users are offline (no active WebSocket connection). Notifications include caller name, call type (audio/video), and direct link to join the call. VAPID keys stored as environment secrets with automatic quote stripping for proper Base64 URL-safe format compatibility.
-
-### November 7, 2025 - Complete Incoming Call Notification System
-**Fixed critical bugs and completed end-to-end incoming call notification flow**: Resolved two major issues preventing incoming call notifications from working. First, fixed POST /api/calls endpoint to broadcast `incoming_call` WebSocket events to all conversation members when a call is created - the endpoint was previously creating calls but silently failing to notify recipients. Added comprehensive broadcast logic that sends real-time WebSocket notifications to online users and Web Push notifications as fallback for offline users, with full caller information (id, name, avatar). Second, fixed duplicate room name errors by making Daily.co room names unique - changed from deterministic `supremo-audio-${conversationId}` format to unique `supremo-audio-${conversationId}-${nanoid(8)}` format, preventing database unique constraint violations when multiple calls are initiated in the same conversation. Installed `nanoid` package and updated both `handleStartCall` (video) and `handleQuickAudioCall` (audio) functions in ChatLayout.tsx. System now supports multiple concurrent calls in the same conversation without conflicts. Added null-safety check for WebSocket server (`wss`) to prevent crashes. Successfully tested end-to-end with automated tests confirming: call initiation broadcasts to recipients, incoming call modal appears with caller details, Accept/Decline buttons work correctly, and UI cleans up properly after call completion.
-
-### November 7, 2025 - To-Do List Reminders Feature
-**Implemented complete reminder system for standalone to-do items**: Enhanced the private To-Do List with target date/time scheduling and automated reminders. Added database columns to `todos` table: `target_date` (timestamp), `target_time` (text), `reminder_enabled` (boolean), and `reminder_sent` (boolean). Updated `TodoList.tsx` UI with date and time pickers (HTML5 input types) and reminder toggle switch - reminder requires a target date to be enabled. Created `TodoReminderService` (server/todo-reminders.ts) that runs every 60 minutes checking for todos needing reminders - sends chat messages for todos within 24 hours of target or overdue items, then marks `reminder_sent=true`. Updated Zod schema to properly handle null/empty values for optional fields using `.nullable()` and `.transform()`. Fixed critical PATCH /api/todos bug where clearing date/time fields wasn't working - updated handler to distinguish between `null` (clear field), `undefined` (don't change), and truthy values (update). PATCH now properly handles clearing targetDate/targetTime by checking if field is present in request body and converting null/empty strings to database NULL. Storage interface updated with `getTodosNeedingReminders()` method. Successfully tested end-to-end: creating todos with/without reminders, toggling completion, clearing date/time fields via PATCH, and verifying database state. All changes preserve existing data and maintain backward compatibility.
-
-### November 8, 2025 - Shareable Meeting Links for External Guests
-**Implemented shareable Daily.co meeting links with one-click copy functionality**: Enhanced the InviteToCallDialog to display shareable meeting URLs that allow external guests or team members not in the conversation to join active calls. Updated call state management in `ChatLayout.tsx` to store and propagate the Daily.co room URL (`roomUrl`) throughout the call lifecycle - added `roomUrl` field to both `outgoingCall` and `activeCall` states. Modified `handleStartCall`, `handleQuickAudioCall`, and `handleAcceptCall` functions to capture and store the room URL from Daily.co's create-room API response. Updated the `call_answered` WebSocket handler to preserve `roomUrl` when transitioning from outgoing to active call state. Enhanced `InviteToCallDialog.tsx` to accept optional `roomUrl` prop and display a dedicated shareable link section with Link2 icon, truncated URL display in muted background, and copy-to-clipboard button. Copy button provides visual feedback by toggling between Copy and Check (green) icons for 2 seconds after successful clipboard operation. Shows toast notification "Link copied" to confirm action. Helper text clarifies "Anyone with this link can join the meeting". Shareable link section appears above the user selection list, separated by a divider. Successfully tested end-to-end with automated tests confirming: link appears for both call initiators and accepters, copy button works correctly, toast notifications display, and the feature integrates seamlessly with existing invite-to-call functionality without breaking user selection flows.
+- **Neon Database**: Serverless PostgreSQL hosting.
+- **OpenAI via Replit AI Integrations**: GPT-4o for AI meeting summarization.
+- **Daily.co**: Video conferencing platform.
+- **Google Fonts**: Inter font family.
+- **File Storage**: Local filesystem (`uploads/` directory).
+- **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`, `xlsx`, `web-push`, `nanoid`.

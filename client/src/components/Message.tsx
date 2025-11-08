@@ -57,6 +57,29 @@ export default function Message({
   const isImage = attachmentUrl?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
   const isVideo = attachmentUrl?.match(/\.(mp4|webm|ogg|mov)$/i);
 
+  const renderMessageBody = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline hover:text-primary/80 break-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {part}
+          </a>
+        );
+      }
+      return <span key={index}>{part}</span>;
+    });
+  };
+
   return (
     <div className="flex gap-3 mb-4 group">
       <Avatar className="w-8 h-8 flex-shrink-0">
@@ -143,7 +166,7 @@ export default function Message({
         
         {body && (
           <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap" data-testid="text-message-body">
-            {body}
+            {renderMessageBody(body)}
           </p>
         )}
         
