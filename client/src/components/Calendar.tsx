@@ -364,6 +364,15 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
     });
   };
 
+  // Helper function to ensure camera-off parameter is added to Daily.co URLs
+  const ensureCameraOff = (url: string, userName: string) => {
+    const urlObj = new URL(url);
+    urlObj.searchParams.set('userName', userName);
+    // Always set video to false (camera off by default)
+    urlObj.searchParams.set('video', 'false');
+    return urlObj.toString();
+  };
+
   const handleJoinMeeting = async (link?: string) => {
     let roomName: string;
     
@@ -404,8 +413,8 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
         setShowInstantMeetingDialog(true);
       }
       
-      // Open in new window with user name - Daily.co instant join with NO lobby!
-      const meetingUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}`;
+      // Open in new window with user name and camera off by default - Daily.co instant join with NO lobby!
+      const meetingUrl = ensureCameraOff(data.url, currentUser.name);
       const newWindow = window.open(meetingUrl, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
       
       // Check if popup was blocked
@@ -535,8 +544,8 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Open in new window with user name
-      const meetingUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}`;
+      // Open in new window with user name and camera off by default
+      const meetingUrl = ensureCameraOff(data.url, currentUser.name);
       const newWindow = window.open(meetingUrl, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
       
       if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {

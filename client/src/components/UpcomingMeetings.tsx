@@ -46,6 +46,15 @@ export function UpcomingMeetings({ currentUser }: UpcomingMeetingsProps) {
     })
     .slice(0, 3); // Show max 3 upcoming meetings
 
+  // Helper function to ensure camera-off parameter is added to Daily.co URLs
+  const ensureCameraOff = (url: string, userName: string) => {
+    const urlObj = new URL(url);
+    urlObj.searchParams.set('userName', userName);
+    // Always set video to false (camera off by default)
+    urlObj.searchParams.set('video', 'false');
+    return urlObj.toString();
+  };
+
   const handleJoinMeeting = async (meeting: MeetingWithParticipants) => {
     // Auto-generate Daily.co meeting link if not present
     const roomName = meeting.meetingLink 
@@ -74,8 +83,8 @@ export function UpcomingMeetings({ currentUser }: UpcomingMeetingsProps) {
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Daily.co - instant join with NO lobby and user name!
-      const meetingUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}`;
+      // Daily.co - instant join with NO lobby, user name, and camera off by default!
+      const meetingUrl = ensureCameraOff(data.url, currentUser.name);
       const newWindow = window.open(meetingUrl, '_blank', 'noopener,noreferrer');
       
       if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
