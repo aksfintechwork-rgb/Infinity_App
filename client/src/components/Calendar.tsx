@@ -452,7 +452,8 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
 
   const handleGenerateMeetingLink = () => {
     const roomName = `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    setMeetingLink(`https://atulkadam.daily.co/${roomName}`);
+    // Add video=false parameter for camera-off by default
+    setMeetingLink(`https://atulkadam.daily.co/${roomName}?video=false`);
   };
 
   const handleEditMeeting = (meeting: Meeting) => {
@@ -567,6 +568,53 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
       toast({
         title: 'Error',
         description: 'Failed to join meeting. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCopyShareableLink = async (meeting: Meeting) => {
+    const roomName = meeting.meetingLink 
+      ? meeting.meetingLink.match(/daily\.co\/(.+)$/)?.[1] || `supremo-meeting-${meeting.id}`
+      : `supremo-meeting-${meeting.id}`;
+    
+    try {
+      // Create room first via backend API
+      const response = await fetch('/api/daily/create-room', {
+        method: 'POST',
+        body: JSON.stringify({ roomName }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create room');
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create room');
+      }
+      
+      // Create shareable link with camera-off parameter (no userName)
+      const shareableLink = addCameraOffParameter(data.url);
+      
+      // Copy to clipboard
+      await navigator.clipboard.writeText(shareableLink);
+      
+      toast({
+        title: 'Link copied',
+        description: 'Shareable meeting link copied to clipboard (camera off by default)',
+      });
+    } catch (error) {
+      console.error('Error copying shareable link:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to copy shareable link. Please try again.',
         variant: 'destructive',
       });
     }
@@ -1175,13 +1223,20 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
                             Join Meeting
                           </DropdownMenuItem>
                           <DropdownMenuItem 
+                            onSelect={(e) => { e.preventDefault(); handleCopyShareableLink(meeting); }}
+                            data-testid="menu-item-copy-shareable-link"
+                          >
+                            <Copy className="w-4 h-4 mr-2" />
+                            Copy Shareable Link
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
                             onSelect={(e) => { e.preventDefault(); handleEditMeeting(meeting); }}
                             data-testid="menu-item-edit-meeting"
                           >
                             <Edit2 className="w-4 h-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
                           <DropdownMenuItem 
                             onSelect={(e) => { e.preventDefault(); deleteMeeting.mutate(meeting.id); }}
                             className="text-destructive"
