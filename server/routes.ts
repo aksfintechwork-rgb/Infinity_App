@@ -1764,6 +1764,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dashboard Analytics (Admin only)
+  app.get("/api/dashboard/analytics", authMiddleware, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const period = (req.query.period as string) || 'week'; // week, month, quarter, year
+      
+      // Calculate date range based on period
+      const now = new Date();
+      let startDate = new Date();
+      
+      switch (period) {
+        case 'week':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(now.getMonth() - 1);
+          break;
+        case 'quarter':
+          startDate.setMonth(now.getMonth() - 3);
+          break;
+        case 'year':
+          startDate.setFullYear(now.getFullYear() - 1);
+          break;
+        default:
+          startDate.setDate(now.getDate() - 7);
+      }
+      
+      // Get all tasks and projects
+      const allTasks = await storage.getAllTasks();
+      const allProjects = await storage.getAllProjects();
+      const allUsers = await storage.getAllUsers();
+      
+      // User-wise task statistics
+      const userStats = allUsers.map(user => {
+        const userTasks = allTasks.filter(task => task.assignedTo === user.id);
+        const completedTasks = userTasks.filter(task => task.status === 'completed');
+        const pendingTasks = userTasks.filter(task => task.status === 'in-progress' || task.status === 'pending');
+        const overdueTasks = userTasks.filter(task => {
+          if (task.status === 'completed') return false;
+          if (!task.targetDate) return false;
+          return new Date(task.targetDate) < now;
+        });
+        
+        // Tasks in selected period
+        const periodTasks = userTasks.filter(task => {
+          const taskDate = task.createdAt ? new Date(task.createdAt) : new Date();
+          return taskDate >= startDate && taskDate <= now;
+        });
+        
+        const periodCompleted = periodTasks.filter(task => task.status === 'completed').length;
+        const completionRate = periodTasks.length > 0 ? Math.round((periodCompleted / periodTasks.length) * 100) : 0;
+        
+        return {
+          userId: user.id,
+          userName: user.name,
+          totalTasks: userTasks.length,
+          completedTasks: completedTasks.length,
+          pendingTasks: pendingTasks.length,
+          overdueTasks: overdueTasks.length,
+          periodTasks: periodTasks.length,
+          periodCompleted,
+          completionRate,
+        };
+      });
+      
+      // Task completion trends (daily data for the period)
+      const trends = [];
+      const currentDate = new Date(startDate);
+      
+      while (currentDate <= now) {
+        const dayStart = new Date(currentDate);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(currentDate);
+        dayEnd.setHours(23, 59, 59, 999);
+        
+        const dayTasks = allTasks.filter(task => {
+          if (!task.createdAt) return false;
+          const taskDate = new Date(task.createdAt);
+          return taskDate >= dayStart && taskDate <= dayEnd;
+        });
+        
+        const completedToday = dayTasks.filter(task => task.status === 'completed').length;
+        
+        trends.push({
+          date: currentDate.toISOString().split('T')[0],
+          totalTasks: dayTasks.length,
+          completedTasks: completedToday,
+          pendingTasks: dayTasks.length - completedToday,
+        });
+        
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      // Project performance metrics
+      const projectStats = allProjects.map(project => {
+        const projectTasks = allTasks.filter(task => task.projectId === project.id);
+        const completedTasks = projectTasks.filter(task => task.status === 'completed').length;
+        const totalTasks = projectTasks.length;
+        const completion = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        
+        // Determine status color
+        let statusColor = 'gray';
+        if (project.status === 'completed') statusColor = 'green';
+        else if (project.status === 'on-hold' || project.status === 'at-risk') statusColor = 'yellow';
+        else if (project.status === 'in-progress') statusColor = 'blue';
+        
+        return {
+          projectId: project.id,
+          projectName: project.projectName,
+          status: project.status,
+          statusColor,
+          progress: project.progress || 0,
+          totalTasks,
+          completedTasks,
+          taskCompletion: completion,
+          responsiblePerson: project.responsiblePerson,
+        };
+      });
+      
+      // Overall statistics
+      const totalTasks = allTasks.length;
+      const completedTasksTotal = allTasks.filter(t => t.status === 'completed').length;
+      const overallCompletionRate = totalTasks > 0 ? Math.round((completedTasksTotal / totalTasks) * 100) : 0;
+      
+      res.json({
+        period,
+        startDate: startDate.toISOString(),
+        endDate: now.toISOString(),
+        overall: {
+          totalTasks,
+          completedTasks: completedTasksTotal,
+          completionRate: overallCompletionRate,
+          totalProjects: allProjects.length,
+          activeProjects: allProjects.filter(p => p.status === 'in-progress').length,
+        },
+        userStats,
+        trends,
+        projectStats,
+      });
+    } catch (error) {
+      console.error("Dashboard analytics error:", error);
+      res.status(500).json({ error: "Failed to fetch dashboard analytics" });
+    }
+  });
+
   // Todos
   app.get("/api/todos", authMiddleware, async (req: AuthRequest, res) => {
     try {
