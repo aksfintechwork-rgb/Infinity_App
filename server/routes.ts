@@ -1878,7 +1878,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalTasks,
           completedTasks,
           taskCompletion: completion,
-          responsiblePerson: project.responsiblePerson,
+          responsiblePerson: project.responsiblePersonName,
         };
       });
       

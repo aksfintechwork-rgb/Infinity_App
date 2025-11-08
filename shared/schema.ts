@@ -229,6 +229,7 @@ export const tasks = pgTable("tasks", {
   createdBy: integer("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
   assignedTo: integer("assigned_to").references(() => users.id, { onDelete: "set null" }),
   conversationId: integer("conversation_id").references(() => conversations.id, { onDelete: "set null" }),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "set null" }),
   reminderFrequency: text("reminder_frequency").notNull().default("daily"),
   lastReminderSent: timestamp("last_reminder_sent"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

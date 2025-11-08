@@ -13,7 +13,7 @@ export default function Dashboard() {
   const [period, setPeriod] = useState('week');
 
   const { data: analytics, isLoading } = useQuery({
-    queryKey: ['/api/dashboard/analytics', period],
+    queryKey: [`/api/dashboard/analytics?period=${period}`],
   });
 
   if (isLoading) {
