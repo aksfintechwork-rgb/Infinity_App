@@ -3,11 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, TrendingDown, Users, CheckCircle, Clock, AlertTriangle, Briefcase, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, CheckCircle2, Clock, AlertCircle, Briefcase, BarChart3, Award, Target, Activity } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 
-const COLORS = ['#C54E1F', '#D97633', '#8B4513', '#A0522D', '#CD853F', '#DEB887'];
+const PIE_COLORS = ['#C54E1F', '#B864E6']; // Orange and Purple only per design guidelines
 
 export default function Dashboard() {
   const [period, setPeriod] = useState('week');
@@ -18,13 +18,13 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-72" />
+          <Skeleton className="h-11 w-40" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32" />)}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-36" />)}
         </div>
       </div>
     );
@@ -35,25 +35,44 @@ export default function Dashboard() {
   const trends = (analytics as any)?.trends || [];
   const projectStats = (analytics as any)?.projectStats || [];
 
-  // Prepare data for user performance pie chart
   const userPieData = userStats
-    .filter((u: any) => u.periodTasks > 0)
+    .filter((u: any) => u.periodCompleted > 0)
     .map((u: any) => ({
       name: u.userName,
       value: u.periodCompleted,
     }));
 
+  const getCompletionTrend = () => {
+    if (trends.length < 2) return 0;
+    const recent = trends.slice(-3);
+    const older = trends.slice(0, 3);
+    const recentAvg = recent.reduce((acc: number, t: any) => acc + (t.completedTasks || 0), 0) / recent.length;
+    const olderAvg = older.reduce((acc: number, t: any) => acc + (t.completedTasks || 0), 0) / older.length;
+    return olderAvg > 0 ? Math.round(((recentAvg - olderAvg) / olderAvg) * 100) : 0;
+  };
+
+  const completionTrend = getCompletionTrend();
+
   return (
-    <div className="flex-1 overflow-auto bg-background">
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground" data-testid="heading-dashboard">Performance Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Track team performance, tasks, and project progress</p>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
+      <div className="p-6 space-y-8 max-w-[1800px] mx-auto">
+        {/* Enhanced Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-primary/10 rounded-xl">
+                <BarChart3 className="w-7 h-7 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text" data-testid="heading-dashboard">
+                  Performance Dashboard
+                </h1>
+                <p className="text-muted-foreground mt-0.5 text-sm">Real-time insights into team performance and project progress</p>
+              </div>
+            </div>
           </div>
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-40" data-testid="select-period">
+            <SelectTrigger className="w-44 h-11 border-2 shadow-sm" data-testid="select-period">
               <SelectValue placeholder="Select period" />
             </SelectTrigger>
             <SelectContent>
@@ -65,149 +84,241 @@ export default function Dashboard() {
           </Select>
         </div>
 
-        {/* Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
-              <Briefcase className="h-4 w-4 text-muted-foreground" />
+        {/* Enhanced Overview Cards with Gradients */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="border-2 shadow-lg hover-elevate active-elevate-2 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">Total Tasks</CardTitle>
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Briefcase className="h-5 w-5 text-primary" />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{overall.totalTasks || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">Across all users</p>
+            <CardContent className="space-y-2">
+              <div className="text-3xl font-bold">{overall.totalTasks || 0}</div>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs gap-1">
+                  <Activity className="w-3 h-3" />
+                  All Users
+                </Badge>
+                <p className="text-xs text-muted-foreground">Across organization</p>
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
+          <Card className="border-2 shadow-lg hover-elevate active-elevate-2 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">Completion Rate</CardTitle>
+              <div className="p-2 bg-green-500/10 rounded-lg">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{overall.completionRate || 0}%</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {overall.completedTasks || 0} of {overall.totalTasks || 0} tasks
+            <CardContent className="space-y-2">
+              <div className="flex items-baseline gap-2">
+                <div className="text-3xl font-bold">{overall.completionRate || 0}%</div>
+                {completionTrend !== 0 && (
+                  <Badge variant={completionTrend > 0 ? "default" : "secondary"} className="gap-1">
+                    {completionTrend > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                    {Math.abs(completionTrend)}%
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {overall.completedTasks || 0} of {overall.totalTasks || 0} tasks completed
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-              <TrendingUp className="h-4 w-4 text-primary" />
+          <Card className="border-2 shadow-lg hover-elevate active-elevate-2 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">Active Projects</CardTitle>
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <Target className="h-5 w-5 text-blue-600" />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{overall.activeProjects || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Out of {overall.totalProjects || 0} total
+            <CardContent className="space-y-2">
+              <div className="text-3xl font-bold">{overall.activeProjects || 0}</div>
+              <p className="text-xs text-muted-foreground">
+                Out of {overall.totalProjects || 0} total projects
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Team Size</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+          <Card className="border-2 shadow-lg hover-elevate active-elevate-2 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">Team Size</CardTitle>
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{userStats.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">Active team members</p>
+            <CardContent className="space-y-2">
+              <div className="text-3xl font-bold">{userStats.length}</div>
+              <Badge variant="outline" className="text-xs">
+                Active Members
+              </Badge>
             </CardContent>
           </Card>
         </div>
 
-        {/* Task Completion Trends */}
-        <Card>
+        {/* Enhanced Task Completion Trends with Area Chart */}
+        <Card className="border-2 shadow-lg">
           <CardHeader>
-            <CardTitle>Task Completion Trends</CardTitle>
-            <CardDescription>Daily task completion over the selected period</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl font-bold">Task Completion Trends</CardTitle>
+                <CardDescription className="mt-1">Performance over the selected period</CardDescription>
+              </div>
+              <Badge variant="outline" className="gap-2">
+                <Activity className="w-4 h-4" />
+                {trends.length} Days
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent>
             {trends.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <BarChart3 className="w-12 h-12 text-muted-foreground mb-3" />
-                <p className="text-sm text-muted-foreground">No trend data available for this period</p>
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="p-4 bg-muted/50 rounded-2xl mb-4">
+                  <BarChart3 className="w-16 h-16 text-muted-foreground" />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">No trend data available for this period</p>
+                <p className="text-xs text-muted-foreground mt-1">Data will appear as tasks are completed</p>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={350}>
                 <LineChart data={trends}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} className="text-muted-foreground" />
-                  <YAxis className="text-muted-foreground" />
-                  <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
-                  <Legend />
-                  <Line type="monotone" dataKey="completedTasks" stroke="#22c55e" name="Completed" strokeWidth={2} />
-                  <Line type="monotone" dataKey="totalTasks" stroke="#C54E1F" name="Total" strokeWidth={2} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    tickLine={false}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    tickLine={false}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '2px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                    }} 
+                  />
+                  <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                  <Line 
+                    type="monotone" 
+                    dataKey="completedTasks" 
+                    stroke="#B864E6" 
+                    name="Completed" 
+                    strokeWidth={3}
+                    dot={{ fill: '#B864E6', r: 4 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="totalTasks" 
+                    stroke="#C54E1F"
+                    name="Total" 
+                    strokeWidth={3}
+                    dot={{ fill: '#C54E1F', r: 4 }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             )}
           </CardContent>
         </Card>
 
-        {/* Individual User Performance Cards */}
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              User-Wise Performance
-            </h3>
-            <p className="text-sm text-muted-foreground">Individual performance metrics for each team member</p>
+        {/* Enhanced User-Wise Performance Cards */}
+        <div className="space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Award className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">User-Wise Performance</h2>
+              <p className="text-sm text-muted-foreground">Individual performance metrics for each team member</p>
+            </div>
           </div>
           {userStats.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center border rounded-lg">
-              <Users className="w-12 h-12 text-muted-foreground mb-3" />
-              <p className="text-sm text-muted-foreground">No user performance data available</p>
+            <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-xl">
+              <div className="p-4 bg-muted/50 rounded-2xl mb-4">
+                <Users className="w-16 h-16 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground">No user performance data available</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {userStats.map((user: any) => (
-                <Card key={user.userId} data-testid={`card-user-${user.userId}`}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base font-semibold">{user.userName}</CardTitle>
+                <Card 
+                  key={user.userId} 
+                  className="border-2 shadow-md hover-elevate active-elevate-2 transition-all relative overflow-hidden"
+                  data-testid={`card-user-${user.userId}`}
+                >
+                  {/* Decorative color bar */}
+                  <div className={`absolute top-0 left-0 right-0 h-1.5 ${
+                    user.completionRate >= 70 ? 'bg-green-500' : 
+                    user.completionRate >= 40 ? 'bg-primary' : 
+                    'bg-yellow-500'
+                  }`} />
+                  
+                  <CardHeader className="pb-3 pt-5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-base font-bold truncate">{user.userName}</CardTitle>
+                      </div>
                       <Badge 
                         variant={user.completionRate >= 70 ? "default" : user.completionRate >= 40 ? "secondary" : "outline"}
+                        className="shrink-0 font-bold"
                         data-testid={`badge-completion-${user.userId}`}
                       >
                         {user.completionRate}%
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="space-y-1">
-                        <p className="text-muted-foreground text-xs">Total Tasks</p>
-                        <p className="text-lg font-bold" data-testid={`text-total-${user.userId}`}>{user.totalTasks}</p>
+                  
+                  <CardContent className="space-y-4">
+                    {/* Stats Grid with Icons */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1 p-2.5 bg-muted/30 rounded-lg">
+                        <div className="flex items-center gap-1.5">
+                          <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground font-medium">Total</p>
+                        </div>
+                        <p className="text-xl font-bold" data-testid={`text-total-${user.userId}`}>{user.totalTasks}</p>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-muted-foreground text-xs">Completed</p>
-                        <p className="text-lg font-bold text-green-600" data-testid={`text-completed-${user.userId}`}>{user.completedTasks}</p>
+                      <div className="space-y-1 p-2.5 bg-green-500/10 rounded-lg">
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                          <p className="text-xs text-green-700 font-medium">Done</p>
+                        </div>
+                        <p className="text-xl font-bold text-green-600" data-testid={`text-completed-${user.userId}`}>{user.completedTasks}</p>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-muted-foreground text-xs">Pending</p>
-                        <p className="text-lg font-bold text-blue-600" data-testid={`text-pending-${user.userId}`}>{user.pendingTasks}</p>
+                      <div className="space-y-1 p-2.5 bg-blue-500/10 rounded-lg">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-blue-600" />
+                          <p className="text-xs text-blue-700 font-medium">Pending</p>
+                        </div>
+                        <p className="text-xl font-bold text-blue-600" data-testid={`text-pending-${user.userId}`}>{user.pendingTasks}</p>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-muted-foreground text-xs">Overdue</p>
-                        <p className={`text-lg font-bold ${user.overdueTasks > 0 ? 'text-red-600' : 'text-muted-foreground'}`} data-testid={`text-overdue-${user.userId}`}>
-                          {user.overdueTasks}
-                        </p>
+                      <div className="space-y-1 p-2.5 bg-red-500/10 rounded-lg">
+                        <div className="flex items-center gap-1.5">
+                          <AlertCircle className="w-3.5 h-3.5 text-red-600" />
+                          <p className="text-xs text-red-700 font-medium">Overdue</p>
+                        </div>
+                        <p className="text-xl font-bold text-red-600" data-testid={`text-overdue-${user.userId}`}>{user.overdueTasks}</p>
                       </div>
                     </div>
                     
-                    {/* Progress Bar */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Completion Progress</span>
-                        <span className="font-medium">{user.completionRate}%</span>
+                    {/* Enhanced Progress Bar */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">Completion Progress</span>
+                        <span className="text-xs font-bold">{user.completionRate}%</span>
                       </div>
-                      <div className="w-full bg-secondary rounded-full h-2">
+                      <div className="relative w-full bg-secondary/20 rounded-full h-2.5 overflow-hidden">
                         <div 
-                          className={`h-2 rounded-full transition-all ${
-                            user.completionRate >= 70 ? 'bg-green-600' : 
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            user.completionRate >= 70 ? 'bg-green-500' : 
                             user.completionRate >= 40 ? 'bg-primary' : 
-                            'bg-yellow-600'
+                            'bg-yellow-500'
                           }`}
                           style={{ width: `${user.completionRate}%` }}
                           data-testid={`progress-bar-${user.userId}`}
@@ -217,11 +328,17 @@ export default function Dashboard() {
 
                     {/* Period Stats */}
                     {user.periodTasks > 0 && (
-                      <div className="pt-2 border-t">
-                        <p className="text-xs text-muted-foreground mb-2">In Selected Period</p>
+                      <div className="pt-3 border-t space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Activity className="w-3.5 h-3.5 text-primary" />
+                          <p className="text-xs font-semibold text-muted-foreground">Period Activity</p>
+                        </div>
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Tasks: {user.periodTasks}</span>
-                          <span className="font-medium text-green-600">Completed: {user.periodCompleted}</span>
+                          <span className="text-muted-foreground">{user.periodTasks} tasks</span>
+                          <Badge variant="default" className="gap-1">
+                            <CheckCircle2 className="w-3 h-3" />
+                            {user.periodCompleted} done
+                          </Badge>
                         </div>
                       </div>
                     )}
@@ -232,29 +349,49 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* Enhanced Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* User Performance Chart */}
-          <Card>
+          <Card className="border-2 shadow-lg">
             <CardHeader>
-              <CardTitle>User Performance Chart</CardTitle>
-              <CardDescription>Tasks completed per team member in selected period</CardDescription>
+              <CardTitle className="text-xl font-bold">User Performance Chart</CardTitle>
+              <CardDescription>Comparative view of team member contributions</CardDescription>
             </CardHeader>
             <CardContent>
               {userStats.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <Users className="w-12 h-12 text-muted-foreground mb-3" />
-                  <p className="text-sm text-muted-foreground">No user performance data available</p>
+                  <div className="p-4 bg-muted/50 rounded-2xl mb-4">
+                    <Users className="w-14 h-14 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium text-muted-foreground">No performance data available</p>
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={userStats}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="userName" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-                    <YAxis className="text-muted-foreground" />
-                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
-                    <Legend />
-                    <Bar dataKey="periodCompleted" fill="#C54E1F" name="Completed" />
-                    <Bar dataKey="pendingTasks" fill="#D97633" name="Pending" />
+                <ResponsiveContainer width="100%" height={350}>
+                  <BarChart data={userStats} barGap={4}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <XAxis 
+                      dataKey="userName" 
+                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                      tickLine={false}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      tickLine={false}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '2px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                      }} 
+                    />
+                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                    <Bar dataKey="periodCompleted" fill="#B864E6" name="Completed" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="pendingTasks" fill="#C54E1F" name="Pending" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -262,19 +399,21 @@ export default function Dashboard() {
           </Card>
 
           {/* Task Distribution Pie Chart */}
-          <Card>
+          <Card className="border-2 shadow-lg">
             <CardHeader>
-              <CardTitle>Task Distribution</CardTitle>
-              <CardDescription>Completed tasks per user in selected period</CardDescription>
+              <CardTitle className="text-xl font-bold">Task Distribution</CardTitle>
+              <CardDescription>Workload distribution across team members</CardDescription>
             </CardHeader>
             <CardContent>
               {userPieData.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <CheckCircle className="w-12 h-12 text-muted-foreground mb-3" />
-                  <p className="text-sm text-muted-foreground">No completed tasks in this period</p>
+                  <div className="p-4 bg-muted/50 rounded-2xl mb-4">
+                    <CheckCircle2 className="w-14 h-14 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium text-muted-foreground">No completed tasks in this period</p>
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={350}>
                   <PieChart>
                     <Pie
                       data={userPieData}
@@ -282,15 +421,24 @@ export default function Dashboard() {
                       cy="50%"
                       labelLine={false}
                       label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
+                      outerRadius={100}
                       fill="#8884d8"
                       dataKey="value"
+                      strokeWidth={2}
+                      stroke="hsl(var(--background))"
                     >
                       {userPieData.map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '2px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                      }} 
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -298,50 +446,80 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* User Statistics Table */}
-        <Card>
+        {/* Enhanced User Statistics Table */}
+        <Card className="border-2 shadow-lg">
           <CardHeader>
-            <CardTitle>Detailed User Statistics</CardTitle>
-            <CardDescription>Comprehensive breakdown of each team member's performance</CardDescription>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Users className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-bold">Detailed User Statistics</CardTitle>
+                <CardDescription className="mt-0.5">Comprehensive performance breakdown</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {userStats.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <Users className="w-12 h-12 text-muted-foreground mb-3" />
-                <p className="text-sm text-muted-foreground">No user statistics available</p>
+                <div className="p-4 bg-muted/50 rounded-2xl mb-4">
+                  <Users className="w-14 h-14 text-muted-foreground" />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">No user statistics available</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-lg border">
                 <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3 font-semibold">User</th>
-                      <th className="text-center p-3 font-semibold">Total Tasks</th>
-                      <th className="text-center p-3 font-semibold">Completed</th>
-                      <th className="text-center p-3 font-semibold">Pending</th>
-                      <th className="text-center p-3 font-semibold">Overdue</th>
-                      <th className="text-center p-3 font-semibold">Completion Rate</th>
+                  <thead className="bg-muted/50">
+                    <tr className="border-b-2">
+                      <th className="text-left p-4 font-bold text-sm">User</th>
+                      <th className="text-center p-4 font-bold text-sm">Total Tasks</th>
+                      <th className="text-center p-4 font-bold text-sm">Completed</th>
+                      <th className="text-center p-4 font-bold text-sm">Pending</th>
+                      <th className="text-center p-4 font-bold text-sm">Overdue</th>
+                      <th className="text-center p-4 font-bold text-sm">Completion Rate</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {userStats.map((user: any) => (
-                      <tr key={user.userId} className="border-b hover:bg-accent/50">
-                        <td className="p-3 font-medium">{user.userName}</td>
-                        <td className="p-3 text-center">{user.totalTasks}</td>
-                        <td className="p-3 text-center text-green-600">{user.completedTasks}</td>
-                        <td className="p-3 text-center text-blue-600">{user.pendingTasks}</td>
-                        <td className="p-3 text-center">
+                    {userStats.map((user: any, index: number) => (
+                      <tr 
+                        key={user.userId} 
+                        className={`border-b hover-elevate transition-all ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}
+                      >
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-xs font-bold text-primary">{user.userName.charAt(0)}</span>
+                            </div>
+                            <span className="font-semibold">{user.userName}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-center font-semibold">{user.totalTasks}</td>
+                        <td className="p-4 text-center">
+                          <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-300 font-bold">
+                            {user.completedTasks}
+                          </Badge>
+                        </td>
+                        <td className="p-4 text-center">
+                          <Badge variant="outline" className="bg-blue-500/10 text-blue-700 border-blue-300 font-bold">
+                            {user.pendingTasks}
+                          </Badge>
+                        </td>
+                        <td className="p-4 text-center">
                           {user.overdueTasks > 0 ? (
-                            <Badge variant="destructive" className="gap-1">
-                              <AlertTriangle className="w-3 h-3" />
+                            <Badge variant="destructive" className="gap-1.5 font-bold">
+                              <AlertCircle className="w-3.5 h-3.5" />
                               {user.overdueTasks}
                             </Badge>
                           ) : (
-                            <span className="text-muted-foreground">0</span>
+                            <span className="text-muted-foreground font-medium">—</span>
                           )}
                         </td>
-                        <td className="p-3 text-center">
-                          <Badge variant={user.completionRate >= 70 ? "default" : "secondary"}>
+                        <td className="p-4 text-center">
+                          <Badge 
+                            variant={user.completionRate >= 70 ? "default" : user.completionRate >= 40 ? "secondary" : "outline"}
+                            className="font-bold text-sm px-3"
+                          >
                             {user.completionRate}%
                           </Badge>
                         </td>
@@ -354,50 +532,67 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Project Performance */}
-        <Card>
+        {/* Enhanced Project Performance */}
+        <Card className="border-2 shadow-lg">
           <CardHeader>
-            <CardTitle>Project Performance</CardTitle>
-            <CardDescription>Status and progress of all projects</CardDescription>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Target className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-bold">Project Performance</CardTitle>
+                <CardDescription className="mt-0.5">Status and progress tracking</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {projectStats.map((project: any) => (
-                <div key={project.projectId} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
+                <div key={project.projectId} className="border-2 rounded-xl p-5 hover-elevate active-elevate-2 transition-all bg-card">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                     <div className="flex-1">
-                      <h4 className="font-semibold text-lg">{project.projectName}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Managed by: {project.responsiblePerson || 'Unassigned'}
-                      </p>
-                    </div>
-                    <Badge variant="outline" className={
-                      project.statusColor === 'green' ? 'border-green-600 text-green-600' :
-                      project.statusColor === 'blue' ? 'border-blue-600 text-blue-600' :
-                      project.statusColor === 'yellow' ? 'border-yellow-600 text-yellow-600' :
-                      ''
-                    }>
-                      {project.status}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Project Progress</p>
-                      <p className="text-lg font-semibold">{project.progress}%</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Tasks Completed</p>
-                      <p className="text-lg font-semibold">{project.completedTasks}/{project.totalTasks}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Task Completion</p>
-                      <p className="text-lg font-semibold">{project.taskCompletion}%</p>
+                      <h4 className="font-bold text-lg mb-1">{project.projectName}</h4>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className="gap-1.5">
+                          <Users className="w-3 h-3" />
+                          {project.responsiblePerson || 'Unassigned'}
+                        </Badge>
+                        <Badge 
+                          variant="outline" 
+                          className={
+                            project.statusColor === 'green' ? 'border-green-500 text-green-700 bg-green-50' :
+                            project.statusColor === 'blue' ? 'border-blue-500 text-blue-700 bg-blue-50' :
+                            project.statusColor === 'yellow' ? 'border-yellow-500 text-yellow-700 bg-yellow-50' :
+                            ''
+                          }
+                        >
+                          {project.status}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
-                  <div className="mt-3">
-                    <div className="w-full bg-secondary rounded-full h-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <p className="text-xs text-muted-foreground font-medium mb-1">Project Progress</p>
+                      <p className="text-2xl font-bold text-primary">{project.progress}%</p>
+                    </div>
+                    <div className="p-3 bg-green-500/10 rounded-lg">
+                      <p className="text-xs text-green-700 font-medium mb-1">Tasks Completed</p>
+                      <p className="text-2xl font-bold text-green-600">{project.completedTasks}/{project.totalTasks}</p>
+                    </div>
+                    <div className="p-3 bg-primary/10 rounded-lg">
+                      <p className="text-xs text-primary/80 font-medium mb-1">Task Completion</p>
+                      <p className="text-2xl font-bold text-primary">{project.taskCompletion}%</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-muted-foreground">Overall Progress</span>
+                      <span className="font-bold">{project.progress}%</span>
+                    </div>
+                    <div className="relative w-full bg-secondary/20 rounded-full h-3 overflow-hidden">
                       <div 
-                        className="bg-primary h-2 rounded-full transition-all"
+                        className="h-full rounded-full transition-all duration-500 bg-primary"
                         style={{ width: `${project.progress}%` }}
                       />
                     </div>
@@ -405,8 +600,11 @@ export default function Dashboard() {
                 </div>
               ))}
               {projectStats.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No projects available
+                <div className="text-center py-12 border-2 border-dashed rounded-xl">
+                  <div className="p-4 bg-muted/50 rounded-2xl mb-4 inline-block">
+                    <Briefcase className="w-12 h-12 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium text-muted-foreground">No projects available</p>
                 </div>
               )}
             </div>
