@@ -373,6 +373,13 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
     return urlObj.toString();
   };
 
+  // Helper to add only camera-off parameter (for shareable links without userName)
+  const addCameraOffParameter = (url: string) => {
+    const urlObj = new URL(url);
+    urlObj.searchParams.set('video', 'false');
+    return urlObj.toString();
+  };
+
   const handleJoinMeeting = async (link?: string) => {
     let roomName: string;
     
@@ -407,9 +414,9 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // For instant meetings (no link provided), show dialog with shareable link
+      // For instant meetings (no link provided), show dialog with shareable link (with camera-off parameter)
       if (!link) {
-        setInstantMeetingLink(data.url);
+        setInstantMeetingLink(addCameraOffParameter(data.url));
         setShowInstantMeetingDialog(true);
       }
       
