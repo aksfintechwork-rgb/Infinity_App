@@ -107,9 +107,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   };
 
-  // In-memory storage for active calls (conversationId -> {roomName, callType, createdAt})
-  const activeCallsMap = new Map<number, { roomName: string; callType: string; createdAt: Date }>();
-
   // One-time setup endpoint - creates initial admin user only if database is empty
   app.post("/api/setup/initialize", async (req, res) => {
     try {
@@ -2571,6 +2568,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           
+          // Get active call from database to include roomName in broadcast
+          const activeCall = await storage.getActiveCallByConversation(conversationId);
+          
           // Get conversation members
           const members = await storage.getConversationMembers(conversationId);
           if (!members || members.length === 0) return;
@@ -2578,12 +2578,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Extract member IDs
           const memberIds = members.map(m => m.id);
           
-          // Broadcast to all conversation members (caller will stop their ringtone)
+          // Broadcast to all conversation members (caller will stop their ringtone and set active call state)
           wss.clients.forEach((client: any) => {
             if (client.readyState === ws.OPEN && memberIds.includes(client.userId)) {
               client.send(JSON.stringify({
                 type: 'call_answered',
-                data: { conversationId },
+                data: { 
+                  conversationId,
+                  roomName: activeCall?.roomName,
+                  callType: activeCall?.callType,
+                },
               }));
             }
           });
