@@ -116,39 +116,29 @@ function App() {
       );
 
       // Show notification if message is not from current user
-      // and either user is on different conversation or window is not focused
       if (message.senderId !== currentUser.id) {
         const conversation = conversations.find(c => c.id === message.conversationId);
         const conversationName = conversation?.title || message.senderName;
         
-        // Show toast notification for task reminders from Atul
-        if (message.senderName === 'Atul') {
-          toast({
-            title: "Task Reminder",
-            description: message.body || 'You have a task reminder',
-            duration: 8000,
-          });
-        }
+        // ALWAYS show on-screen toast notification for ALL incoming messages
+        toast({
+          title: `💬 ${conversationName}`,
+          description: `${message.senderName}: ${message.body || 'Sent an attachment'}`,
+          duration: 5000,
+        });
 
-        const shouldNotify = 
+        // Show browser notification with sound if user is on different conversation or window not focused
+        const shouldShowBrowserNotification = 
           message.conversationId !== activeConversationId || 
           !document.hasFocus();
 
-        if (shouldNotify) {
-          // Show browser notification with sound
+        if (shouldShowBrowserNotification) {
           notifyNewMessage(
             message.senderName,
             message.body || 'Sent an attachment',
             conversation?.title,
             conversation?.isGroup || false
           );
-          
-          // ALSO show on-screen toast notification for immediate visibility
-          toast({
-            title: `💬 ${conversationName}`,
-            description: `${message.senderName}: ${message.body || 'Sent an attachment'}`,
-            duration: 6000,
-          });
         }
       }
     });
