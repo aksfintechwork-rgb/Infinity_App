@@ -816,7 +816,8 @@ export default function ChatLayout({
       setActiveCall({
         conversationId: activeConversation.id,
         callType: 'audio',
-        roomName
+        roomName,
+        roomUrl: data.url
       });
       
       // Send incoming call notification to other members via WebSocket
@@ -841,6 +842,8 @@ export default function ChatLayout({
         conversationId: activeConversation.id,
         callType: 'audio',
         calledName: activeConversation.title || activeConversation.members,
+        roomName,
+        roomUrl: data.url
       });
       
       toast({
