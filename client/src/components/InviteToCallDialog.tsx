@@ -126,97 +126,100 @@ export default function InviteToCallDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md" data-testid="dialog-invite-to-call">
-        <DialogHeader>
+        <DialogHeader className="pb-3">
           <DialogTitle>Invite to {callType === 'video' ? 'Video' : 'Audio'} Call</DialogTitle>
         </DialogHeader>
 
-        {/* Shareable Meeting Link */}
-        {roomUrl && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Link2 className="w-4 h-4" />
-              Share Meeting Link
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 px-3 py-2 text-sm bg-muted rounded-md truncate">
-                {roomUrl}
+        <div className="space-y-4">
+          {/* Shareable Meeting Link */}
+          {roomUrl && (
+            <div className="space-y-3 pb-4 border-b">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Link2 className="w-4 h-4 text-primary" />
+                <span>Share Meeting Link</span>
               </div>
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={handleCopyLink}
-                data-testid="button-copy-meeting-link"
-                className="flex-shrink-0"
-              >
-                {copied ? (
-                  <Check className="w-4 h-4 text-green-600" />
-                ) : (
-                  <Copy className="w-4 h-4" />
-                )}
-              </Button>
+              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-md border">
+                <div className="flex-1 text-sm text-foreground/80 truncate font-mono">
+                  {roomUrl}
+                </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleCopyLink}
+                  data-testid="button-copy-meeting-link"
+                  className="flex-shrink-0 h-8 w-8"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Anyone with this link can join the meeting
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Anyone with this link can join the meeting
-            </p>
-            <Separator className="my-4" />
-          </div>
-        )}
+          )}
 
-        {availableUsers.length === 0 ? (
-          <div className="py-8 text-center text-muted-foreground">
-            <p className="text-sm">All team members are already in this conversation</p>
-          </div>
-        ) : (
-          <>
-            <div className="text-sm text-muted-foreground mb-3">
-              Select team members to invite to this call
+          {availableUsers.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">
+              <p className="text-sm">All team members are already in this conversation</p>
             </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="text-sm font-medium">
+                Select team members to invite
+              </div>
 
-            <ScrollArea className="h-[300px] pr-4">
-              <div className="space-y-2">
-                {availableUsers.map((user) => (
-                  <div
-                    key={user.id}
-                    className="flex items-center gap-3 p-2 rounded-md hover-elevate active-elevate-2 cursor-pointer"
-                    onClick={() => toggleUser(user.id)}
-                    data-testid={`user-item-${user.id}`}
-                  >
-                    <Checkbox
-                      checked={selectedUsers.includes(user.id)}
-                      onCheckedChange={() => toggleUser(user.id)}
-                      data-testid={`checkbox-user-${user.id}`}
-                    />
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={user.avatar} alt={user.name} />
-                      <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">{user.name}</div>
-                      <div className="text-xs text-muted-foreground truncate">{user.loginId}</div>
+              <ScrollArea className="h-[280px] -mr-4 pr-4">
+                <div className="space-y-1.5">
+                  {availableUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center gap-3 p-2.5 rounded-md hover-elevate active-elevate-2 cursor-pointer transition-colors"
+                      onClick={() => toggleUser(user.id)}
+                      data-testid={`user-item-${user.id}`}
+                    >
+                      <Checkbox
+                        checked={selectedUsers.includes(user.id)}
+                        onCheckedChange={() => toggleUser(user.id)}
+                        data-testid={`checkbox-user-${user.id}`}
+                      />
+                      <Avatar className="w-9 h-9">
+                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarFallback className="text-xs">{getInitials(user.name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{user.name}</div>
+                        <div className="text-xs text-muted-foreground truncate">{user.loginId}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+        </div>
 
-            <DialogFooter className="gap-2">
-              <Button
-                variant="outline"
-                onClick={onClose}
-                disabled={isSending}
-                data-testid="button-cancel-invite"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleInvite}
-                disabled={selectedUsers.length === 0 || isSending}
-                data-testid="button-send-invite"
-              >
-                {isSending ? 'Sending...' : `Invite ${selectedUsers.length > 0 ? `(${selectedUsers.length})` : ''}`}
-              </Button>
-            </DialogFooter>
-          </>
+        {availableUsers.length > 0 && (
+          <DialogFooter className="gap-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={isSending}
+              data-testid="button-cancel-invite"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleInvite}
+              disabled={selectedUsers.length === 0 || isSending}
+              data-testid="button-send-invite"
+            >
+              {isSending ? 'Sending...' : `Invite ${selectedUsers.length > 0 ? `(${selectedUsers.length})` : ''}`}
+            </Button>
+          </DialogFooter>
         )}
       </DialogContent>
     </Dialog>
