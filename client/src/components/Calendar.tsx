@@ -179,6 +179,8 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
   const [recurrencePattern, setRecurrencePattern] = useState<string>('none');
   const [recurrenceFrequency, setRecurrenceFrequency] = useState<number>(1);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
+  const [instantMeetingLink, setInstantMeetingLink] = useState('');
+  const [showInstantMeetingDialog, setShowInstantMeetingDialog] = useState(false);
   const { toast} = useToast();
 
   useEffect(() => {
@@ -396,6 +398,12 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
         throw new Error(data.error || 'Failed to create room');
       }
       
+      // For instant meetings (no link provided), show dialog with shareable link
+      if (!link) {
+        setInstantMeetingLink(data.url);
+        setShowInstantMeetingDialog(true);
+      }
+      
       // Open in new window with user name - Daily.co instant join with NO lobby!
       const meetingUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}`;
       const newWindow = window.open(meetingUrl, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
@@ -416,6 +424,14 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
         variant: 'destructive',
       });
     }
+  };
+  
+  const handleCopyInstantMeetingLink = () => {
+    navigator.clipboard.writeText(instantMeetingLink);
+    toast({
+      title: 'Link copied',
+      description: 'Meeting link copied to clipboard',
+    });
   };
 
   const handleGenerateMeetingLink = () => {
@@ -1168,6 +1184,47 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
           </div>
         </div>
       </div>
+
+      {/* Instant Meeting Link Dialog */}
+      <Dialog open={showInstantMeetingDialog} onOpenChange={setShowInstantMeetingDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Meeting Started</DialogTitle>
+            <DialogDescription>
+              Your meeting is now ready. Share this link with others to invite them to join.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-2">
+              <Input
+                value={instantMeetingLink}
+                readOnly
+                className="flex-1"
+                data-testid="input-instant-meeting-link"
+              />
+              <Button
+                onClick={handleCopyInstantMeetingLink}
+                variant="outline"
+                size="icon"
+                data-testid="button-copy-instant-link"
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Anyone with this link can join the meeting. The meeting window has been opened in a new tab.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => setShowInstantMeetingDialog(false)}
+              data-testid="button-close-instant-dialog"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
