@@ -360,46 +360,82 @@ export default function Dashboard() {
         {/* Enhanced Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* User Performance Chart */}
-          <Card className="border-2 shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold">User Performance Chart</CardTitle>
-              <CardDescription>Comparative view of team member contributions</CardDescription>
+          <Card className="border-2 shadow-xl transition-all overflow-hidden">
+            <CardHeader className="bg-gradient-to-br from-background to-accent/5 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-primary/10 rounded-xl">
+                  <BarChart3 className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-bold">User Performance Chart</CardTitle>
+                  <CardDescription className="mt-0.5">Comparative view of team member contributions</CardDescription>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               {userStats.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="p-4 bg-muted/50 rounded-2xl mb-4">
-                    <Users className="w-14 h-14 text-muted-foreground" />
+                  <div className="p-5 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl mb-4">
+                    <Users className="w-16 h-16 text-primary" />
                   </div>
                   <p className="text-sm font-medium text-muted-foreground">No performance data available</p>
+                  <p className="text-xs text-muted-foreground mt-1">Data will appear as users complete tasks</p>
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={userStats} barGap={4}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                <ResponsiveContainer width="100%" height={380}>
+                  <BarChart data={userStats} barGap={6} barCategoryGap="15%">
+                    <CartesianGrid 
+                      strokeDasharray="3 3" 
+                      stroke="hsl(var(--border))" 
+                      opacity={0.2} 
+                      vertical={false}
+                    />
                     <XAxis 
                       dataKey="userName" 
                       tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                       tickLine={false}
                       angle={-45}
                       textAnchor="end"
-                      height={80}
+                      height={90}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
                     />
                     <YAxis 
                       tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                       tickLine={false}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
+                      label={{ value: 'Tasks', angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: 'hsl(var(--muted-foreground))' } }}
                     />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--card))', 
                         border: '2px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                      }} 
+                        borderRadius: '10px',
+                        boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.15)',
+                        padding: '12px'
+                      }}
+                      cursor={{ fill: 'hsl(var(--accent))', opacity: 0.1 }}
                     />
-                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                    <Bar dataKey="periodCompleted" fill="#B864E6" name="Completed" radius={[8, 8, 0, 0]} />
-                    <Bar dataKey="pendingTasks" fill="#C54E1F" name="Pending" radius={[8, 8, 0, 0]} />
+                    <Legend 
+                      wrapperStyle={{ paddingTop: '20px' }} 
+                      iconType="circle"
+                      iconSize={10}
+                    />
+                    <Bar 
+                      dataKey="periodCompleted" 
+                      fill="#B864E6"
+                      stroke="#B864E6"
+                      name="Completed" 
+                      radius={[8, 8, 0, 0]}
+                      maxBarSize={50}
+                    />
+                    <Bar 
+                      dataKey="pendingTasks" 
+                      fill="#C54E1F"
+                      stroke="#C54E1F"
+                      name="Pending" 
+                      radius={[8, 8, 0, 0]}
+                      maxBarSize={50}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -407,48 +443,77 @@ export default function Dashboard() {
           </Card>
 
           {/* Task Distribution Pie Chart */}
-          <Card className="border-2 shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold">Task Distribution</CardTitle>
-              <CardDescription>Workload distribution across team members</CardDescription>
+          <Card className="border-2 shadow-xl transition-all overflow-hidden">
+            <CardHeader className="bg-gradient-to-br from-background to-accent/5 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-primary/10 rounded-xl">
+                  <Target className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-bold">Task Distribution</CardTitle>
+                  <CardDescription className="mt-0.5">Workload distribution across team members</CardDescription>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               {userPieData.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="p-4 bg-muted/50 rounded-2xl mb-4">
-                    <CheckCircle2 className="w-14 h-14 text-muted-foreground" />
+                  <div className="p-5 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl mb-4">
+                    <CheckCircle2 className="w-16 h-16 text-primary" />
                   </div>
                   <p className="text-sm font-medium text-muted-foreground">No completed tasks in this period</p>
+                  <p className="text-xs text-muted-foreground mt-1">Complete tasks to see distribution</p>
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={350}>
-                  <PieChart>
-                    <Pie
-                      data={userPieData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                      strokeWidth={2}
-                      stroke="hsl(var(--background))"
-                    >
-                      {userPieData.map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--card))', 
-                        border: '2px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                      }} 
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div className="relative">
+                  <ResponsiveContainer width="100%" height={380}>
+                    <PieChart>
+                      <Pie
+                        data={userPieData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={{
+                          stroke: 'hsl(var(--muted-foreground))',
+                          strokeWidth: 1.5
+                        }}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={120}
+                        innerRadius={50}
+                        fill="#8884d8"
+                        dataKey="value"
+                        strokeWidth={3}
+                        stroke="hsl(var(--background))"
+                        paddingAngle={2}
+                      >
+                        {userPieData.map((entry: any, index: number) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={PIE_COLORS[index % PIE_COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--card))', 
+                          border: '2px solid hsl(var(--border))',
+                          borderRadius: '10px',
+                          boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.15)',
+                          padding: '12px'
+                        }} 
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Center Label */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="text-center">
+                      <p className="text-xs font-medium text-muted-foreground">Total</p>
+                      <p className="text-2xl font-bold text-foreground">
+                        {userPieData.reduce((acc: number, item: any) => acc + item.value, 0)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Tasks</p>
+                    </div>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
