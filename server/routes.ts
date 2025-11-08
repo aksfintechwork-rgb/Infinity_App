@@ -107,6 +107,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   };
 
+  // In-memory storage for active calls (conversationId -> {roomName, callType, createdAt})
+  const activeCallsMap = new Map<number, { roomName: string; callType: string; createdAt: Date }>();
+
   // One-time setup endpoint - creates initial admin user only if database is empty
   app.post("/api/setup/initialize", async (req, res) => {
     try {
