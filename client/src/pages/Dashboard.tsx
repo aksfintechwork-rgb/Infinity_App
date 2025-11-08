@@ -144,11 +144,99 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
+        {/* Individual User Performance Cards */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              User-Wise Performance
+            </h3>
+            <p className="text-sm text-muted-foreground">Individual performance metrics for each team member</p>
+          </div>
+          {userStats.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center border rounded-lg">
+              <Users className="w-12 h-12 text-muted-foreground mb-3" />
+              <p className="text-sm text-muted-foreground">No user performance data available</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {userStats.map((user: any) => (
+                <Card key={user.userId} data-testid={`card-user-${user.userId}`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base font-semibold">{user.userName}</CardTitle>
+                      <Badge 
+                        variant={user.completionRate >= 70 ? "default" : user.completionRate >= 40 ? "secondary" : "outline"}
+                        data-testid={`badge-completion-${user.userId}`}
+                      >
+                        {user.completionRate}%
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="space-y-1">
+                        <p className="text-muted-foreground text-xs">Total Tasks</p>
+                        <p className="text-lg font-bold" data-testid={`text-total-${user.userId}`}>{user.totalTasks}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-muted-foreground text-xs">Completed</p>
+                        <p className="text-lg font-bold text-green-600" data-testid={`text-completed-${user.userId}`}>{user.completedTasks}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-muted-foreground text-xs">Pending</p>
+                        <p className="text-lg font-bold text-blue-600" data-testid={`text-pending-${user.userId}`}>{user.pendingTasks}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-muted-foreground text-xs">Overdue</p>
+                        <p className={`text-lg font-bold ${user.overdueTasks > 0 ? 'text-red-600' : 'text-muted-foreground'}`} data-testid={`text-overdue-${user.userId}`}>
+                          {user.overdueTasks}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Completion Progress</span>
+                        <span className="font-medium">{user.completionRate}%</span>
+                      </div>
+                      <div className="w-full bg-secondary rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full transition-all ${
+                            user.completionRate >= 70 ? 'bg-green-600' : 
+                            user.completionRate >= 40 ? 'bg-primary' : 
+                            'bg-yellow-600'
+                          }`}
+                          style={{ width: `${user.completionRate}%` }}
+                          data-testid={`progress-bar-${user.userId}`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Period Stats */}
+                    {user.periodTasks > 0 && (
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground mb-2">In Selected Period</p>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Tasks: {user.periodTasks}</span>
+                          <span className="font-medium text-green-600">Completed: {user.periodCompleted}</span>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* User Performance */}
+          {/* User Performance Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>User Performance</CardTitle>
+              <CardTitle>User Performance Chart</CardTitle>
               <CardDescription>Tasks completed per team member in selected period</CardDescription>
             </CardHeader>
             <CardContent>
