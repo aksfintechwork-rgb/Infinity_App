@@ -125,29 +125,31 @@ export default function InviteToCallDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md" data-testid="dialog-invite-to-call">
+      <DialogContent className="sm:max-w-md max-w-[95vw]" data-testid="dialog-invite-to-call">
         <DialogHeader className="pb-3">
           <DialogTitle>Invite to {callType === 'video' ? 'Video' : 'Audio'} Call</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-hidden">
           {/* Shareable Meeting Link */}
           {roomUrl && (
             <div className="space-y-3 pb-4 border-b">
               <div className="flex items-center gap-2 text-sm font-medium">
-                <Link2 className="w-4 h-4 text-primary" />
+                <Link2 className="w-4 h-4 text-primary flex-shrink-0" />
                 <span>Share Meeting Link</span>
               </div>
-              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-md border">
-                <div className="flex-1 text-sm text-foreground/80 truncate font-mono">
-                  {roomUrl}
+              <div className="flex items-center gap-2 w-full">
+                <div className="flex-1 min-w-0 px-3 py-2.5 bg-muted/50 rounded-md border">
+                  <div className="text-xs text-foreground/80 truncate font-mono">
+                    {roomUrl}
+                  </div>
                 </div>
                 <Button
                   size="icon"
                   variant="ghost"
                   onClick={handleCopyLink}
                   data-testid="button-copy-meeting-link"
-                  className="flex-shrink-0 h-8 w-8"
+                  className="flex-shrink-0 h-9 w-9"
                 >
                   {copied ? (
                     <Check className="w-4 h-4 text-green-600" />
