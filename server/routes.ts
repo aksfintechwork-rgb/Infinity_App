@@ -732,6 +732,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Send push notifications to offline conversation members
+      try {
+        const conversation = await storage.getConversationById(validation.data.conversationId);
+        if (conversation && wss) {
+          const memberIds = conversation.memberIds.filter(id => id !== req.userId);
+          
+          // Find which users are currently connected via WebSocket
+          const connectedUserIds = new Set<number>();
+          wss.clients.forEach((client: any) => {
+            if (client.userId && memberIds.includes(client.userId)) {
+              connectedUserIds.add(client.userId);
+            }
+          });
+          
+          // Send push notifications to offline members only
+          const offlineUserIds = memberIds.filter(id => !connectedUserIds.has(id));
+          if (offlineUserIds.length > 0) {
+            console.log(`[POST /api/messages] Sending push notifications to ${offlineUserIds.length} offline users`);
+            
+            const messagePreview = message.body 
+              ? (message.body.length > 50 ? message.body.substring(0, 50) + '...' : message.body)
+              : (message.attachmentUrl ? '📎 Attachment' : 'New message');
+            
+            for (const userId of offlineUserIds) {
+              await sendPushNotification(userId, {
+                type: 'message',
+                title: `${sender?.name || 'Someone'} sent a message`,
+                body: messagePreview,
+                url: `/?conversation=${validation.data.conversationId}`,
+                conversationId: validation.data.conversationId,
+              });
+            }
+          }
+        }
+      } catch (pushError) {
+        console.error('[POST /api/messages] Failed to send push notifications:', pushError);
+      }
+
       res.status(201).json({
         ...message,
         senderName: sender?.name || 'Unknown',

@@ -1,21 +1,48 @@
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : {};
-  const title = data.title || 'Incoming Call';
-  const options = {
-    body: data.body || 'You have an incoming call',
-    icon: '/favicon.ico',
-    badge: '/favicon.ico',
-    tag: 'incoming-call',
-    requireInteraction: true,
-    actions: [
-      { action: 'answer', title: 'Answer' },
-      { action: 'decline', title: 'Decline' }
-    ],
-    data: {
-      url: data.url || '/',
-      callData: data.callData || {}
-    }
-  };
+  const notificationType = data.type || 'call';
+  
+  let title, options;
+  
+  if (notificationType === 'message') {
+    // Message notification
+    title = data.title || 'New Message';
+    options = {
+      body: data.body || 'You have a new message',
+      icon: '/favicon.ico',
+      badge: '/favicon.ico',
+      tag: `message-${data.conversationId || 'default'}`,
+      requireInteraction: false,
+      vibrate: [200, 100, 200],
+      silent: false,
+      data: {
+        url: data.url || '/',
+        type: 'message',
+        conversationId: data.conversationId
+      }
+    };
+  } else {
+    // Call notification
+    title = data.title || 'Incoming Call';
+    options = {
+      body: data.body || 'You have an incoming call',
+      icon: '/favicon.ico',
+      badge: '/favicon.ico',
+      tag: `call-${data.callData?.conversationId || 'default'}`,
+      requireInteraction: true,
+      vibrate: [300, 100, 300, 100, 300, 100, 300],
+      silent: false,
+      actions: [
+        { action: 'answer', title: 'Answer' },
+        { action: 'decline', title: 'Decline' }
+      ],
+      data: {
+        url: data.url || '/',
+        callData: data.callData || {},
+        type: 'call'
+      }
+    };
+  }
 
   event.waitUntil(
     self.registration.showNotification(title, options)
