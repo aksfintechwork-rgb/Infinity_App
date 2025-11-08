@@ -159,7 +159,7 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Enhanced Task Completion Trends with Area Chart */}
+        {/* Enhanced Task Completion Trends with Bar Chart */}
         <Card className="border-2 shadow-lg">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -183,44 +183,52 @@ export default function Dashboard() {
                 <p className="text-xs text-muted-foreground mt-1">Data will appear as tasks are completed</p>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={350}>
-                <LineChart data={trends}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+              <ResponsiveContainer width="100%" height={380}>
+                <BarChart data={trends} barGap={8} barCategoryGap="20%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} vertical={false} />
                   <XAxis 
                     dataKey="date" 
                     tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                     tickLine={false}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
                   />
                   <YAxis 
                     tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                     tickLine={false}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
                   />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--card))', 
                       border: '2px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                    }} 
+                      borderRadius: '10px',
+                      boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)',
+                      padding: '12px'
+                    }}
+                    cursor={{ fill: 'hsl(var(--accent))', opacity: 0.1 }}
                   />
-                  <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                  <Line 
-                    type="monotone" 
-                    dataKey="completedTasks" 
-                    stroke="#B864E6" 
-                    name="Completed" 
-                    strokeWidth={3}
-                    dot={{ fill: '#B864E6', r: 4 }}
+                  <Legend 
+                    wrapperStyle={{ paddingTop: '24px' }} 
+                    iconType="circle"
+                    iconSize={10}
                   />
-                  <Line 
-                    type="monotone" 
+                  <Bar 
                     dataKey="totalTasks" 
+                    fill="#C54E1F"
                     stroke="#C54E1F"
                     name="Total" 
-                    strokeWidth={3}
-                    dot={{ fill: '#C54E1F', r: 4 }}
+                    radius={[8, 8, 0, 0]}
+                    maxBarSize={50}
                   />
-                </LineChart>
+                  <Bar 
+                    dataKey="completedTasks" 
+                    fill="#B864E6"
+                    stroke="#B864E6"
+                    name="Completed"
+                    radius={[8, 8, 0, 0]}
+                    maxBarSize={50}
+                  />
+                </BarChart>
               </ResponsiveContainer>
             )}
           </CardContent>
