@@ -11,6 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { Copy, Check, Link2 } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 interface User {
   id: number;
@@ -28,6 +30,7 @@ interface InviteToCallDialogProps {
   conversationId: number;
   callType: 'audio' | 'video';
   roomName: string;
+  roomUrl?: string;
   allUsers: User[];
   conversationMemberIds: number[];
   onSendInvite: (userId: number) => void;
@@ -40,12 +43,14 @@ export default function InviteToCallDialog({
   conversationId,
   callType,
   roomName,
+  roomUrl,
   allUsers,
   conversationMemberIds,
   onSendInvite,
 }: InviteToCallDialogProps) {
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
   // Filter users: exclude only current user (allow inviting anyone to the call)
@@ -105,12 +110,57 @@ export default function InviteToCallDialog({
       .slice(0, 2);
   };
 
+  const handleCopyLink = () => {
+    if (!roomUrl) return;
+    
+    navigator.clipboard.writeText(roomUrl);
+    setCopied(true);
+    toast({
+      title: 'Link copied',
+      description: 'Meeting link copied to clipboard',
+    });
+    
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md" data-testid="dialog-invite-to-call">
         <DialogHeader>
           <DialogTitle>Invite to {callType === 'video' ? 'Video' : 'Audio'} Call</DialogTitle>
         </DialogHeader>
+
+        {/* Shareable Meeting Link */}
+        {roomUrl && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Link2 className="w-4 h-4" />
+              Share Meeting Link
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 px-3 py-2 text-sm bg-muted rounded-md truncate">
+                {roomUrl}
+              </div>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={handleCopyLink}
+                data-testid="button-copy-meeting-link"
+                className="flex-shrink-0"
+              >
+                {copied ? (
+                  <Check className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Anyone with this link can join the meeting
+            </p>
+            <Separator className="my-4" />
+          </div>
+        )}
 
         {availableUsers.length === 0 ? (
           <div className="py-8 text-center text-muted-foreground">

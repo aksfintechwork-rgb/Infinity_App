@@ -133,6 +133,7 @@ export default function ChatLayout({
     callType: 'audio' | 'video';
     calledName: string;
     roomName: string;
+    roomUrl: string;
   } | null>(null);
 
   // Active call state (persists after call is answered)
@@ -140,6 +141,7 @@ export default function ChatLayout({
     conversationId: number;
     callType: 'audio' | 'video';
     roomName: string;
+    roomUrl?: string;
   } | null>(null);
 
   // Edit and forward message state
@@ -379,7 +381,8 @@ export default function ChatLayout({
         setActiveCall({
           conversationId: outgoingCall.conversationId,
           callType: data.callType || outgoingCall.callType,
-          roomName: data.roomName || outgoingCall.roomName
+          roomName: data.roomName || outgoingCall.roomName,
+          roomUrl: outgoingCall.roomUrl
         });
         setOutgoingCall(null);
       }
@@ -650,7 +653,8 @@ export default function ChatLayout({
       setActiveCall({
         conversationId: activeConversation.id,
         callType: 'video',
-        roomName
+        roomName,
+        roomUrl: data.url
       });
       
       // Send incoming call notification to other members via WebSocket
@@ -676,6 +680,7 @@ export default function ChatLayout({
         callType: 'video',
         calledName: activeConversation.title || activeConversation.members,
         roomName,
+        roomUrl: data.url
       });
       
       toast({
@@ -753,6 +758,7 @@ export default function ChatLayout({
         callType: 'audio',
         calledName: displayName,
         roomName,
+        roomUrl: data.url
       });
       
       toast({
@@ -1676,12 +1682,8 @@ export default function ChatLayout({
           currentUserId={currentUser.id}
           conversationId={outgoingCall?.conversationId || activeCall!.conversationId}
           callType={outgoingCall?.callType || activeCall!.callType}
-          roomName={outgoingCall 
-            ? (outgoingCall.callType === 'video' 
-                ? `supremo-video-${outgoingCall.conversationId}`
-                : `supremo-audio-${outgoingCall.conversationId}`)
-            : activeCall!.roomName
-          }
+          roomName={outgoingCall?.roomName || activeCall!.roomName}
+          roomUrl={outgoingCall?.roomUrl || activeCall?.roomUrl}
           allUsers={allUsers}
           conversationMemberIds={
             conversations.find(c => c.id === (outgoingCall?.conversationId || activeCall!.conversationId))?.memberIds || []
