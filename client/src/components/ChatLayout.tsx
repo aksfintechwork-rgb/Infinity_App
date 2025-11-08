@@ -571,7 +571,8 @@ export default function ChatLayout({
       setActiveCall({
         conversationId: incomingCall.conversationId,
         callType: incomingCall.callType,
-        roomName: incomingCall.roomName
+        roomName: incomingCall.roomName,
+        roomUrl: data.url
       });
 
       toast({
