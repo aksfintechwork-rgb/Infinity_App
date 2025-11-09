@@ -42,6 +42,8 @@ import {
   type InsertTodo,
   type PushSubscription,
   type InsertPushSubscription,
+  type Company,
+  type InsertCompany,
   users,
   conversations,
   messages,
@@ -60,20 +62,58 @@ import {
   activeCallParticipants,
   todos,
   pushSubscriptions,
+  companies,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, inArray, sql, gte, lte, isNotNull } from "drizzle-orm";
+import { eq, and, or, desc, inArray, sql, gte, lte, isNotNull, SQL } from "drizzle-orm";
+
+/**
+ * Query context for multi-tenant operations
+ * - For super_admin: companyId=null, isSuperAdmin=true → queries all companies
+ * - For regular users: companyId=required, isSuperAdmin=false → scoped to their company
+ */
+export interface QueryContext {
+  companyId: number | null;
+  isSuperAdmin: boolean;
+}
+
+/**
+ * Helper to build company-scoped WHERE conditions
+ * Returns SQL condition that filters by companyId (or allows all if super_admin)
+ */
+function buildCompanyFilter(ctx: QueryContext, tableCompanyIdColumn: SQL): SQL | undefined {
+  if (ctx.isSuperAdmin && ctx.companyId === null) {
+    // Super admin accessing all companies - no filter needed
+    return undefined;
+  }
+  
+  if (ctx.companyId === null) {
+    throw new Error("companyId is required for non-super-admin users");
+  }
+  
+  // Regular user or super admin viewing specific company - filter by companyId
+  return eq(tableCompanyIdColumn, ctx.companyId);
+}
 
 export interface IStorage {
-  getUserById(id: number): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
-  getUserByLoginId(loginId: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  getAllUsers(): Promise<User[]>;
-  getAllAdmins(): Promise<User[]>;
-  updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
-  updateUserLastSeen(userId: number): Promise<void>;
-  deleteUser(userId: number): Promise<void>;
+  // Company Management (super_admin only)
+  createCompany(company: InsertCompany): Promise<Company>;
+  getAllCompanies(): Promise<Company[]>;
+  getCompanyById(id: number): Promise<Company | undefined>;
+  getCompanyBySubdomain(subdomain: string): Promise<Company | undefined>;
+  updateCompany(id: number, updates: Partial<InsertCompany>): Promise<Company | undefined>;
+  deleteCompany(id: number): Promise<void>;
+  
+  // User Management (company-scoped)
+  getUserById(ctx: QueryContext, id: number): Promise<User | undefined>;
+  getUserByEmail(ctx: QueryContext, email: string): Promise<User | undefined>;
+  getUserByLoginId(ctx: QueryContext, loginId: string): Promise<User | undefined>;
+  createUser(ctx: QueryContext, user: InsertUser): Promise<User>;
+  getAllUsers(ctx: QueryContext): Promise<User[]>;
+  getAllAdmins(ctx: QueryContext): Promise<User[]>;
+  updateUserPassword(ctx: QueryContext, userId: number, hashedPassword: string): Promise<void>;
+  updateUserLastSeen(ctx: QueryContext, userId: number): Promise<void>;
+  deleteUser(ctx: QueryContext, userId: number): Promise<void>;
   
   createConversation(conversation: InsertConversation): Promise<Conversation>;
   getConversationById(id: number): Promise<Conversation | undefined>;
