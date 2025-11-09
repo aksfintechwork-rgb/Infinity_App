@@ -108,6 +108,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   };
 
+  // Helper function to check if user has at least one visible tab
+  // Returns true if user should receive push notification (no visible tabs)
+  const shouldSendPushNotification = (userId: number): boolean => {
+    if (!wss) return true; // If no WebSocket server, assume user is offline
+    
+    let hasVisibleTab = false;
+    
+    wss.clients.forEach((client: WebSocketClient) => {
+      if (client.readyState === WebSocket.OPEN && client.userId === userId) {
+        if (client.isTabVisible === true) {
+          hasVisibleTab = true;
+        }
+      }
+    });
+    
+    // Send push notification if user has no visible tabs
+    return !hasVisibleTab;
+  };
+
   // One-time setup endpoint - creates initial admin user only if database is empty
   app.post("/api/setup/initialize", async (req, res) => {
     try {
@@ -736,6 +755,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send push notifications to members who don't have a visible tab
       try {
         const conversation = await storage.getConversationById(validation.data.conversationId);
+        
         if (conversation && wss) {
           const memberIds = conversation.memberIds.filter(id => id !== req.userId);
           
@@ -2598,25 +2618,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     return onlineIds;
-  };
-
-  // Helper function to check if user has at least one visible tab
-  // Returns true if user should receive push notification (no visible tabs)
-  const shouldSendPushNotification = (userId: number): boolean => {
-    let hasVisibleTab = false;
-    
-    wss.clients.forEach((client: WebSocketClient) => {
-      if (
-        client.readyState === WebSocket.OPEN &&
-        client.userId === userId &&
-        client.isTabVisible === true
-      ) {
-        hasVisibleTab = true;
-      }
-    });
-    
-    // Send push notification if user has no visible tabs
-    return !hasVisibleTab;
   };
 
   // Helper function to broadcast user presence status
