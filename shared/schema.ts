@@ -1,9 +1,9 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, boolean, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, boolean, timestamp, integer, serial, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const userRoleEnum = z.enum(["admin", "user"]);
+export const userRoleEnum = z.enum(["super_admin", "admin", "user"]);
 export type UserRole = z.infer<typeof userRoleEnum>;
 
 export const taskStatusEnum = z.enum(["pending", "in_progress", "completed", "cancelled"]);
@@ -12,17 +12,49 @@ export type TaskStatus = z.infer<typeof taskStatusEnum>;
 export const reminderFrequencyEnum = z.enum(["none", "hourly", "every_3_hours", "every_6_hours", "daily", "every_2_days"]);
 export type ReminderFrequency = z.infer<typeof reminderFrequencyEnum>;
 
-export const users = pgTable("users", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+// Companies table for multi-tenant SaaS with white-labeling
+export const companies = pgTable("companies", {
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  loginId: text("login_id").notNull().unique(),
+  subdomain: text("subdomain").notNull().unique(),
+  logo: text("logo"),
+  primaryColor: text("primary_color").notNull().default("#C54E1F"),
+  backgroundColor: text("background_color").notNull().default("#F5F0E8"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+const _baseCompanySchema = createInsertSchema(companies, {
+  subdomain: z.string().min(2).max(32).regex(/^[a-z0-9-]+$/, "Subdomain can only contain lowercase letters, numbers, and dashes"),
+  primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color"),
+  backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color"),
+});
+
+export const insertCompanySchema = _baseCompanySchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  createdAt: true,
+});
+
+export type InsertCompany = z.infer<typeof insertCompanySchema>;
+export type Company = typeof companies.$inferSelect;
+
+export const users = pgTable("users", {
+  companyId: integer("company_id").references(() => companies.id, { onDelete: "cascade" }),
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  loginId: text("login_id").notNull(),
   email: text("email"),
   password: text("password").notNull(),
   role: text("role").notNull().default("user"),
   avatar: text("avatar"),
   lastSeenAt: timestamp("last_seen_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  tenantLoginUnique: uniqueIndex("users_company_id_login_id_unique").on(table.companyId, table.loginId),
+  superAdminLoginUnique: uniqueIndex("users_super_admin_login_id_unique").on(table.loginId).where(sql`${table.companyId} IS NULL`),
+}));
 
 const _baseUserSchema = createInsertSchema(users, {
   loginId: z.string().min(3).max(32).regex(/^[a-zA-Z0-9_-]+$/, "Login ID can only contain letters, numbers, dashes, and underscores"),
@@ -40,7 +72,8 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
 export const conversations = pgTable("conversations", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
   title: text("title"),
   isGroup: boolean("is_group").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -66,7 +99,8 @@ export type ConversationWithDetails = Conversation & {
 };
 
 export const conversationMembers = pgTable("conversation_members", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
   conversationId: integer("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
@@ -86,7 +120,8 @@ export type InsertConversationMember = z.infer<typeof insertConversationMemberSc
 export type ConversationMember = typeof conversationMembers.$inferSelect;
 
 export const pinnedConversations = pgTable("pinned_conversations", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   conversationId: integer("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
   pinnedAt: timestamp("pinned_at").notNull().defaultNow(),
@@ -105,7 +140,8 @@ export type InsertPinnedConversation = z.infer<typeof insertPinnedConversationSc
 export type PinnedConversation = typeof pinnedConversations.$inferSelect;
 
 export const conversationReadStatus = pgTable("conversation_read_status", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   conversationId: integer("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
   lastReadMessageId: integer("last_read_message_id"),
@@ -125,7 +161,8 @@ export type InsertConversationReadStatus = z.infer<typeof insertConversationRead
 export type ConversationReadStatus = typeof conversationReadStatus.$inferSelect;
 
 export const messages = pgTable("messages", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
   conversationId: integer("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
   senderId: integer("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   body: text("body"),
@@ -160,7 +197,8 @@ export const recurrencePatternEnum = z.enum(["none", "daily", "weekly", "monthly
 export type RecurrencePattern = z.infer<typeof recurrencePatternEnum>;
 
 export const meetings = pgTable("meetings", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
   title: text("title").notNull(),
   description: text("description"),
   startTime: timestamp("start_time").notNull(),
@@ -198,7 +236,8 @@ export type InsertMeeting = z.infer<typeof insertMeetingSchema>;
 export type Meeting = typeof meetings.$inferSelect;
 
 export const meetingParticipants = pgTable("meeting_participants", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
   meetingId: integer("meeting_id").notNull().references(() => meetings.id, { onDelete: "cascade" }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   addedAt: timestamp("added_at").notNull().defaultNow(),
@@ -217,7 +256,8 @@ export type InsertMeetingParticipant = z.infer<typeof insertMeetingParticipantSc
 export type MeetingParticipant = typeof meetingParticipants.$inferSelect;
 
 export const tasks = pgTable("tasks", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
   title: text("title").notNull(),
   description: text("description"),
   startDate: timestamp("start_date"),
@@ -264,7 +304,8 @@ export type TaskWithDetails = Task & {
 };
 
 export const taskSupportRequests = pgTable("task_support_requests", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
   taskId: integer("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" }),
   requesterId: integer("requester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   supporterId: integer("supporter_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -289,7 +330,8 @@ export const worksheetPriorityEnum = z.enum(["low", "medium", "high", "urgent"])
 export type WorksheetPriority = z.infer<typeof worksheetPriorityEnum>;
 
 export const dailyWorksheets = pgTable("daily_worksheets", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   date: timestamp("date").notNull(),
   todos: text("todos").notNull().default("[]"),
@@ -341,8 +383,9 @@ export const projectPriorityEnum = z.enum(["low", "medium", "high"]);
 export type ProjectPriority = z.infer<typeof projectPriorityEnum>;
 
 export const projects = pgTable("projects", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  projectId: text("project_id").notNull().unique(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
+  projectId: text("project_id").notNull(),
   projectName: text("project_name").notNull(),
   description: text("description"),
   startDate: timestamp("start_date").notNull(),
@@ -362,7 +405,9 @@ export const projects = pgTable("projects", {
   priority: text("priority").notNull().default("medium"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  projectIdUnique: uniqueIndex("projects_company_id_project_id_unique").on(table.companyId, table.projectId),
+}));
 
 const _baseProjectSchema = createInsertSchema(projects, {
   projectName: z.string().min(1, "Project name is required"),
@@ -396,7 +441,8 @@ export type ProjectWithDetails = Project & {
 };
 
 export const driveFolders = pgTable("drive_folders", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
   name: text("name").notNull(),
   parentId: integer("parent_id"),
   createdById: integer("created_by_id").notNull().references(() => users.id),
@@ -425,7 +471,8 @@ export type DriveFolderWithDetails = DriveFolder & {
 };
 
 export const driveFiles = pgTable("drive_files", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
   name: text("name").notNull(),
   originalName: text("original_name").notNull(),
   storagePath: text("storage_path").notNull(),
@@ -461,8 +508,9 @@ export const callTypeEnum = z.enum(["audio", "video"]);
 export type CallType = z.infer<typeof callTypeEnum>;
 
 export const activeCalls = pgTable("active_calls", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  roomName: text("room_name").notNull().unique(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
+  roomName: text("room_name").notNull(), // Unique per company (see table constraints)
   roomUrl: text("room_url").notNull(),
   conversationId: integer("conversation_id").references(() => conversations.id, { onDelete: "cascade" }),
   hostId: integer("host_id").notNull().references(() => users.id),
@@ -470,7 +518,9 @@ export const activeCalls = pgTable("active_calls", {
   status: text("status").notNull().default("active"),
   startedAt: timestamp("started_at").notNull().defaultNow(),
   endedAt: timestamp("ended_at"),
-});
+}, (table) => ({
+  roomNameUnique: uniqueIndex("active_calls_company_id_room_name_unique").on(table.companyId, table.roomName),
+}));
 
 const _baseActiveCallSchema = createInsertSchema(activeCalls, {
   callType: callTypeEnum.default("video"),
@@ -493,7 +543,8 @@ export type ActiveCallWithDetails = ActiveCall & {
 };
 
 export const activeCallParticipants = pgTable("active_call_participants", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
   callId: integer("call_id").notNull().references(() => activeCalls.id, { onDelete: "cascade" }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
@@ -516,7 +567,8 @@ export const todoPriorityEnum = z.enum(["low", "medium", "high", "urgent"]);
 export type TodoPriority = z.infer<typeof todoPriorityEnum>;
 
 export const todos = pgTable("todos", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   task: text("task").notNull(),
   priority: text("priority").notNull().default("medium"),
@@ -550,7 +602,8 @@ export type InsertTodo = z.infer<typeof insertTodoSchema>;
 export type Todo = typeof todos.$inferSelect;
 
 export const pushSubscriptions = pgTable("push_subscriptions", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")/*.notNull()*/.references(() => companies.id, { onDelete: "cascade" }), // TODO: Add .notNull() after Phase 2 migration
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   endpoint: text("endpoint").notNull(),
   p256dhKey: text("p256dh_key").notNull(),
