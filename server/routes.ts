@@ -12,6 +12,7 @@ import webpush from "web-push";
 interface WebSocketClient extends WebSocket {
   userId?: number;
   isAlive?: boolean;
+  isTabVisible?: boolean; // Track if user's tab is visible/focused
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -732,30 +733,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Send push notifications to offline conversation members
+      // Send push notifications to members who don't have a visible tab
       try {
         const conversation = await storage.getConversationById(validation.data.conversationId);
         if (conversation && wss) {
           const memberIds = conversation.memberIds.filter(id => id !== req.userId);
           
-          // Find which users are currently connected via WebSocket
-          const connectedUserIds = new Set<number>();
-          wss.clients.forEach((client: any) => {
-            if (client.userId && memberIds.includes(client.userId)) {
-              connectedUserIds.add(client.userId);
+          // Check which users need push notifications (no visible tab)
+          const usersNeedingPush: number[] = [];
+          for (const userId of memberIds) {
+            if (shouldSendPushNotification(userId)) {
+              usersNeedingPush.push(userId);
             }
-          });
+          }
           
-          // Send push notifications to offline members only
-          const offlineUserIds = memberIds.filter(id => !connectedUserIds.has(id));
-          if (offlineUserIds.length > 0) {
-            console.log(`[POST /api/messages] Sending push notifications to ${offlineUserIds.length} offline users`);
+          if (usersNeedingPush.length > 0) {
+            console.log(`[POST /api/messages] Sending push notifications to ${usersNeedingPush.length} users (offline or tab hidden)`);
             
             const messagePreview = message.body 
               ? (message.body.length > 50 ? message.body.substring(0, 50) + '...' : message.body)
               : (message.attachmentUrl ? '📎 Attachment' : 'New message');
             
-            for (const userId of offlineUserIds) {
+            for (const userId of usersNeedingPush) {
               await sendPushNotification(userId, {
                 type: 'message',
                 title: `${sender?.name || 'Someone'} sent a message`,
@@ -2401,11 +2400,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
             }
             
-            // Send push notifications to offline members
-            const offlineUserIds = memberIds.filter(id => !connectedUserIds.includes(id) && id !== req.userId);
-            console.log(`[POST /api/calls] Sending push notifications to offline users:`, offlineUserIds);
+            // Send push notifications to members who don't have a visible tab
+            const usersNeedingPush = memberIds.filter(id => 
+              id !== req.userId && shouldSendPushNotification(id)
+            );
+            console.log(`[POST /api/calls] Sending push notifications to ${usersNeedingPush.length} users (offline or tab hidden)`);
             const finalCallType = callType || 'video';
-            for (const userId of offlineUserIds) {
+            for (const userId of usersNeedingPush) {
               await sendPushNotification(userId, {
                 title: `Incoming ${finalCallType === 'video' ? 'Video' : 'Audio'} Call`,
                 body: `${caller.name} is calling...`,
@@ -2599,6 +2600,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return onlineIds;
   };
 
+  // Helper function to check if user has at least one visible tab
+  // Returns true if user should receive push notification (no visible tabs)
+  const shouldSendPushNotification = (userId: number): boolean => {
+    let hasVisibleTab = false;
+    
+    wss.clients.forEach((client: WebSocketClient) => {
+      if (
+        client.readyState === WebSocket.OPEN &&
+        client.userId === userId &&
+        client.isTabVisible === true
+      ) {
+        hasVisibleTab = true;
+      }
+    });
+    
+    // Send push notification if user has no visible tabs
+    return !hasVisibleTab;
+  };
+
   // Helper function to broadcast user presence status
   const broadcastUserPresence = (userId: number, status: 'online' | 'offline') => {
     wss.clients.forEach((client: WebSocketClient) => {
@@ -2628,6 +2648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     ws.userId = payload.userId;
     ws.isAlive = true;
+    ws.isTabVisible = true; // Assume tab is visible on initial connection
 
     console.log(`WebSocket client connected: userId=${ws.userId}`);
 
@@ -2652,6 +2673,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update last seen on any WebSocket activity
         if (ws.userId) {
           await storage.updateUserLastSeen(ws.userId);
+        }
+        
+        // Handle tab visibility updates for smart push notification routing
+        if (message.type === 'tab_visibility') {
+          if (typeof message.data?.visible === 'boolean') {
+            ws.isTabVisible = message.data.visible;
+            console.log(`[tab_visibility] User ${ws.userId} tab is now ${ws.isTabVisible ? 'visible' : 'hidden'}`);
+          }
+          return;
         }
         
         if (message.type === 'incoming_call') {
@@ -2682,9 +2712,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           });
           
-          // Send push notifications to offline members
-          const offlineUserIds = memberIds.filter(id => !connectedUserIds.includes(id) && id !== from.id);
-          for (const userId of offlineUserIds) {
+          // Send push notifications to members who don't have a visible tab
+          const usersNeedingPush = memberIds.filter(id => 
+            id !== from.id && shouldSendPushNotification(id)
+          );
+          for (const userId of usersNeedingPush) {
             await sendPushNotification(userId, {
               title: `Incoming ${callType === 'video' ? 'Video' : 'Audio'} Call`,
               body: `${from.name} is calling...`,
@@ -2692,6 +2724,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               callData: { conversationId, roomName, callType, from },
             });
           }
+          console.log(`[incoming_call] Sent push to ${usersNeedingPush.length} users (offline or tab hidden)`);
           
           return;
         }
@@ -2720,9 +2753,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           });
           
-          if (!foundClient) {
-            console.log(`[invite_to_call] No active WebSocket connection for user ${userId}, sending push notification`);
-            // Send push notification to offline user
+          // Send push notification if user doesn't have a visible tab
+          if (!foundClient || shouldSendPushNotification(userId)) {
+            console.log(`[invite_to_call] User ${userId} needs push notification (no connection or tab hidden)`);
             await sendPushNotification(userId, {
               title: `Incoming ${callType === 'video' ? 'Video' : 'Audio'} Call`,
               body: `${from.name} invited you to a call`,

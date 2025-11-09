@@ -87,6 +87,48 @@ function App() {
     };
   }, [currentUser]);
 
+  // Track tab visibility and send to backend for smart push notification routing
+  useEffect(() => {
+    if (!ws.isConnected || !currentUser) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleVisibilityChange = () => {
+      // Debounce rapid visibility changes
+      if (debounceTimer) clearTimeout(debounceTimer);
+      
+      debounceTimer = setTimeout(() => {
+        const isVisible = !document.hidden;
+        
+        // Send visibility status to backend (server derives userId from ws.userId)
+        ws.send({
+          type: 'tab_visibility',
+          data: {
+            visible: isVisible
+          }
+        });
+
+        console.log(`Tab visibility changed: ${isVisible ? 'visible' : 'hidden'}`);
+      }, 100); // 100ms debounce
+    };
+
+    // Send initial visibility state immediately
+    ws.send({
+      type: 'tab_visibility',
+      data: {
+        visible: !document.hidden
+      }
+    });
+
+    // Listen for visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
+  }, [ws.isConnected, currentUser, ws]);
+
   useEffect(() => {
     if (!ws.isConnected || !currentUser) return;
 
