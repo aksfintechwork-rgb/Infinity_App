@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { storage } from './storage';
+import { storage, type QueryContext } from './storage';
 
 if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable must be set');
@@ -12,6 +12,9 @@ const SALT_ROUNDS = 10;
 
 export interface AuthRequest extends Request {
   userId?: number;
+  companyId?: number | null;
+  isSuperAdmin?: boolean;
+  queryContext?: QueryContext;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -22,13 +25,17 @@ export async function comparePassword(password: string, hash: string): Promise<b
   return bcrypt.compare(password, hash);
 }
 
-export function generateToken(userId: number): string {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
+export function generateToken(userId: number, companyId: number | null, role: string): string {
+  return jwt.sign({ 
+    userId, 
+    companyId,
+    isSuperAdmin: role === 'super_admin'
+  }, JWT_SECRET, { expiresIn: '7d' });
 }
 
-export function verifyToken(token: string): { userId: number } | null {
+export function verifyToken(token: string): { userId: number; companyId: number | null; isSuperAdmin: boolean } | null {
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { userId: number };
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: number; companyId: number | null; isSuperAdmin: boolean };
     return payload;
   } catch (error) {
     return null;
@@ -50,15 +57,21 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   }
 
   req.userId = payload.userId;
+  req.companyId = payload.companyId;
+  req.isSuperAdmin = payload.isSuperAdmin;
+  req.queryContext = {
+    companyId: payload.companyId,
+    isSuperAdmin: payload.isSuperAdmin
+  };
   next();
 }
 
 export async function getCurrentUser(req: AuthRequest, res: Response) {
-  if (!req.userId) {
+  if (!req.userId || !req.queryContext) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
-  const user = await storage.getUserById(req.userId);
+  const user = await storage.getUserById(req.queryContext, req.userId);
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
   }
@@ -68,17 +81,29 @@ export async function getCurrentUser(req: AuthRequest, res: Response) {
 }
 
 export async function requireAdmin(req: AuthRequest, res: Response, next: NextFunction) {
-  if (!req.userId) {
+  if (!req.userId || !req.queryContext) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
-  const user = await storage.getUserById(req.userId);
+  const user = await storage.getUserById(req.queryContext, req.userId);
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
   }
 
-  if (user.role !== 'admin') {
+  if (user.role !== 'admin' && user.role !== 'super_admin') {
     return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  next();
+}
+
+export async function requireSuperAdmin(req: AuthRequest, res: Response, next: NextFunction) {
+  if (!req.userId || !req.queryContext) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  if (!req.isSuperAdmin) {
+    return res.status(403).json({ error: 'Super admin access required' });
   }
 
   next();

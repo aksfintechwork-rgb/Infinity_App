@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { hashPassword, comparePassword, generateToken, authMiddleware, getCurrentUser, requireAdmin, type AuthRequest, verifyToken } from "./auth";
-import { insertUserSchema, insertConversationSchema, insertMessageSchema, updateMessageSchema, insertMeetingSchema, insertTaskSchema, insertSupportRequestSchema, insertProjectSchema, insertDriveFolderSchema, insertDriveFileSchema, insertTodoSchema, insertPushSubscriptionSchema } from "@shared/schema";
+import { hashPassword, comparePassword, generateToken, authMiddleware, getCurrentUser, requireAdmin, requireSuperAdmin, type AuthRequest, verifyToken } from "./auth";
+import { insertUserSchema, insertConversationSchema, insertMessageSchema, updateMessageSchema, insertMeetingSchema, insertTaskSchema, insertSupportRequestSchema, insertProjectSchema, insertDriveFolderSchema, insertDriveFileSchema, insertTodoSchema, insertPushSubscriptionSchema, insertCompanySchema } from "@shared/schema";
 import { z } from "zod";
 import { upload, getFileUrl } from "./upload";
 import { WebSocketServer, WebSocket } from "ws";
@@ -11,6 +11,7 @@ import webpush from "web-push";
 
 interface WebSocketClient extends WebSocket {
   userId?: number;
+  companyId?: number | null;  // Track company for tenant isolation
   isAlive?: boolean;
   isTabVisible?: boolean; // Track if user's tab is visible/focused
 }
@@ -34,7 +35,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Helper function to send push notification
   const sendPushNotification = async (userId: number, payload: any) => {
     try {
-      const subscriptions = await storage.getUserPushSubscriptions(userId);
+      const systemContext = { companyId: null, isSuperAdmin: true };
+      const subscriptions = await storage.getUserPushSubscriptions(systemContext, userId);
       
       const pushPromises = subscriptions.map(async (sub) => {
         try {
@@ -68,41 +70,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // WebSocket server will be assigned after HTTP server is created
   let wss: WebSocketServer | null = null;
 
-  // Helper function to broadcast user list updates
-  const broadcastUserListUpdate = (type: 'user_created' | 'user_deleted', userData: any) => {
+  // Company-scoped broadcast - requires explicit company targeting
+  const broadcastToCompany = (message: any, targetCompanyId: number | null, includeSuperAdmins = false) => {
     if (!wss) return;
     wss.clients.forEach((client: WebSocketClient) => {
       if (client.readyState === WebSocket.OPEN && client.userId) {
-        client.send(JSON.stringify({ type, data: userData }));
+        // Send to clients in target company
+        const isTargetCompany = client.companyId === targetCompanyId;
+        // Optionally include super admins (companyId=null)
+        const isSuperAdmin = includeSuperAdmins && client.companyId === null;
+        
+        if (isTargetCompany || isSuperAdmin) {
+          client.send(JSON.stringify(message));
+        }
       }
     });
   };
 
-  // Helper function to broadcast task updates (only to authorized users)
-  const broadcastTaskUpdate = (type: 'task_created' | 'task_updated' | 'task_deleted' | 'task_status_updated', taskData: any, authorizedUserIds: number[]) => {
-    if (!wss) return;
-    
-    // Require non-empty authorized user IDs to prevent inadvertent broadcasts
-    if (!authorizedUserIds || authorizedUserIds.length === 0) {
+  // User list updates - company scoped
+  const broadcastUserListUpdate = (type: 'user_created' | 'user_deleted', userData: any, companyId: number | null) => {
+    broadcastToCompany({ type, data: userData }, companyId, false);
+  };
+
+  // Task updates - company scoped with authorized user check
+  const broadcastTaskUpdate = (type: string, taskData: any, companyId: number | null, authorizedUserIds: number[]) => {
+    if (!wss || !authorizedUserIds || authorizedUserIds.length === 0) {
       console.error(`[SECURITY] Attempted to broadcast ${type} without authorized user IDs`);
       return;
     }
     
     wss.clients.forEach((client: WebSocketClient) => {
       if (client.readyState === WebSocket.OPEN && client.userId) {
-        // Only send to users in the authorized list (creator and/or assignee)
-        if (authorizedUserIds.includes(client.userId)) {
+        // Must match company AND be in authorized list
+        const isTargetCompany = client.companyId === companyId;
+        const isAuthorized = authorizedUserIds.includes(client.userId);
+        
+        if (isTargetCompany && isAuthorized) {
           client.send(JSON.stringify({ type, data: taskData }));
         }
       }
     });
   };
 
-  // Helper function to broadcast general updates (projects, drive, etc.) to all connected users
-  const broadcastUpdate = (message: any) => {
+  // General updates - company scoped (projects, drive, etc.)
+  const broadcastUpdate = (message: any, companyId: number | null) => {
+    broadcastToCompany(message, companyId, false);
+  };
+
+  // System-wide broadcasts (super admins only)
+  const broadcastSystem = (message: any) => {
     if (!wss) return;
     wss.clients.forEach((client: WebSocketClient) => {
-      if (client.readyState === WebSocket.OPEN && client.userId) {
+      if (client.readyState === WebSocket.OPEN && client.companyId === null) {
         client.send(JSON.stringify(message));
       }
     });
@@ -130,14 +149,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // One-time setup endpoint - creates initial admin user only if database is empty
   app.post("/api/setup/initialize", async (req, res) => {
     try {
-      const users = await storage.getAllUsers();
+      const systemContext = { companyId: null, isSuperAdmin: true };
+      const users = await storage.getAllUsers(systemContext);
       if (users.length > 0) {
         return res.status(403).json({ error: "Setup already completed. Database has users." });
       }
 
       // Create initial admin user with default credentials
       const hashedPassword = await hashPassword("admin123");
-      const adminUser = await storage.createUser({
+      const adminUser = await storage.createUser(systemContext, {
+        companyId: null,
         name: "Admin User",
         loginId: "admin",
         email: "admin@supremotraders.com",
@@ -156,6 +177,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("[SETUP] ❌ Setup failed:", error);
       return res.status(500).json({ error: "Setup failed", details: error.message });
+    }
+  });
+
+  // ========== COMPANY MANAGEMENT (Super Admin Only) ==========
+  
+  // Get all companies
+  app.get("/api/companies", authMiddleware, requireSuperAdmin, async (req: AuthRequest, res) => {
+    try {
+      const companies = await storage.getAllCompanies();
+      res.json(companies);
+    } catch (error) {
+      console.error("Error fetching companies:", error);
+      res.status(500).json({ error: "Failed to fetch companies" });
+    }
+  });
+
+  // Get company by ID
+  app.get("/api/companies/:id", authMiddleware, requireSuperAdmin, async (req: AuthRequest, res) => {
+    try {
+      const company = await storage.getCompanyById(parseInt(req.params.id));
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      res.json(company);
+    } catch (error) {
+      console.error("Error fetching company:", error);
+      res.status(500).json({ error: "Failed to fetch company" });
+    }
+  });
+
+  // Create new company
+  app.post("/api/companies", authMiddleware, requireSuperAdmin, async (req: AuthRequest, res) => {
+    try {
+      const companyData = insertCompanySchema.parse(req.body);
+      const company = await storage.createCompany(companyData);
+      res.json(company);
+    } catch (error: any) {
+      console.error("Error creating company:", error);
+      if (error.code === '23505') { // PostgreSQL unique violation
+        return res.status(400).json({ error: "Company subdomain already exists" });
+      }
+      res.status(500).json({ error: "Failed to create company" });
+    }
+  });
+
+  // Update company
+  app.put("/api/companies/:id", authMiddleware, requireSuperAdmin, async (req: AuthRequest, res) => {
+    try {
+      const updates = insertCompanySchema.partial().parse(req.body);
+      const company = await storage.updateCompany(parseInt(req.params.id), updates);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      res.json(company);
+    } catch (error: any) {
+      console.error("Error updating company:", error);
+      if (error.code === '23505') {
+        return res.status(400).json({ error: "Company subdomain already exists" });
+      }
+      res.status(500).json({ error: "Failed to update company" });
+    }
+  });
+
+  // Delete company
+  app.delete("/api/companies/:id", authMiddleware, requireSuperAdmin, async (req: AuthRequest, res) => {
+    try {
+      await storage.deleteCompany(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting company:", error);
+      res.status(500).json({ error: "Failed to delete company" });
     }
   });
 
@@ -199,7 +291,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`[LOGIN] 🔍 Attempting login for loginId: "${loginId}" (length: ${loginId.length}, password length: ${password.length})`);
-      const user = await storage.getUserByLoginId(loginId);
+      const systemContext = { companyId: null, isSuperAdmin: true };
+      const user = await storage.getUserByLoginId(systemContext, loginId);
       if (!user) {
         console.log(`[LOGIN] ❌ User not found for loginId: "${loginId}"`);
         return res.status(401).json({ error: "Invalid credentials" });
@@ -215,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[LOGIN] ✅ Successful login for user: "${user.name}"`);
 
 
-      const token = generateToken(user.id);
+      const token = generateToken(user.id, user.companyId, user.role);
       const { password: _, ...userWithoutPassword } = user;
 
       res.json({
@@ -233,7 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/profile", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const userId = req.userId!;
-      const user = await storage.getUserById(userId);
+      const user = await storage.getUserById(req.queryContext!, userId);
       
       if (!user) {
         return res.status(404).json({ error: "User not found" });
@@ -260,7 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userId = req.userId!;
-      const user = await storage.getUserById(userId);
+      const user = await storage.getUserById(req.queryContext!, userId);
       
       if (!user) {
         return res.status(404).json({ error: "User not found" });
@@ -272,7 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const hashedNewPassword = await hashPassword(newPassword);
-      await storage.updateUserPassword(userId, hashedNewPassword);
+      await storage.updateUserPassword(req.queryContext!, userId, hashedNewPassword);
 
       console.log(`[PASSWORD CHANGE] ✅ Password changed successfully for user: ${user.name} (ID: ${userId})`);
       
@@ -283,9 +376,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/users", authMiddleware, async (req, res) => {
+  app.get("/api/users", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const users = await storage.getAllUsers();
+      const users = await storage.getAllUsers(req.queryContext!);
       const usersWithoutPasswords = users.map(({ password, ...user }) => user);
       res.json(usersWithoutPasswords);
     } catch (error) {
@@ -300,7 +393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
       
-      await storage.updateUserLastSeen(req.userId);
+      await storage.updateUserLastSeen(req.queryContext!, req.userId);
       res.json({ success: true });
     } catch (error) {
       console.error("Update last seen error:", error);
@@ -308,9 +401,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/users", authMiddleware, requireAdmin, async (req, res) => {
+  app.get("/api/admin/users", authMiddleware, requireAdmin, async (req: AuthRequest, res) => {
     try {
-      const users = await storage.getAllUsers();
+      const users = await storage.getAllUsers(req.queryContext!);
       const usersWithoutPasswords = users.map(({ password, ...user }) => user);
       res.json(usersWithoutPasswords);
     } catch (error) {
@@ -319,22 +412,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/users", authMiddleware, requireAdmin, async (req, res) => {
+  app.post("/api/admin/users", authMiddleware, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const validation = insertUserSchema.safeParse(req.body);
       if (!validation.success) {
         return res.status(400).json({ error: "Invalid input", details: validation.error });
       }
 
-      const { name, loginId, email, password, avatar, role } = validation.data as z.infer<typeof insertUserSchema>;
+      const { name, loginId, email, password, avatar, role, companyId } = validation.data as z.infer<typeof insertUserSchema>;
 
-      const existingUser = await storage.getUserByLoginId(loginId);
+      const existingUser = await storage.getUserByLoginId(req.queryContext!, loginId);
       if (existingUser) {
         return res.status(400).json({ error: "Login ID already taken" });
       }
 
       const hashedPassword = await hashPassword(password);
-      const user = await storage.createUser({
+      const user = await storage.createUser(req.queryContext!, {
+        companyId: companyId ?? req.queryContext!.companyId,
         name,
         loginId,
         email,
@@ -345,8 +439,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { password: _, ...userWithoutPassword } = user;
       
-      // Broadcast user creation to all connected clients
-      broadcastUserListUpdate('user_created', userWithoutPassword);
+      // Broadcast user creation to all connected clients in the same company
+      broadcastUserListUpdate('user_created', userWithoutPassword, user.companyId);
       
       res.status(201).json(userWithoutPassword);
     } catch (error) {
@@ -368,15 +462,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Cannot delete your own account" });
       }
 
-      const user = await storage.getUserById(userId);
+      const user = await storage.getUserById(req.queryContext!, userId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      await storage.deleteUser(userId);
+      await storage.deleteUser(req.queryContext!, userId);
       
-      // Broadcast user deletion to all connected clients
-      broadcastUserListUpdate('user_deleted', { id: userId });
+      // Broadcast user deletion to all connected clients in the same company
+      broadcastUserListUpdate('user_deleted', { id: userId }, user.companyId);
       
       res.json({ message: "User deleted successfully" });
     } catch (error) {
@@ -680,13 +774,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const messagesWithSenderInfo = await Promise.all(
         messages.map(async (msg) => {
-          const sender = await storage.getUserById(msg.senderId);
+          const systemContext = { companyId: null, isSuperAdmin: true };
+          const sender = await storage.getUserById(systemContext, msg.senderId);
           let repliedToMessage = null;
           
           if (msg.replyToId) {
             const replyMsg = await storage.getMessageById(msg.replyToId);
             if (replyMsg) {
-              const replySender = await storage.getUserById(replyMsg.senderId);
+              const replySender = await storage.getUserById(systemContext, replyMsg.senderId);
               repliedToMessage = {
                 id: replyMsg.id,
                 senderName: replySender?.name || 'Unknown',
@@ -736,13 +831,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const message = await storage.createMessage(validation.data);
-      const sender = await storage.getUserById(message.senderId);
+      const systemContext = { companyId: null, isSuperAdmin: true };
+      const sender = await storage.getUserById(systemContext, message.senderId);
 
       let repliedToMessage = null;
       if (message.replyToId) {
         const replyMsg = await storage.getMessageById(message.replyToId);
         if (replyMsg) {
-          const replySender = await storage.getUserById(replyMsg.senderId);
+          const replySender = await storage.getUserById(systemContext, replyMsg.senderId);
           repliedToMessage = {
             id: replyMsg.id,
             senderName: replySender?.name || 'Unknown',
@@ -831,7 +927,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Failed to update message" });
       }
 
-      const sender = await storage.getUserById(updatedMessage.senderId);
+      const systemContext = { companyId: null, isSuperAdmin: true };
+      const sender = await storage.getUserById(systemContext, updatedMessage.senderId);
       res.json({
         ...updatedMessage,
         senderName: sender?.name || 'Unknown',
@@ -912,6 +1009,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Access denied to original message" });
       }
 
+      const systemContext = { companyId: null, isSuperAdmin: true };
       const forwardedMessages = [];
       for (const conversationId of conversationIds) {
         if (!userConvIds.includes(conversationId)) {
@@ -920,13 +1018,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const forwardedMessage = await storage.createMessage({
           conversationId,
-          senderId: req.userId,
+          senderId: req.userId!,
           body: originalMessage.body || undefined,
           attachmentUrl: originalMessage.attachmentUrl || undefined,
           forwardedFromId: originalMessage.id,
         });
 
-        const sender = await storage.getUserById(forwardedMessage.senderId);
+        const sender = await storage.getUserById(systemContext, forwardedMessage.senderId);
         forwardedMessages.push({
           ...forwardedMessage,
           senderName: sender?.name || 'Unknown',
@@ -948,10 +1046,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/meetings", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const meetings = await storage.getAllMeetings();
+      const systemContext = { companyId: null, isSuperAdmin: true };
       
       const meetingsWithDetails = await Promise.all(
         meetings.map(async (meeting) => {
-          const creator = await storage.getUserById(meeting.createdBy);
+          const creator = await storage.getUserById(systemContext, meeting.createdBy);
           const participants = await storage.getMeetingParticipants(meeting.id);
           return {
             ...meeting,
@@ -997,7 +1096,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const creator = await storage.getUserById(meeting.createdBy);
+      const systemContext = { companyId: null, isSuperAdmin: true };
+      const creator = await storage.getUserById(systemContext, meeting.createdBy);
       const participants = await storage.getMeetingParticipants(meeting.id);
 
       res.status(201).json({
@@ -1097,8 +1197,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.updateMeetingSummary(meetingId, summary, language);
 
+      const systemContext = { companyId: null, isSuperAdmin: true };
       const updatedMeeting = await storage.getMeetingById(meetingId);
-      const creator = await storage.getUserById(updatedMeeting!.createdBy);
+      const creator = await storage.getUserById(systemContext, updatedMeeting!.createdBy);
       const participants = await storage.getMeetingParticipants(meetingId);
 
       res.json({
@@ -1125,7 +1226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Meeting not found" });
       }
 
-      const user = await storage.getUserById(req.userId);
+      const user = await storage.getUserById(req.queryContext!, req.userId);
       if (meeting.createdBy !== req.userId && user?.role !== 'admin') {
         return res.status(403).json({ error: "Only the creator or an admin can edit this meeting" });
       }
@@ -1189,8 +1290,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      const systemContext = { companyId: null, isSuperAdmin: true };
       const updatedMeeting = await storage.getMeetingById(meetingId);
-      const creator = await storage.getUserById(updatedMeeting!.createdBy);
+      const creator = await storage.getUserById(systemContext, updatedMeeting!.createdBy);
       const participants = await storage.getMeetingParticipants(meetingId);
 
       res.json({
@@ -1217,7 +1319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Meeting not found" });
       }
 
-      const user = await storage.getUserById(req.userId);
+      const user = await storage.getUserById(req.queryContext!, req.userId);
       if (meeting.createdBy !== req.userId && user?.role !== 'admin') {
         return res.status(403).json({ error: "Only the creator or an admin can delete this meeting" });
       }
@@ -1273,7 +1375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       broadcastUpdate({
         type: 'drive_folder_created',
         folder,
-      });
+      }, req.queryContext!.companyId);
     } catch (error) {
       console.error("[DRIVE] Create folder error:", error);
       res.status(500).json({ error: "Failed to create folder" });
@@ -1304,7 +1406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       broadcastUpdate({
         type: 'drive_folder_deleted',
         folderId,
-      });
+      }, req.queryContext!.companyId);
     } catch (error) {
       console.error("Delete drive folder error:", error);
       res.status(500).json({ error: "Failed to delete folder" });
@@ -1360,7 +1462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       broadcastUpdate({
         type: 'drive_file_uploaded',
         file,
-      });
+      }, req.queryContext!.companyId);
     } catch (error) {
       console.error("[DRIVE] Upload file error:", error);
       res.status(500).json({ error: "Failed to upload file" });
@@ -1432,7 +1534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       broadcastUpdate({
         type: 'drive_file_deleted',
         fileId,
-      });
+      }, req.queryContext!.companyId);
     } catch (error) {
       console.error("Delete drive file error:", error);
       res.status(500).json({ error: "Failed to delete file" });
@@ -1468,12 +1570,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         authorizedUserIds.push(taskDetails.assignedTo);
       }
       
-      // Get all admin user IDs for real-time updates
-      const adminIds = (await storage.getAllUsers()).filter(u => u.role === 'admin').map(u => u.id);
+      // Get all admin user IDs for real-time updates (in the same company)
+      const adminIds = (await storage.getAllUsers(req.queryContext!)).filter(u => u.role === 'admin').map(u => u.id);
       
       // Broadcast to both authorized users and admins for real-time updates
       const allRecipients = Array.from(new Set([...authorizedUserIds, ...adminIds]));
-      broadcastTaskUpdate('task_created', taskDetails, allRecipients);
+      broadcastTaskUpdate('task_created', taskDetails, req.queryContext!.companyId, allRecipients);
       
       res.status(201).json(taskDetails);
     } catch (error) {
@@ -1490,7 +1592,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const filter = req.query.filter as string | undefined;
       const userIdParam = req.query.userId as string | undefined;
-      const user = await storage.getUserById(req.userId);
+      const user = await storage.getUserById(req.queryContext!, req.userId!);
       const isAdmin = user?.role === 'admin';
 
       // Validate userId parameter if provided
@@ -1551,7 +1653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Task not found" });
       }
 
-      const user = await storage.getUserById(req.userId);
+      const user = await storage.getUserById(req.queryContext!, req.userId);
       const isAdmin = user?.role === 'admin';
 
       // Admins can see all tasks, regular users only see tasks they're involved in
@@ -1579,7 +1681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Task not found" });
       }
 
-      const user = await storage.getUserById(req.userId);
+      const user = await storage.getUserById(req.queryContext!, req.userId!);
       const isAdmin = user?.role === 'admin';
       const isCreator = task.createdBy === req.userId;
       const isAssignee = task.assignedTo === req.userId;
@@ -1646,7 +1748,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If status or completion percentage was updated by a team member, notify all admins
       if ((req.body.status !== undefined || req.body.completionPercentage !== undefined) && !isAdmin) {
-        const allAdmins = await storage.getAllAdmins();
+        const allAdmins = await storage.getAllAdmins(req.queryContext!);
         const adminIds = allAdmins.map(admin => admin.id);
         
         // Broadcast to both authorized users and admins
@@ -1654,9 +1756,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         broadcastTaskUpdate('task_status_updated', {
           ...taskDetails,
           updatedBy: user?.name || 'Unknown',
-        }, allRecipients);
+        }, req.queryContext!.companyId, allRecipients);
       } else {
-        broadcastTaskUpdate('task_updated', taskDetails, authorizedUserIds);
+        broadcastTaskUpdate('task_updated', taskDetails, req.queryContext!.companyId, authorizedUserIds);
       }
       
       res.json(taskDetails);
@@ -1692,7 +1794,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.deleteTask(taskId);
       
-      broadcastTaskUpdate('task_deleted', { id: taskId }, authorizedUserIds);
+      broadcastTaskUpdate('task_deleted', { id: taskId }, req.queryContext!.companyId, authorizedUserIds);
       
       res.json({ message: "Task deleted successfully" });
     } catch (error) {
@@ -1720,7 +1822,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteTask(taskId);
       
       // Broadcast to all involved users
-      broadcastTaskUpdate('task_deleted', { id: taskId }, authorizedUserIds);
+      broadcastTaskUpdate('task_deleted', { id: taskId }, req.queryContext!.companyId, authorizedUserIds);
       
       res.json({ message: "Task deleted successfully by admin" });
     } catch (error) {
@@ -1812,7 +1914,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all tasks and projects
       const allTasks = await storage.getAllTasks();
       const allProjects = await storage.getAllProjects();
-      const allUsers = await storage.getAllUsers();
+      const allUsers = await storage.getAllUsers(req.queryContext!);
       
       // User-wise task statistics
       const userStats = allUsers.map(user => {
@@ -2234,7 +2336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       broadcastUpdate({
         type: 'project_created',
         project,
-      });
+      }, req.queryContext!.companyId);
     } catch (error) {
       console.error("[PROJECT] Create project error:", error);
       if (error instanceof Error) {
@@ -2270,7 +2372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get current user to check if admin
-      const currentUser = await storage.getUserById(req.userId);
+      const currentUser = await storage.getUserById(req.queryContext!, req.userId);
       if (!currentUser) {
         return res.status(401).json({ error: "User not found" });
       }
@@ -2293,7 +2395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       broadcastUpdate({
         type: 'project_updated',
         project,
-      });
+      }, req.queryContext!.companyId);
     } catch (error) {
       console.error("Update project error:", error);
       res.status(500).json({ error: "Failed to update project" });
@@ -2313,7 +2415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get current user to check if admin
-      const currentUser = await storage.getUserById(req.userId);
+      const currentUser = await storage.getUserById(req.queryContext!, req.userId);
       if (!currentUser) {
         return res.status(401).json({ error: "User not found" });
       }
@@ -2332,7 +2434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       broadcastUpdate({
         type: 'project_deleted',
         projectId: parseInt(req.params.id),
-      });
+      }, req.queryContext!.companyId);
     } catch (error) {
       console.error("Delete project error:", error);
       res.status(500).json({ error: "Failed to delete project" });
@@ -2388,7 +2490,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Broadcast incoming call notification to conversation members
       if (conversationId) {
-        const caller = await storage.getUserById(req.userId);
+        const systemContext = { companyId: null, isSuperAdmin: true };
+        const caller = await storage.getUserById(systemContext, req.userId!);
         if (caller) {
           const members = await storage.getConversationMembers(conversationId);
           if (members && members.length > 0) {
@@ -2472,9 +2575,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "You must be in the call to invite others" });
       }
 
-      const inviter = await storage.getUserById(req.userId);
+      const systemContext = { companyId: null, isSuperAdmin: true };
+      const inviter = await storage.getUserById(systemContext, req.userId!);
       if (!inviter) {
         return res.status(401).json({ error: "User not found" });
+      }
+
+      if (!wss) {
+        return res.status(500).json({ error: "WebSocket server not available" });
       }
 
       wss.clients.forEach((client: any) => {
@@ -2528,13 +2636,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const updatedCall = await storage.getActiveCallById(callId);
+      
+      // Get companyId from conversation
+      const members = await storage.getConversationMembers(call.conversationId);
+      const companyId = members[0]?.companyId ?? null;
 
       broadcastUpdate({
         type: 'call_participant_joined',
         callId,
         userId: req.userId,
         participantCount: updatedCall?.participantCount || 0,
-      });
+      }, companyId);
 
       res.json({ success: true });
     } catch (error) {
@@ -2551,16 +2663,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const callId = parseInt(req.params.id);
       
+      const call = await storage.getActiveCallById(callId);
+      
+      // Get companyId from conversation before removing participant
+      const members = await storage.getConversationMembers(call!.conversationId);
+      const companyId = members[0]?.companyId ?? null;
+      
       await storage.removeCallParticipant(callId, req.userId);
 
-      const call = await storage.getActiveCallById(callId);
+      const updatedCall = await storage.getActiveCallById(callId);
 
       broadcastUpdate({
         type: 'call_participant_left',
         callId,
         userId: req.userId,
-        participantCount: call?.participantCount || 0,
-      });
+        participantCount: updatedCall?.participantCount || 0,
+      }, companyId);
 
       res.json({ success: true });
     } catch (error) {
@@ -2583,18 +2701,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (call.hostId !== req.userId) {
-        const user = await storage.getUserById(req.userId);
+        const user = await storage.getUserById(req.queryContext!, req.userId);
         if (user?.role !== 'admin') {
           return res.status(403).json({ error: "Only the host or admin can end the call" });
         }
       }
+      
+      // Get companyId from conversation before ending call
+      const members = await storage.getConversationMembers(call.conversationId);
+      const companyId = members[0]?.companyId ?? null;
 
       await storage.endCall(callId);
 
       broadcastUpdate({
         type: 'call_ended',
         callId,
-      });
+      }, companyId);
 
       res.json({ success: true });
     } catch (error) {
@@ -2620,16 +2742,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return onlineIds;
   };
 
-  // Helper function to broadcast user presence status
-  const broadcastUserPresence = (userId: number, status: 'online' | 'offline') => {
-    wss.clients.forEach((client: WebSocketClient) => {
-      if (client.readyState === WebSocket.OPEN && client.userId) {
-        client.send(JSON.stringify({
-          type: status === 'online' ? 'user_online' : 'user_offline',
-          data: { userId },
-        }));
-      }
-    });
+  // Helper function to broadcast user presence status (company-scoped)
+  const broadcastUserPresence = async (userId: number, status: 'online' | 'offline') => {
+    const systemContext = { companyId: null, isSuperAdmin: true };
+    const user = await storage.getUserById(systemContext, userId);
+    if (!user) return;
+    
+    const message = {
+      type: status === 'online' ? 'user_online' : 'user_offline',
+      data: { userId },
+    };
+    
+    // Broadcast only to users in the same company
+    broadcastToCompany(message, user.companyId, false);
   };
 
   wss.on('connection', (ws: WebSocketClient, req) => {
@@ -2648,10 +2773,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     ws.userId = payload.userId;
+    ws.companyId = payload.companyId;  // Track company for tenant isolation
     ws.isAlive = true;
     ws.isTabVisible = true; // Assume tab is visible on initial connection
 
-    console.log(`WebSocket client connected: userId=${ws.userId}`);
+    console.log(`WebSocket client connected: userId=${ws.userId}, companyId=${ws.companyId}`);
 
     // Broadcast that this user is online
     broadcastUserPresence(ws.userId, 'online');
@@ -2672,8 +2798,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const message = JSON.parse(data.toString());
         
         // Update last seen on any WebSocket activity
-        if (ws.userId) {
-          await storage.updateUserLastSeen(ws.userId);
+        if (ws.userId && ws.companyId !== undefined) {
+          const userContext = { companyId: ws.companyId, isSuperAdmin: ws.companyId === null };
+          await storage.updateUserLastSeen(userContext, ws.userId);
         }
         
         // Handle tab visibility updates for smart push notification routing
@@ -2693,13 +2820,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const members = await storage.getConversationMembers(conversationId);
           if (!members || members.length === 0) return;
           
-          // Extract member IDs
+          // Extract member IDs and derive company (all members should be in same company)
           const memberIds = members.map(m => m.id);
+          const companyId = members[0]?.companyId ?? null;
           
-          // Broadcast to all members (they will filter out their own call on the client)
+          // Broadcast to all members in the same company (they will filter out their own call on the client)
           const connectedUserIds: number[] = [];
-          wss.clients.forEach((client: any) => {
-            if (client.readyState === WebSocket.OPEN && memberIds.includes(client.userId)) {
+          wss.clients.forEach((client: WebSocketClient) => {
+            if (client.readyState === WebSocket.OPEN && 
+                client.userId && 
+                client.companyId === companyId &&
+                memberIds.includes(client.userId)) {
               connectedUserIds.push(client.userId);
               client.send(JSON.stringify({
                 type: 'incoming_call',
@@ -2736,10 +2867,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`[invite_to_call] Sending invitation to user ${userId} from ${from.name} for ${callType} call in conversation ${conversationId}`);
           
-          // Find the WebSocket connection for the invited user
+          // Verify caller belongs to the conversation and get companyId
+          const systemContext = { companyId: null, isSuperAdmin: true };
+          const members = await storage.getConversationMembers(conversationId);
+          if (!members || members.length === 0) return;
+          const companyId = members[0]?.companyId ?? null;
+          
+          // Find the WebSocket connection for the invited user (must be in same company)
           let foundClient = false;
-          wss.clients.forEach((client: any) => {
-            if (client.readyState === ws.OPEN && client.userId === userId) {
+          wss.clients.forEach((client: WebSocketClient) => {
+            if (client.readyState === WebSocket.OPEN && 
+                client.userId === userId && 
+                client.companyId === companyId) {
               foundClient = true;
               console.log(`[invite_to_call] Found WebSocket connection for user ${userId}, sending incoming_call event`);
               client.send(JSON.stringify({
@@ -2791,12 +2930,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const members = await storage.getConversationMembers(conversationId);
           if (!members || members.length === 0) return;
           
-          // Extract member IDs
+          // Extract member IDs and derive company
           const memberIds = members.map(m => m.id);
+          const companyId = members[0]?.companyId ?? null;
           
-          // Broadcast to all conversation members (caller will stop their ringtone and set active call state)
-          wss.clients.forEach((client: any) => {
-            if (client.readyState === ws.OPEN && memberIds.includes(client.userId)) {
+          // Broadcast to all conversation members in same company (caller will stop their ringtone and set active call state)
+          wss.clients.forEach((client: WebSocketClient) => {
+            if (client.readyState === WebSocket.OPEN && 
+                client.userId && 
+                client.companyId === companyId &&
+                memberIds.includes(client.userId)) {
               client.send(JSON.stringify({
                 type: 'call_answered',
                 data: { 
@@ -2831,12 +2974,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const members = await storage.getConversationMembers(conversationId);
           if (!members || members.length === 0) return;
           
-          // Extract member IDs
+          // Extract member IDs and derive company
           const memberIds = members.map(m => m.id);
+          const companyId = members[0]?.companyId ?? null;
           
-          // Broadcast to all conversation members (caller will stop their ringtone and show notification)
-          wss.clients.forEach((client: any) => {
-            if (client.readyState === ws.OPEN && memberIds.includes(client.userId)) {
+          // Broadcast to all conversation members in same company (caller will stop their ringtone and show notification)
+          wss.clients.forEach((client: WebSocketClient) => {
+            if (client.readyState === WebSocket.OPEN && 
+                client.userId && 
+                client.companyId === companyId &&
+                memberIds.includes(client.userId)) {
               client.send(JSON.stringify({
                 type: 'call_rejected',
                 data: { conversationId },
@@ -2857,7 +3004,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Verify user belongs to this conversation
-          const userConvIds = await storage.getUserConversationIds(ws.userId!);
+          const systemContext = { companyId: null, isSuperAdmin: true };
+          const userConvIds = await storage.getUserConversationIds(systemContext, ws.userId!);
           if (!userConvIds.includes(conversationId)) {
             ws.send(JSON.stringify({ type: 'error', error: 'Access denied' }));
             return;
@@ -2867,15 +3015,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const members = await storage.getConversationMembers(conversationId);
           if (!members || members.length === 0) return;
           
-          // Extract member IDs
+          // Extract member IDs and derive company
           const memberIds = members.map(m => m.id);
+          const companyId = members[0]?.companyId ?? null;
           
           // Get caller info to include in notification
-          const caller = await storage.getUserById(ws.userId!);
+          const caller = await storage.getUserById(systemContext, ws.userId!);
           
-          // Broadcast to all conversation members (receiver will stop ringtone and see missed call)
-          wss.clients.forEach((client: any) => {
-            if (client.readyState === ws.OPEN && memberIds.includes(client.userId)) {
+          // Broadcast to all conversation members in same company (receiver will stop ringtone and see missed call)
+          wss.clients.forEach((client: WebSocketClient) => {
+            if (client.readyState === WebSocket.OPEN && 
+                client.userId && 
+                client.companyId === companyId &&
+                memberIds.includes(client.userId)) {
               client.send(JSON.stringify({
                 type: 'call_cancelled',
                 data: { 
@@ -2889,6 +3041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         if (message.type === 'new_message') {
+          const systemContext = { companyId: null, isSuperAdmin: true };
           const validation = insertMessageSchema.extend({
             conversationId: z.number(),
             senderId: z.number(),
@@ -2902,20 +3055,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
 
-          const userConvIds = await storage.getUserConversationIds(ws.userId!);
+          const userConvIds = await storage.getUserConversationIds(systemContext, ws.userId!);
           if (!userConvIds.includes(validation.data.conversationId)) {
             ws.send(JSON.stringify({ type: 'error', error: 'Access denied' }));
             return;
           }
 
           const newMessage = await storage.createMessage(validation.data);
-          const sender = await storage.getUserById(newMessage.senderId);
+          const sender = await storage.getUserById(systemContext, newMessage.senderId);
 
           let repliedToMessage = null;
           if (newMessage.replyToId) {
             const replyMsg = await storage.getMessageById(newMessage.replyToId);
             if (replyMsg) {
-              const replySender = await storage.getUserById(replyMsg.senderId);
+              const replySender = await storage.getUserById(systemContext, replyMsg.senderId);
               repliedToMessage = {
                 id: replyMsg.id,
                 senderName: replySender?.name || 'Unknown',
@@ -2934,10 +3087,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const members = await storage.getConversationMembers(validation.data.conversationId);
           const memberIds = members.map(m => m.id);
+          const companyId = members[0]?.companyId ?? null;
 
           wss.clients.forEach((client: WebSocketClient) => {
             if (client.readyState === WebSocket.OPEN && 
                 client.userId && 
+                client.companyId === companyId &&
                 memberIds.includes(client.userId)) {
               client.send(JSON.stringify({
                 type: 'new_message',
@@ -2948,6 +3103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         if (message.type === 'message_edited') {
+          const systemContext = { companyId: null, isSuperAdmin: true };
           const { messageId, body, attachmentUrl } = message.data;
           
           const existingMessage = await storage.getMessageById(messageId);
@@ -2967,7 +3123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           
-          const sender = await storage.getUserById(updatedMessage.senderId);
+          const sender = await storage.getUserById(systemContext, updatedMessage.senderId);
           const messageWithSender = {
             ...updatedMessage,
             senderName: sender?.name || 'Unknown',
@@ -2976,10 +3132,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           const members = await storage.getConversationMembers(existingMessage.conversationId);
           const memberIds = members.map(m => m.id);
+          const companyId = members[0]?.companyId ?? null;
           
           wss.clients.forEach((client: WebSocketClient) => {
             if (client.readyState === WebSocket.OPEN && 
                 client.userId && 
+                client.companyId === companyId &&
                 memberIds.includes(client.userId)) {
               client.send(JSON.stringify({
                 type: 'message_edited',
@@ -2990,21 +3148,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         if (message.type === 'typing') {
+          const systemContext = { companyId: null, isSuperAdmin: true };
           const { conversationId, isTyping } = message.data;
           
-          const userConvIds = await storage.getUserConversationIds(ws.userId!);
+          const userConvIds = await storage.getUserConversationIds(systemContext, ws.userId!);
           if (!userConvIds.includes(conversationId)) {
             return;
           }
 
           const members = await storage.getConversationMembers(conversationId);
           const memberIds = members.map(m => m.id);
-          const user = await storage.getUserById(ws.userId!);
+          const companyId = members[0]?.companyId ?? null;
+          const user = await storage.getUserById(systemContext, ws.userId!);
 
           wss.clients.forEach((client: WebSocketClient) => {
             if (client.readyState === WebSocket.OPEN && 
                 client.userId && 
                 client.userId !== ws.userId &&
+                client.companyId === companyId &&
                 memberIds.includes(client.userId)) {
               client.send(JSON.stringify({
                 type: 'typing',

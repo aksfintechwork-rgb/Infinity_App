@@ -1,4 +1,4 @@
-import { storage } from "./storage";
+import { storage, type QueryContext } from "./storage";
 import { hashPassword, comparePassword } from "./auth";
 
 /**
@@ -8,19 +8,23 @@ import { hashPassword, comparePassword } from "./auth";
  */
 export async function initializeDatabase() {
   try {
-    const users = await storage.getAllUsers();
+    // System context with super admin privileges for seeding
+    const systemContext: QueryContext = { companyId: null, isSuperAdmin: true };
+    
+    const users = await storage.getAllUsers(systemContext);
     
     if (users.length === 0) {
       // Database is empty - create initial admin user
       console.log("[SEED] 🌱 Database is empty. Creating initial admin user...");
       
       const hashedPassword = await hashPassword("admin123");
-      const adminUser = await storage.createUser({
+      const adminUser = await storage.createUser(systemContext, {
         name: "Admin User",
         loginId: "admin",
         email: "admin@supremotraders.com",
         password: hashedPassword,
-        role: "admin"
+        role: "admin",
+        companyId: 1 // Default company
       });
       
       console.log(`[SEED] ✅ Initial admin user created successfully!`);
@@ -32,18 +36,19 @@ export async function initializeDatabase() {
       // Database has users - verify admin account exists and has correct password
       console.log(`[SEED] ℹ️  Database already initialized with ${users.length} user(s)`);
       
-      const adminUser = await storage.getUserByLoginId("admin");
+      const adminUser = await storage.getUserByLoginId(systemContext, "admin");
       
       if (!adminUser) {
         // Admin doesn't exist - create it
         console.log("[SEED] ⚠️  Admin user not found. Creating admin user...");
         const hashedPassword = await hashPassword("admin123");
-        const newAdmin = await storage.createUser({
+        const newAdmin = await storage.createUser(systemContext, {
           name: "Admin User",
           loginId: "admin",
           email: "admin@supremotraders.com",
           password: hashedPassword,
-          role: "admin"
+          role: "admin",
+          companyId: 1 // Default company
         });
         console.log(`[SEED] ✅ Admin user created. Login with: admin / admin123`);
         return newAdmin;
@@ -55,7 +60,7 @@ export async function initializeDatabase() {
           // Password is wrong - heal it
           console.log("[SEED] 🔧 Admin password mismatch detected. Healing admin password...");
           const hashedPassword = await hashPassword("admin123");
-          await storage.updateUserPassword(adminUser.id, hashedPassword);
+          await storage.updateUserPassword(systemContext, adminUser.id, hashedPassword);
           console.log(`[SEED] ✅ Admin password restored to default: admin123`);
           console.log(`[SEED] 🔒 IMPORTANT: Please change the admin password after login for security!`);
         } else {
