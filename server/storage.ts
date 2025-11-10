@@ -42,8 +42,6 @@ import {
   type InsertTodo,
   type PushSubscription,
   type InsertPushSubscription,
-  type Company,
-  type InsertCompany,
   users,
   conversations,
   messages,
@@ -62,58 +60,20 @@ import {
   activeCallParticipants,
   todos,
   pushSubscriptions,
-  companies,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, inArray, sql, gte, lte, isNotNull, SQL } from "drizzle-orm";
-
-/**
- * Query context for multi-tenant operations
- * - For super_admin: companyId=null, isSuperAdmin=true → queries all companies
- * - For regular users: companyId=required, isSuperAdmin=false → scoped to their company
- */
-export interface QueryContext {
-  companyId: number | null;
-  isSuperAdmin: boolean;
-}
-
-/**
- * Helper to build company-scoped WHERE conditions
- * Returns SQL condition that filters by companyId (or allows all if super_admin)
- */
-function buildCompanyFilter(ctx: QueryContext, tableCompanyIdColumn: SQL): SQL | undefined {
-  if (ctx.isSuperAdmin && ctx.companyId === null) {
-    // Super admin accessing all companies - no filter needed
-    return undefined;
-  }
-  
-  if (ctx.companyId === null) {
-    throw new Error("companyId is required for non-super-admin users");
-  }
-  
-  // Regular user or super admin viewing specific company - filter by companyId
-  return eq(tableCompanyIdColumn, ctx.companyId);
-}
+import { eq, and, or, desc, inArray, sql, gte, lte, isNotNull } from "drizzle-orm";
 
 export interface IStorage {
-  // Company Management (super_admin only)
-  createCompany(company: InsertCompany): Promise<Company>;
-  getAllCompanies(): Promise<Company[]>;
-  getCompanyById(id: number): Promise<Company | undefined>;
-  getCompanyBySubdomain(subdomain: string): Promise<Company | undefined>;
-  updateCompany(id: number, updates: Partial<InsertCompany>): Promise<Company | undefined>;
-  deleteCompany(id: number): Promise<void>;
-  
-  // User Management (company-scoped)
-  getUserById(ctx: QueryContext, id: number): Promise<User | undefined>;
-  getUserByEmail(ctx: QueryContext, email: string): Promise<User | undefined>;
-  getUserByLoginId(ctx: QueryContext, loginId: string): Promise<User | undefined>;
-  createUser(ctx: QueryContext, user: InsertUser): Promise<User>;
-  getAllUsers(ctx: QueryContext): Promise<User[]>;
-  getAllAdmins(ctx: QueryContext): Promise<User[]>;
-  updateUserPassword(ctx: QueryContext, userId: number, hashedPassword: string): Promise<void>;
-  updateUserLastSeen(ctx: QueryContext, userId: number): Promise<void>;
-  deleteUser(ctx: QueryContext, userId: number): Promise<void>;
+  getUserById(id: number): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByLoginId(loginId: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
+  getAllAdmins(): Promise<User[]>;
+  updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
+  updateUserLastSeen(userId: number): Promise<void>;
+  deleteUser(userId: number): Promise<void>;
   
   createConversation(conversation: InsertConversation): Promise<Conversation>;
   getConversationById(id: number): Promise<Conversation | undefined>;
@@ -219,125 +179,56 @@ export interface IStorage {
 }
 
 export class PostgresStorage implements IStorage {
-  async createCompany(company: InsertCompany): Promise<Company> {
-    const result = await db.insert(companies).values(company).returning();
+  async getUserById(id: number): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
     return result[0];
   }
 
-  async getAllCompanies(): Promise<Company[]> {
-    return db.select().from(companies).orderBy(companies.name);
-  }
-
-  async getCompanyById(id: number): Promise<Company | undefined> {
-    const result = await db.select().from(companies).where(eq(companies.id, id)).limit(1);
-    return result[0];
-  }
-
-  async getCompanyBySubdomain(subdomain: string): Promise<Company | undefined> {
-    const result = await db.select().from(companies).where(eq(companies.subdomain, subdomain)).limit(1);
-    return result[0];
-  }
-
-  async updateCompany(id: number, updates: Partial<InsertCompany>): Promise<Company | undefined> {
-    const result = await db
-      .update(companies)
-      .set(updates)
-      .where(eq(companies.id, id))
-      .returning();
-    return result[0];
-  }
-
-  async deleteCompany(id: number): Promise<void> {
-    await db.delete(companies).where(eq(companies.id, id));
-  }
-
-  async getUserById(ctx: QueryContext, id: number): Promise<User | undefined> {
-    const filter = buildCompanyFilter(ctx, users.companyId);
-    const conditions = filter ? and(eq(users.id, id), filter) : eq(users.id, id);
-    const result = await db.select().from(users).where(conditions).limit(1);
-    return result[0];
-  }
-
-  async getUserByEmail(ctx: QueryContext, email: string): Promise<User | undefined> {
+  async getUserByEmail(email: string): Promise<User | undefined> {
     if (!email) return undefined;
-    const filter = buildCompanyFilter(ctx, users.companyId);
-    const conditions = filter ? and(eq(users.email, email), filter) : eq(users.email, email);
-    const result = await db.select().from(users).where(conditions).limit(1);
+    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
     return result[0];
   }
 
-  async getUserByLoginId(ctx: QueryContext, loginId: string): Promise<User | undefined> {
-    // Case-insensitive login ID lookup with company scoping
-    // Users can have same loginId across different companies
-    const filter = buildCompanyFilter(ctx, users.companyId);
-    const loginCondition = sql`LOWER(${users.loginId}) = LOWER(${loginId})`;
-    const conditions = filter ? and(loginCondition, filter) : loginCondition;
-    const result = await db.select().from(users).where(conditions).limit(1);
+  async getUserByLoginId(loginId: string): Promise<User | undefined> {
+    // Case-insensitive login ID lookup
+    const result = await db.select().from(users).where(
+      sql`LOWER(${users.loginId}) = LOWER(${loginId})`
+    ).limit(1);
     return result[0];
   }
 
-  async createUser(ctx: QueryContext, user: InsertUser): Promise<User> {
-    // Determine final companyId
-    let finalCompanyId: number | null;
-    
-    if (ctx.isSuperAdmin) {
-      // Super admin can create users for any company or create other super_admins (companyId=null)
-      // Use the provided companyId from the user object
-      finalCompanyId = user.companyId ?? null;
-      
-      // Validation: non-super-admin users MUST have a companyId
-      if (user.role !== 'super_admin' && finalCompanyId === null) {
-        throw new Error("companyId is required for non-super-admin users");
-      }
-    } else {
-      // Regular users can only create users in their own company
-      if (ctx.companyId === null) {
-        throw new Error("companyId is required for non-super-admin users");
-      }
-      finalCompanyId = ctx.companyId;
-    }
-    
+  async createUser(user: InsertUser): Promise<User> {
     // Convert empty email string to null
-    const userData: typeof user & { email?: string | null; companyId?: number | null } = {
+    const userData: typeof user & { email?: string | null } = {
       ...user,
       email: user.email && user.email.trim() !== '' ? user.email : null,
-      companyId: finalCompanyId,
     };
     const result = await db.insert(users).values(userData as any).returning();
     return result[0];
   }
 
-  async getAllUsers(ctx: QueryContext): Promise<User[]> {
-    const filter = buildCompanyFilter(ctx, users.companyId);
-    return filter ? db.select().from(users).where(filter) : db.select().from(users);
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users);
   }
 
-  async getAllAdmins(ctx: QueryContext): Promise<User[]> {
-    const filter = buildCompanyFilter(ctx, users.companyId);
-    const conditions = filter ? and(eq(users.role, 'admin'), filter) : eq(users.role, 'admin');
-    return db.select().from(users).where(conditions);
+  async getAllAdmins(): Promise<User[]> {
+    return db.select().from(users).where(eq(users.role, 'admin'));
   }
 
-  async updateUserPassword(ctx: QueryContext, userId: number, hashedPassword: string): Promise<void> {
-    const filter = buildCompanyFilter(ctx, users.companyId);
-    const conditions = filter ? and(eq(users.id, userId), filter) : eq(users.id, userId);
-    await db.update(users).set({ password: hashedPassword }).where(conditions);
+  async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
+    await db.update(users).set({ password: hashedPassword }).where(eq(users.id, userId));
   }
 
-  async updateUserLastSeen(ctx: QueryContext, userId: number): Promise<void> {
-    const filter = buildCompanyFilter(ctx, users.companyId);
-    const conditions = filter ? and(eq(users.id, userId), filter) : eq(users.id, userId);
-    await db.update(users).set({ lastSeenAt: new Date() }).where(conditions);
+  async updateUserLastSeen(userId: number): Promise<void> {
+    await db.update(users).set({ lastSeenAt: new Date() }).where(eq(users.id, userId));
   }
 
-  async deleteUser(ctx: QueryContext, userId: number): Promise<void> {
-    const filter = buildCompanyFilter(ctx, users.companyId);
-    const conditions = filter ? and(eq(users.id, userId), filter) : eq(users.id, userId);
-    
+  async deleteUser(userId: number): Promise<void> {
     // First, delete user's conversation memberships
     await db.delete(conversationMembers).where(eq(conversationMembers.userId, userId));
     // Then delete the user
-    await db.delete(users).where(conditions);
+    await db.delete(users).where(eq(users.id, userId));
   }
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {
@@ -411,14 +302,12 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .select({
         id: users.id,
-        companyId: users.companyId,
         name: users.name,
         loginId: users.loginId,
         email: users.email,
         password: users.password,
         role: users.role,
         avatar: users.avatar,
-        lastSeenAt: users.lastSeenAt,
         createdAt: users.createdAt,
       })
       .from(conversationMembers)
@@ -676,14 +565,12 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .select({
         id: users.id,
-        companyId: users.companyId,
         name: users.name,
         loginId: users.loginId,
         email: users.email,
         password: users.password,
         role: users.role,
         avatar: users.avatar,
-        lastSeenAt: users.lastSeenAt,
         createdAt: users.createdAt,
       })
       .from(meetingParticipants)
@@ -952,7 +839,6 @@ export class PostgresStorage implements IStorage {
     let query = db
       .select({
         id: dailyWorksheets.id,
-        companyId: dailyWorksheets.companyId,
         userId: dailyWorksheets.userId,
         date: dailyWorksheets.date,
         todos: dailyWorksheets.todos,
@@ -993,7 +879,6 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .select({
         id: dailyWorksheets.id,
-        companyId: dailyWorksheets.companyId,
         userId: dailyWorksheets.userId,
         date: dailyWorksheets.date,
         todos: dailyWorksheets.todos,
@@ -1030,7 +915,6 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .select({
         id: projects.id,
-        companyId: projects.companyId,
         projectId: projects.projectId,
         projectName: projects.projectName,
         description: projects.description,
@@ -1081,7 +965,6 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .select({
         id: projects.id,
-        companyId: projects.companyId,
         projectId: projects.projectId,
         projectName: projects.projectName,
         description: projects.description,
@@ -1130,7 +1013,6 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .select({
         id: projects.id,
-        companyId: projects.companyId,
         projectId: projects.projectId,
         projectName: projects.projectName,
         description: projects.description,
@@ -1215,7 +1097,6 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .select({
         id: driveFolders.id,
-        companyId: driveFolders.companyId,
         name: driveFolders.name,
         parentId: driveFolders.parentId,
         createdById: driveFolders.createdById,
@@ -1275,7 +1156,6 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .select({
         id: driveFiles.id,
-        companyId: driveFiles.companyId,
         name: driveFiles.name,
         originalName: driveFiles.originalName,
         storagePath: driveFiles.storagePath,
@@ -1301,7 +1181,6 @@ export class PostgresStorage implements IStorage {
       const result = await db
         .select({
           id: driveFiles.id,
-          companyId: driveFiles.companyId,
           name: driveFiles.name,
           originalName: driveFiles.originalName,
           storagePath: driveFiles.storagePath,
@@ -1326,7 +1205,6 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .select({
         id: driveFiles.id,
-        companyId: driveFiles.companyId,
         name: driveFiles.name,
         originalName: driveFiles.originalName,
         storagePath: driveFiles.storagePath,
@@ -1354,7 +1232,6 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .select({
         id: driveFiles.id,
-        companyId: driveFiles.companyId,
         name: driveFiles.name,
         originalName: driveFiles.originalName,
         storagePath: driveFiles.storagePath,
@@ -1401,7 +1278,6 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .select({
         id: activeCalls.id,
-        companyId: activeCalls.companyId,
         roomName: activeCalls.roomName,
         roomUrl: activeCalls.roomUrl,
         conversationId: activeCalls.conversationId,
@@ -1431,7 +1307,6 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .select({
         id: activeCalls.id,
-        companyId: activeCalls.companyId,
         roomName: activeCalls.roomName,
         roomUrl: activeCalls.roomUrl,
         conversationId: activeCalls.conversationId,
@@ -1461,7 +1336,6 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .select({
         id: activeCalls.id,
-        companyId: activeCalls.companyId,
         roomName: activeCalls.roomName,
         roomUrl: activeCalls.roomUrl,
         conversationId: activeCalls.conversationId,
@@ -1494,7 +1368,6 @@ export class PostgresStorage implements IStorage {
     const result = await db
       .select({
         id: activeCalls.id,
-        companyId: activeCalls.companyId,
         roomName: activeCalls.roomName,
         roomUrl: activeCalls.roomUrl,
         conversationId: activeCalls.conversationId,
