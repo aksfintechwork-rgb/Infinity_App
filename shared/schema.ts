@@ -534,6 +534,35 @@ export const insertActiveCallParticipantSchema = _baseActiveCallParticipantSchem
 export type InsertActiveCallParticipant = z.infer<typeof insertActiveCallParticipantSchema>;
 export type ActiveCallParticipant = typeof activeCallParticipants.$inferSelect;
 
+export const missedCalls = pgTable("missed_calls", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  callerId: integer("caller_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  receiverId: integer("receiver_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  conversationId: integer("conversation_id").references(() => conversations.id, { onDelete: "cascade" }),
+  callType: text("call_type").notNull().default("video"),
+  missedAt: timestamp("missed_at").notNull().defaultNow(),
+  viewed: boolean("viewed").notNull().default(false),
+  viewedAt: timestamp("viewed_at"),
+});
+
+const _baseMissedCallSchema = createInsertSchema(missedCalls, {
+  callType: callTypeEnum.default("video"),
+});
+
+export const insertMissedCallSchema = _baseMissedCallSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  missedAt: true,
+});
+
+export type InsertMissedCall = z.infer<typeof insertMissedCallSchema>;
+export type MissedCall = typeof missedCalls.$inferSelect;
+export type MissedCallWithDetails = MissedCall & {
+  callerName: string;
+  callerAvatar: string | null;
+};
+
 export const todoPriorityEnum = z.enum(["low", "medium", "high", "urgent"]);
 export type TodoPriority = z.infer<typeof todoPriorityEnum>;
 
