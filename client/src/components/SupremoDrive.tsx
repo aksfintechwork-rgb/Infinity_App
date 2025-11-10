@@ -122,7 +122,8 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
       });
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+        throw new Error(errorData.error || 'Upload failed');
       }
 
       return response.json();
@@ -133,8 +134,13 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
       setIsUploadOpen(false);
       setSelectedFile(null);
     },
-    onError: () => {
-      toast({ title: 'Failed to upload file', variant: 'destructive' });
+    onError: (error: Error) => {
+      console.error('[SupremoDrive] Upload error:', error);
+      toast({ 
+        title: 'Failed to upload file', 
+        description: error.message || 'Please try again',
+        variant: 'destructive' 
+      });
     },
   });
 
