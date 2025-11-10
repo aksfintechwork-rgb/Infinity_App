@@ -385,6 +385,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint: Reset/change password for any user
+  app.patch("/api/admin/users/:userId/password", authMiddleware, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+
+      const { newPassword } = req.body;
+      
+      if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters long" });
+      }
+
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const hashedPassword = await hashPassword(newPassword);
+      await storage.updateUserPassword(userId, hashedPassword);
+      
+      console.log(`[ADMIN] Password reset for user ${user.loginId} (ID: ${userId}) by admin ${req.userId}`);
+      
+      res.json({ 
+        message: "Password reset successfully",
+        loginId: user.loginId 
+      });
+    } catch (error) {
+      console.error("Admin reset password error:", error);
+      res.status(500).json({ error: "Failed to reset password" });
+    }
+  });
+
   app.get("/api/conversations", authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (!req.userId) {

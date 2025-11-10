@@ -193,3 +193,21 @@ export async function deleteUser(token: string, userId: number) {
 
   return response.json();
 }
+
+export async function resetUserPassword(token: string, userId: number, newPassword: string) {
+  const response = await fetch(`${API_BASE}/admin/users/${userId}/password`, {
+    method: 'PATCH',
+    headers: { 
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}` 
+    },
+    body: JSON.stringify({ newPassword }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to reset password');
+  }
+
+  return response.json();
+}

@@ -18,7 +18,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { Users, UserPlus, Shield, User, KeyRound, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { Users, UserPlus, Shield, User, KeyRound, CheckCircle, XCircle, Trash2, Lock } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface AdminPanelProps {
   token: string;
@@ -41,6 +50,9 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
     password: '',
   });
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; user?: any } | null>(null);
+  
+  const [resetPasswordData, setResetPasswordData] = useState<{ userId: number; userName: string; loginId: string; newPassword: string } | null>(null);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-users'],
@@ -86,6 +98,26 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
     },
   });
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ userId, newPassword }: { userId: number; newPassword: string }) => 
+      api.resetUserPassword(token, userId, newPassword),
+    onSuccess: (data) => {
+      setIsResetDialogOpen(false);
+      setResetPasswordData(null);
+      toast({
+        title: 'Password Reset Successfully',
+        description: `Password for ${data.loginId} has been updated`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to reset password',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUser.name || !newUser.loginId || !newUser.password) {
@@ -97,6 +129,34 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
       return;
     }
     createUserMutation.mutate(newUser);
+  };
+
+  const handleResetPassword = () => {
+    if (!resetPasswordData) return;
+    
+    if (!resetPasswordData.newPassword || resetPasswordData.newPassword.length < 6) {
+      toast({
+        title: 'Error',
+        description: 'Password must be at least 6 characters long',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    resetPasswordMutation.mutate({
+      userId: resetPasswordData.userId,
+      newPassword: resetPasswordData.newPassword,
+    });
+  };
+
+  const openResetDialog = (user: any) => {
+    setResetPasswordData({
+      userId: user.id,
+      userName: user.name,
+      loginId: user.loginId,
+      newPassword: '',
+    });
+    setIsResetDialogOpen(true);
   };
 
   const handleTestCredentials = async (e: React.FormEvent) => {
@@ -389,6 +449,16 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
                     >
                       {user.role === 'admin' ? 'Admin' : 'User'}
                     </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                      onClick={() => openResetDialog(user)}
+                      data-testid={`button-reset-password-${user.id}`}
+                      title="Reset password"
+                    >
+                      <Lock className="w-4 h-4" />
+                    </Button>
                     {user.id !== currentUserId && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -429,6 +499,58 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+        <DialogContent data-testid="dialog-reset-password">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for <strong>{resetPasswordData?.userName}</strong> ({resetPasswordData?.loginId})
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">New Password</Label>
+              <Input
+                id="new-password"
+                data-testid="input-new-password"
+                type="password"
+                placeholder="Enter new password (min 6 characters)"
+                value={resetPasswordData?.newPassword || ''}
+                onChange={(e) => setResetPasswordData(prev => 
+                  prev ? { ...prev, newPassword: e.target.value } : null
+                )}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleResetPassword();
+                  }
+                }}
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">
+                Password must be at least 6 characters long
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsResetDialogOpen(false)}
+              data-testid="button-cancel-reset"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleResetPassword}
+              disabled={resetPasswordMutation.isPending}
+              data-testid="button-confirm-reset"
+            >
+              {resetPasswordMutation.isPending ? 'Resetting...' : 'Reset Password'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
