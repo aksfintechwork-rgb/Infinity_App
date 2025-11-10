@@ -22,6 +22,10 @@ import {
   ChevronRight,
   Home,
   Menu,
+  Cloud,
+  CloudOff,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -47,6 +51,16 @@ interface DriveFile {
   uploadedById: number;
   uploadedByName: string;
   uploadedAt: string;
+  googleDriveId: string | null;
+  syncStatus: 'not_synced' | 'queued' | 'in_progress' | 'synced' | 'error' | null;
+  lastSyncedAt: string | null;
+}
+
+interface GoogleDriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  size?: number;
 }
 
 interface SupremoDriveProps {
@@ -60,6 +74,7 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
   const [folderPath, setFolderPath] = useState<Array<{ id: number | null; name: string }>>([{ id: null, name: "Drive" }]);
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isGoogleDriveImportOpen, setIsGoogleDriveImportOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -149,6 +164,43 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
     },
   });
 
+  const { data: googleDriveFiles = [] } = useQuery<GoogleDriveFile[]>({
+    queryKey: ['/api/drive/google/files'],
+    enabled: isGoogleDriveImportOpen,
+  });
+
+  const syncToGoogleDriveMutation = useMutation({
+    mutationFn: async (fileId: number) => {
+      return await apiRequest('POST', `/api/drive/files/${fileId}/sync-to-google`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/drive/files'] });
+      toast({ title: 'File synced to Google Drive successfully' });
+    },
+    onError: () => {
+      toast({ title: 'Failed to sync file to Google Drive', variant: 'destructive' });
+    },
+  });
+
+  const importFromGoogleDriveMutation = useMutation({
+    mutationFn: async ({ googleDriveFileId, fileName, mimeType }: { googleDriveFileId: string; fileName: string; mimeType: string }) => {
+      return await apiRequest('POST', '/api/drive/google/import', {
+        googleDriveFileId,
+        fileName,
+        mimeType,
+        folderId: currentFolderId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/drive/files'] });
+      toast({ title: 'File imported from Google Drive successfully' });
+      setIsGoogleDriveImportOpen(false);
+    },
+    onError: () => {
+      toast({ title: 'Failed to import file from Google Drive', variant: 'destructive' });
+    },
+  });
+
   const handleFolderClick = (folder: DriveFolder) => {
     setCurrentFolderId(folder.id);
     setFolderPath([...folderPath, { id: folder.id, name: folder.name }]);
@@ -202,6 +254,47 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
   const handleDeleteFile = (file: DriveFile) => {
     if (confirm(`Delete file "${file.originalName}"?`)) {
       deleteFileMutation.mutate(file.id);
+    }
+  };
+
+  const handleSyncToGoogleDrive = (file: DriveFile) => {
+    syncToGoogleDriveMutation.mutate(file.id);
+  };
+
+  const handleImportFromGoogleDrive = (googleFile: GoogleDriveFile) => {
+    importFromGoogleDriveMutation.mutate({
+      googleDriveFileId: googleFile.id,
+      fileName: googleFile.name,
+      mimeType: googleFile.mimeType,
+    });
+  };
+
+  const getSyncStatusIcon = (syncStatus: DriveFile['syncStatus']) => {
+    switch (syncStatus) {
+      case 'synced':
+        return <Cloud className="w-4 h-4 text-green-600" />;
+      case 'queued':
+      case 'in_progress':
+        return <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />;
+      case 'error':
+        return <AlertCircle className="w-4 h-4 text-destructive" />;
+      default:
+        return <CloudOff className="w-4 h-4 text-muted-foreground" />;
+    }
+  };
+
+  const getSyncStatusText = (syncStatus: DriveFile['syncStatus']) => {
+    switch (syncStatus) {
+      case 'synced':
+        return 'Synced to Google Drive';
+      case 'queued':
+        return 'Queued for sync';
+      case 'in_progress':
+        return 'Syncing...';
+      case 'error':
+        return 'Sync failed';
+      default:
+        return 'Not synced';
     }
   };
 
@@ -287,6 +380,58 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
               </div>
             </DialogContent>
           </Dialog>
+
+          <Dialog open={isGoogleDriveImportOpen} onOpenChange={setIsGoogleDriveImportOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" data-testid="button-import-google-drive">
+                <Cloud className="w-4 h-4 mr-2" />
+                Import from Google Drive
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[80vh]">
+              <DialogHeader>
+                <DialogTitle>Import from Google Drive</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-4 overflow-auto max-h-[60vh]">
+                {googleDriveFiles.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Cloud className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                    <p>No files found in Google Drive</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {googleDriveFiles.map((file) => (
+                      <Card key={file.id} className="p-3 hover-elevate">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <File className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate" title={file.name}>
+                                {file.name}
+                              </div>
+                              {file.size && (
+                                <div className="text-xs text-muted-foreground">
+                                  {formatFileSize(file.size)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => handleImportFromGoogleDrive(file)}
+                            disabled={importFromGoogleDriveMutation.isPending}
+                            data-testid={`button-import-${file.id}`}
+                          >
+                            Import
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -368,6 +513,12 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
                     <div className="text-xs text-muted-foreground">
                       by {file.uploadedByName}
                     </div>
+                    <div className="flex items-center gap-2 mt-2 text-xs">
+                      {getSyncStatusIcon(file.syncStatus)}
+                      <span className="text-muted-foreground">
+                        {getSyncStatusText(file.syncStatus)}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex flex-col gap-1">
                     <Button
@@ -377,6 +528,16 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
                       data-testid={`button-download-file-${file.id}`}
                     >
                       <Download className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleSyncToGoogleDrive(file)}
+                      disabled={syncToGoogleDriveMutation.isPending || file.syncStatus === 'queued' || file.syncStatus === 'in_progress'}
+                      data-testid={`button-sync-file-${file.id}`}
+                      title="Sync to Google Drive"
+                    >
+                      <Cloud className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="ghost"
