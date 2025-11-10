@@ -154,6 +154,8 @@ export interface IStorage {
   getAllDriveFiles(userId: number): Promise<DriveFileWithDetails[]>;
   updateDriveFile(id: number, updates: Partial<InsertDriveFile>): Promise<DriveFile | undefined>;
   deleteDriveFile(id: number): Promise<void>;
+  updateDriveFileSyncStatus(id: number, googleDriveId: string, syncStatus: string): Promise<void>;
+  updateDriveFolderSyncStatus(id: number, googleDriveId: string, syncStatus: string): Promise<void>;
   
   createActiveCall(call: InsertActiveCall): Promise<ActiveCall>;
   getActiveCallById(id: number): Promise<ActiveCallWithDetails | undefined>;
@@ -1105,6 +1107,9 @@ export class PostgresStorage implements IStorage {
         name: driveFolders.name,
         parentId: driveFolders.parentId,
         createdById: driveFolders.createdById,
+        googleDriveId: driveFolders.googleDriveId,
+        syncStatus: driveFolders.syncStatus,
+        lastSyncedAt: driveFolders.lastSyncedAt,
         createdAt: driveFolders.createdAt,
         updatedAt: driveFolders.updatedAt,
         createdByName: users.name,
@@ -1168,6 +1173,9 @@ export class PostgresStorage implements IStorage {
         size: driveFiles.size,
         folderId: driveFiles.folderId,
         uploadedById: driveFiles.uploadedById,
+        googleDriveId: driveFiles.googleDriveId,
+        syncStatus: driveFiles.syncStatus,
+        lastSyncedAt: driveFiles.lastSyncedAt,
         uploadedAt: driveFiles.uploadedAt,
         uploadedByName: users.name,
       })
@@ -1193,6 +1201,9 @@ export class PostgresStorage implements IStorage {
           size: driveFiles.size,
           folderId: driveFiles.folderId,
           uploadedById: driveFiles.uploadedById,
+          googleDriveId: driveFiles.googleDriveId,
+          syncStatus: driveFiles.syncStatus,
+          lastSyncedAt: driveFiles.lastSyncedAt,
           uploadedAt: driveFiles.uploadedAt,
           uploadedByName: users.name,
         })
@@ -1217,6 +1228,9 @@ export class PostgresStorage implements IStorage {
         size: driveFiles.size,
         folderId: driveFiles.folderId,
         uploadedById: driveFiles.uploadedById,
+        googleDriveId: driveFiles.googleDriveId,
+        syncStatus: driveFiles.syncStatus,
+        lastSyncedAt: driveFiles.lastSyncedAt,
         uploadedAt: driveFiles.uploadedAt,
         uploadedByName: users.name,
       })
@@ -1244,6 +1258,9 @@ export class PostgresStorage implements IStorage {
         size: driveFiles.size,
         folderId: driveFiles.folderId,
         uploadedById: driveFiles.uploadedById,
+        googleDriveId: driveFiles.googleDriveId,
+        syncStatus: driveFiles.syncStatus,
+        lastSyncedAt: driveFiles.lastSyncedAt,
         uploadedAt: driveFiles.uploadedAt,
         uploadedByName: users.name,
       })
@@ -1272,6 +1289,20 @@ export class PostgresStorage implements IStorage {
 
   async deleteDriveFile(id: number): Promise<void> {
     await db.delete(driveFiles).where(eq(driveFiles.id, id));
+  }
+
+  async updateDriveFileSyncStatus(id: number, googleDriveId: string, syncStatus: string): Promise<void> {
+    await db
+      .update(driveFiles)
+      .set({ googleDriveId, syncStatus, lastSyncedAt: new Date() })
+      .where(eq(driveFiles.id, id));
+  }
+
+  async updateDriveFolderSyncStatus(id: number, googleDriveId: string, syncStatus: string): Promise<void> {
+    await db
+      .update(driveFolders)
+      .set({ googleDriveId, syncStatus, lastSyncedAt: new Date() })
+      .where(eq(driveFolders.id, id));
   }
 
   async createActiveCall(call: InsertActiveCall): Promise<ActiveCall> {
