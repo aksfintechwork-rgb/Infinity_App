@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone, PhoneOff, Folder, HardDrive, ListChecks, BarChart3, X } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone, PhoneOff, Folder, HardDrive, ListChecks, BarChart3, X, PhoneMissed } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
@@ -25,6 +25,7 @@ import IncomingCallModal from './IncomingCallModal';
 import EditMessageDialog from './EditMessageDialog';
 import ForwardMessageDialog from './ForwardMessageDialog';
 import InviteToCallDialog from './InviteToCallDialog';
+import { MissedCallsList } from './MissedCallsList';
 import { useOutgoingRingtone } from '@/hooks/use-outgoing-ringtone';
 import logoImage from '@assets/image_1761659890673.png';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -155,6 +156,9 @@ export default function ChatLayout({
   // Invite to call state
   const [isInviteToCallOpen, setIsInviteToCallOpen] = useState(false);
 
+  // Missed calls sheet state
+  const [isMissedCallsOpen, setIsMissedCallsOpen] = useState(false);
+
   // Track call window reference
   const callWindowRef = useRef<Window | null>(null);
   const windowCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -169,6 +173,13 @@ export default function ChatLayout({
   const { data: pinnedConversationIds = [] } = useQuery<number[]>({
     queryKey: ['/api/pinned-conversations'],
   });
+
+  // Query for missed calls to compute unviewed count for badge
+  const { data: missedCalls = [] } = useQuery<Array<{ id: number; viewed: boolean }>>({
+    queryKey: ['/api/missed-calls'],
+  });
+
+  const unviewedMissedCallsCount = missedCalls.filter(call => !call.viewed).length;
 
   const pinMutation = useMutation({
     mutationFn: async (conversationId: number) => {
@@ -418,6 +429,26 @@ export default function ChatLayout({
       unsubscribeCancelled();
     };
   }, [ws, outgoingCall, incomingCall, toast]);
+
+  // WebSocket listener for missed calls
+  useEffect(() => {
+    if (!ws?.on) return;
+
+    const unsubscribe = ws.on('missed_call', (data: any) => {
+      // Invalidate missed calls query to fetch updated list
+      queryClient.invalidateQueries({ queryKey: ['/api/missed-calls'] });
+      
+      // Show toast notification
+      toast({
+        title: 'Missed Call',
+        description: `${data.from.name} called while you were busy`,
+      });
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [ws, toast]);
 
   // Auto-timeout for outgoing call after 30 seconds
   useEffect(() => {
@@ -829,6 +860,16 @@ export default function ChatLayout({
         description: 'Failed to start audio call. Please try again.',
         variant: 'destructive'
       });
+    }
+  };
+
+  const handleMissedCallCallback = (callerId: number, conversationId: number | null, callType: string) => {
+    if (conversationId) {
+      if (callType === 'audio') {
+        handleQuickAudioCall(conversationId);
+      } else {
+        handleQuickAudioCall(conversationId);
+      }
     }
   };
 
@@ -1366,6 +1407,26 @@ export default function ChatLayout({
                     </Button>
                   </>
                 )}
+                
+                {/* Missed Calls Button */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsMissedCallsOpen(true)}
+                  className="relative h-9 w-9"
+                  data-testid="button-missed-calls"
+                  title="Missed calls"
+                >
+                  <PhoneMissed className="w-4 h-4" />
+                  {unviewedMissedCallsCount > 0 && (
+                    <Badge 
+                      className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 px-1 text-xs"
+                      data-testid="badge-missed-calls-count"
+                    >
+                      {unviewedMissedCallsCount}
+                    </Badge>
+                  )}
+                </Button>
               </div>
             </div>
 
@@ -1780,6 +1841,13 @@ export default function ChatLayout({
           onSendInvite={handleSendCallInvite}
         />
       )}
+
+      {/* Missed Calls List */}
+      <MissedCallsList
+        open={isMissedCallsOpen}
+        onOpenChange={setIsMissedCallsOpen}
+        onCallBack={handleMissedCallCallback}
+      />
     </div>
   );
 }
