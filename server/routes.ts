@@ -8,6 +8,8 @@ import { upload, getFileUrl } from "./upload";
 import { WebSocketServer, WebSocket } from "ws";
 import { generateMeetingSummary } from "./openai";
 import webpush from "web-push";
+import { getUncachableGoogleDriveClient, listGoogleDriveFiles, uploadFileToGoogleDrive, downloadFileFromGoogleDrive } from "./googleDrive";
+import fs from "fs/promises";
 
 interface WebSocketClient extends WebSocket {
   userId?: number;
@@ -1527,6 +1529,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete drive file error:", error);
       res.status(500).json({ error: "Failed to delete file" });
+    }
+  });
+
+  // Google Drive Integration Routes
+  app.get("/api/drive/google/files", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const folderId = req.query.folderId as string | undefined;
+      const files = await listGoogleDriveFiles(folderId);
+      res.json(files);
+    } catch (error) {
+      console.error("List Google Drive files error:", error);
+      res.status(500).json({ error: "Failed to list Google Drive files" });
+    }
+  });
+
+  app.post("/api/drive/files/:id/sync-to-google", authMiddleware, async (req: AuthRequest, res) => {
+    let file;
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const fileId = parseInt(req.params.id);
+      file = await storage.getDriveFileById(fileId);
+
+      if (!file) {
+        return res.status(404).json({ error: "File not found" });
+      }
+
+      // Check ownership
+      if (file.folderId) {
+        const folder = await storage.getDriveFolderById(file.folderId);
+        if (!folder || folder.createdById !== req.userId) {
+          return res.status(403).json({ error: "You don't have permission to sync this file" });
+        }
+      } else if (file.uploadedById !== req.userId) {
+        return res.status(403).json({ error: "You don't have permission to sync this file" });
+      }
+
+      // Update sync status to queued (preserve existing googleDriveId)
+      await storage.updateDriveFile(file.id, { syncStatus: 'queued', lastSyncedAt: new Date() });
+
+      // Read file from local storage
+      const fileBuffer = await fs.readFile(file.storagePath);
+
+      // Upload to Google Drive
+      const googleDriveFile = await uploadFileToGoogleDrive(
+        file.originalName,
+        file.mimeType,
+        fileBuffer,
+        req.body.googleDriveFolderId
+      );
+
+      // Update sync status to synced with new googleDriveId
+      await storage.updateDriveFileSyncStatus(file.id, googleDriveFile.id || '', 'synced');
+
+      const updatedFile = await storage.getDriveFileById(file.id);
+
+      broadcastUpdate({
+        type: 'drive_file_synced',
+        file: updatedFile,
+      });
+
+      res.json(updatedFile);
+    } catch (error) {
+      console.error("Sync to Google Drive error:", error);
+      // Only update error status if we successfully retrieved the file record
+      if (file) {
+        await storage.updateDriveFile(file.id, { syncStatus: 'error', lastSyncedAt: new Date() });
+      }
+      res.status(500).json({ error: "Failed to sync file to Google Drive" });
+    }
+  });
+
+  app.post("/api/drive/google/import", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { googleDriveFileId, fileName, mimeType, folderId } = req.body;
+
+      if (!googleDriveFileId || !fileName) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // If folderId is provided, verify ownership
+      if (folderId) {
+        const folder = await storage.getDriveFolderById(parseInt(folderId));
+        if (!folder) {
+          return res.status(404).json({ error: "Folder not found" });
+        }
+        if (folder.createdById !== req.userId) {
+          return res.status(403).json({ error: "You don't have permission to import into this folder" });
+        }
+      }
+
+      // Download from Google Drive
+      const fileBuffer = await downloadFileFromGoogleDrive(googleDriveFileId);
+
+      // Save to local storage
+      const uploadPath = `uploads/${Date.now()}-${fileName}`;
+      await fs.writeFile(uploadPath, fileBuffer);
+
+      // Create database entry
+      const fileData = {
+        name: fileName,
+        originalName: fileName,
+        storagePath: uploadPath,
+        mimeType: mimeType || 'application/octet-stream',
+        size: fileBuffer.length,
+        folderId: folderId ? parseInt(folderId) : null,
+        uploadedById: req.userId,
+      };
+
+      const file = await storage.createDriveFile(fileData);
+      
+      // Update sync status
+      await storage.updateDriveFileSyncStatus(file.id, googleDriveFileId, 'synced');
+
+      const updatedFile = await storage.getDriveFileById(file.id);
+
+      broadcastUpdate({
+        type: 'drive_file_uploaded',
+        file: updatedFile,
+      });
+
+      res.json(updatedFile);
+    } catch (error) {
+      console.error("Import from Google Drive error:", error);
+      res.status(500).json({ error: "Failed to import file from Google Drive" });
     }
   });
 

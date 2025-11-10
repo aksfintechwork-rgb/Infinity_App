@@ -40,12 +40,14 @@ Preferred communication style: Simple, everyday language.
 - **Performance Dashboard**: Admin-only analytics dashboard with comprehensive visualizations including overall statistics cards (total tasks, completion rate, active projects, team size), task completion trend charts, user performance bar charts, task distribution pie charts, detailed user statistics table, and project performance tracking. Features period-based filtering (week, month, quarter, year) with empty state handling and banking theme-aligned chart colors.
 - **User Productivity Tools**: Daily Work Log and a standalone private To-Do List with priority levels, completion tracking, and reminder system.
 - **User Management**: Admin tools for user creation, deletion, task oversight, password reset, and role management. Admins can promote users to admin or demote admins to regular users with built-in safeguards: prevents self-demotion (admins cannot demote themselves) and prevents demoting the last admin (at least one admin must remain).
-- **Security & Access**: Role-based access control, secure file management with ownership validation, and self-service password change.
+- **Supremo Drive with Google Drive Integration**: Local file storage with optional Google Drive sync. Features include: (1) Upload files to local storage, (2) Sync local files to Google Drive with status tracking (not_synced, queued, in_progress, synced, error), (3) Import files from Google Drive to local storage, (4) List Google Drive files, (5) Folder-based organization with ownership validation. All sync operations preserve existing Google Drive IDs to enable re-sync and updates.
+- **Security & Access**: Role-based access control, secure file management with ownership validation, folder-level authorization checks for Google Drive imports, and self-service password change.
 
 ## External Dependencies
 - **Neon Database**: Serverless PostgreSQL hosting.
 - **OpenAI via Replit AI Integrations**: GPT-4o for AI meeting summarization.
 - **Daily.co**: Video conferencing platform.
+- **Google Drive via Replit Integrations**: Cloud file storage and sync capabilities for Supremo Drive. Authenticated via Replit connector with automatic OAuth token management.
 - **Google Fonts**: Inter font family.
-- **File Storage**: Local filesystem (`uploads/` directory).
-- **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`, `xlsx`, `web-push`, `nanoid`, `recharts`.
+- **File Storage**: Hybrid approach - local filesystem (`uploads/` directory) with optional Google Drive sync. Sync status tracked in database (not_synced, queued, in_progress, synced, error).
+- **Key Libraries**: `@neondatabase/serverless`, `drizzle-orm`, `jsonwebtoken`, `bcrypt`, `multer`, `ws`, `dotenv`, `@tanstack/react-query`, `date-fns`, `cors`, `openai`, `xlsx`, `web-push`, `nanoid`, `recharts`, `googleapis`.
