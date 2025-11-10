@@ -616,6 +616,13 @@ export default function ChatLayout({
     setIncomingCall(null);
   };
 
+  // Helper function to play busy tone
+  const playBusyTone = () => {
+    const busyTone = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjGH0fPTgjMGHm7A7+OZUQ0QVKzn77BfGwc4jtXzzn0pBSh+zPHajzsIGGe48OScTgwPT6bg8bllHAY2jdTz0X8rBSh8yfDck0AKFV+16+miVRQKQ5vd8sNwIgY0hdLz04I1Bh5uv+/lmVAMEE+o5O+zYhsHNo3T882CKwUpfsrx25E+CRhetenpoVYTCkKa3PG+cSMGM4XS88uALQUme8jw3ZRCCRW',
+    );
+    busyTone.play().catch(err => console.error('Failed to play busy tone:', err));
+  };
+
   const handleStartCall = async () => {
     if (!activeConversation) return;
     
@@ -634,14 +641,38 @@ export default function ChatLayout({
       
       // Register the call in the database
       try {
-        await apiRequest('POST', '/api/calls', {
+        const callResponse = await apiRequest('POST', '/api/calls', {
           roomName,
           roomUrl: data.url,
           conversationId: activeConversation.id,
           callType: 'video',
         });
+        
+        // Check if the response indicates busy status
+        if (!callResponse.ok) {
+          if (callResponse.status === 409) {
+            const errorData = await callResponse.json();
+            
+            playBusyTone();
+            
+            toast({
+              title: 'Line busy',
+              description: errorData.error || 'All recipients are currently on another call',
+              variant: 'destructive'
+            });
+            
+            return;
+          }
+          throw new Error('Failed to register call');
+        }
       } catch (dbError) {
         console.error('Failed to register call in database:', dbError);
+        toast({
+          title: 'Error',
+          description: 'Failed to initiate call. Please try again.',
+          variant: 'destructive'
+        });
+        return;
       }
       
       // Open the room in new window with user name and video off by default - instant join!
@@ -719,14 +750,38 @@ export default function ChatLayout({
       
       // Register the call in the database
       try {
-        await apiRequest('POST', '/api/calls', {
+        const callResponse = await apiRequest('POST', '/api/calls', {
           roomName,
           roomUrl: data.url,
           conversationId,
           callType: 'audio',
         });
+        
+        // Check if the response indicates busy status
+        if (!callResponse.ok) {
+          if (callResponse.status === 409) {
+            const errorData = await callResponse.json();
+            
+            playBusyTone();
+            
+            toast({
+              title: 'Line busy',
+              description: errorData.error || 'All recipients are currently on another call',
+              variant: 'destructive'
+            });
+            
+            return;
+          }
+          throw new Error('Failed to register call');
+        }
       } catch (dbError) {
         console.error('Failed to register call in database:', dbError);
+        toast({
+          title: 'Error',
+          description: 'Failed to initiate call. Please try again.',
+          variant: 'destructive'
+        });
+        return;
       }
       
       // Open the room in new window with video disabled and user name for audio calls
