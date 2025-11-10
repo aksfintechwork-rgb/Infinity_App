@@ -1133,7 +1133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           properties: {
             enable_chat: true,
             enable_screenshare: true,
-            start_video_off: false,
+            start_video_off: true,
             start_audio_off: false,
             enable_prejoin_ui: false
           }
