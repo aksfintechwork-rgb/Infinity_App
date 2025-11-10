@@ -396,11 +396,17 @@ export type ProjectWithDetails = Project & {
   statusColor: 'green' | 'yellow' | 'red';
 };
 
+export const syncStatusEnum = z.enum(["not_synced", "queued", "in_progress", "synced", "error"]);
+export type SyncStatus = z.infer<typeof syncStatusEnum>;
+
 export const driveFolders = pgTable("drive_folders", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: text("name").notNull(),
   parentId: integer("parent_id"),
   createdById: integer("created_by_id").notNull().references(() => users.id),
+  googleDriveId: text("google_drive_id"),
+  syncStatus: text("sync_status").notNull().default("not_synced"),
+  lastSyncedAt: timestamp("last_synced_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -416,6 +422,12 @@ export const insertDriveFolderSchema = _baseDriveFolderSchema.omit({
   createdAt: true,
   // @ts-ignore - drizzle-zod type inference issue
   updatedAt: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  googleDriveId: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  syncStatus: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  lastSyncedAt: true,
 });
 
 export type InsertDriveFolder = z.infer<typeof insertDriveFolderSchema>;
@@ -434,6 +446,9 @@ export const driveFiles = pgTable("drive_files", {
   size: integer("size").notNull(),
   folderId: integer("folder_id").references(() => driveFolders.id, { onDelete: "cascade" }),
   uploadedById: integer("uploaded_by_id").notNull().references(() => users.id),
+  googleDriveId: text("google_drive_id"),
+  syncStatus: text("sync_status").notNull().default("not_synced"),
+  lastSyncedAt: timestamp("last_synced_at"),
   uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
 });
 
@@ -447,6 +462,12 @@ export const insertDriveFileSchema = _baseDriveFileSchema.omit({
   id: true,
   // @ts-ignore - drizzle-zod type inference issue
   uploadedAt: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  googleDriveId: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  syncStatus: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  lastSyncedAt: true,
 });
 
 export type InsertDriveFile = z.infer<typeof insertDriveFileSchema>;
