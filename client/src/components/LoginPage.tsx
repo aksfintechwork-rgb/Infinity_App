@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Eye, EyeOff, Info } from 'lucide-react';
 import logoImage from '@assets/image_1761743625103.png';
 
 interface LoginPageProps {
@@ -47,16 +48,22 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         <Card className="border-2">
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-xl md:text-2xl">Welcome Back</CardTitle>
-            <CardDescription className="text-sm md:text-base">Sign in with your credentials provided by your administrator</CardDescription>
+            <CardDescription className="text-sm md:text-base">Sign in to the SUPREMO TRADERS team platform</CardDescription>
           </CardHeader>
           <CardContent>
+            <Alert className="mb-4 bg-accent/50 border-accent">
+              <Info className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-sm">
+                <strong>First time logging in?</strong> Contact your administrator for your login credentials.
+              </AlertDescription>
+            </Alert>
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="login-id" className="text-base">Login ID</Label>
                 <Input
                   id="login-id"
                   type="text"
-                  placeholder="admin or user123"
+                  placeholder="Enter your login ID"
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
                   required
@@ -67,9 +74,6 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                   spellCheck="false"
                   className="h-12 text-base"
                 />
-                <p className="text-xs md:text-sm text-muted-foreground">
-                  Use the login ID provided by your administrator
-                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="login-password" className="text-base">Password</Label>
@@ -110,9 +114,10 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           </CardContent>
         </Card>
         
-        <p className="text-center text-sm md:text-base text-muted-foreground mt-4 md:mt-6">
-          Need an account? Contact your administrator.
-        </p>
+        <div className="text-center text-sm text-muted-foreground mt-4 md:mt-6 space-y-2">
+          <p>Don't have login credentials yet?</p>
+          <p className="text-xs">Contact your system administrator to get started</p>
+        </div>
       </div>
     </div>
   );
