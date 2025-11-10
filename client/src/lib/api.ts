@@ -211,3 +211,21 @@ export async function resetUserPassword(token: string, userId: number, newPasswo
 
   return response.json();
 }
+
+export async function updateUserRole(token: string, userId: number, role: 'admin' | 'user') {
+  const response = await fetch(`${API_BASE}/admin/users/${userId}/role`, {
+    method: 'PATCH',
+    headers: { 
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}` 
+    },
+    body: JSON.stringify({ role }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update user role');
+  }
+
+  return response.json();
+}

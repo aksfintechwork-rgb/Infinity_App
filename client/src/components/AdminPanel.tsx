@@ -59,6 +59,11 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
     queryFn: () => api.getAdminUsers(token),
   });
 
+  const adminCount = users.filter(u => u.role === 'admin').length;
+  const isLastAdmin = (user: any) => user.role === 'admin' && adminCount <= 1;
+  const isSelfDemotion = (user: any) => user.id === currentUserId && user.role === 'admin';
+  const cannotChangeRole = (user: any) => isLastAdmin(user) || (isSelfDemotion(user) && user.role === 'admin');
+
   const createUserMutation = useMutation({
     mutationFn: (data: typeof newUser) => api.createUserAsAdmin(token, data),
     onSuccess: () => {
@@ -113,6 +118,26 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to reset password',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: number; role: 'admin' | 'user' }) => 
+      api.updateUserRole(token, userId, role),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: 'Role Updated Successfully',
+        description: data.message,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update user role',
         variant: 'destructive',
       });
     },
@@ -439,16 +464,79 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span
-                      className={`px-2 py-1 text-xs rounded-md ${
-                        user.role === 'admin'
-                          ? 'bg-primary/10 text-primary'
-                          : 'bg-muted text-muted-foreground'
-                      }`}
-                      data-testid={`badge-user-role-${user.id}`}
-                    >
-                      {user.role === 'admin' ? 'Admin' : 'User'}
-                    </span>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`h-7 px-2 text-xs ${
+                            user.role === 'admin'
+                              ? 'bg-primary/10 text-primary hover:bg-primary/20'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                          data-testid={`button-change-role-${user.id}`}
+                          title={
+                            isLastAdmin(user) 
+                              ? 'Cannot demote the last admin' 
+                              : isSelfDemotion(user)
+                              ? 'Cannot demote your own admin account'
+                              : 'Change user role'
+                          }
+                        >
+                          <Shield className="w-3 h-3 mr-1" />
+                          {user.role === 'admin' ? 'Admin' : 'User'}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {cannotChangeRole(user) ? 'Cannot Change Role' : 'Change User Role'}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {isLastAdmin(user) ? (
+                              <>
+                                <strong>{user.name}</strong> is the last remaining admin in the system.
+                                <br /><br />
+                                At least one admin must remain to manage users and system settings. 
+                                Please promote another user to admin before demoting this account.
+                              </>
+                            ) : isSelfDemotion(user) ? (
+                              <>
+                                You cannot demote your own admin account.
+                                <br /><br />
+                                This prevents accidental loss of administrative privileges. 
+                                If you need to change your role, please ask another administrator to do it for you.
+                              </>
+                            ) : (
+                              <>
+                                Change role for <strong>{user.name}</strong> ({user.loginId}) to{' '}
+                                <strong>{user.role === 'admin' ? 'Regular User' : 'Admin'}</strong>?
+                                <br /><br />
+                                {user.role === 'admin' 
+                                  ? 'This will remove admin privileges from this user.'
+                                  : 'This will grant admin privileges to this user, allowing them to manage all users, tasks, and settings.'}
+                              </>
+                            )}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel data-testid={`button-cancel-role-${user.id}`}>
+                            {cannotChangeRole(user) ? 'Close' : 'Cancel'}
+                          </AlertDialogCancel>
+                          {!cannotChangeRole(user) && (
+                            <AlertDialogAction
+                              onClick={() => updateRoleMutation.mutate({
+                                userId: user.id,
+                                role: user.role === 'admin' ? 'user' : 'admin'
+                              })}
+                              data-testid={`button-confirm-role-${user.id}`}
+                            >
+                              Change to {user.role === 'admin' ? 'User' : 'Admin'}
+                            </AlertDialogAction>
+                          )}
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                     <Button
                       variant="ghost"
                       size="icon"

@@ -420,6 +420,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/admin/users/:userId/role", authMiddleware, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+
+      const { role } = req.body;
+      
+      if (!role || (role !== 'admin' && role !== 'user')) {
+        return res.status(400).json({ error: "Role must be either 'admin' or 'user'" });
+      }
+
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Prevent self-demotion from admin to user
+      if (user.role === 'admin' && role === 'user' && userId === req.userId) {
+        return res.status(409).json({ 
+          error: "Cannot demote your own admin account. Please ask another administrator to change your role." 
+        });
+      }
+
+      // Prevent demoting the last admin
+      if (user.role === 'admin' && role === 'user') {
+        const allAdmins = await storage.getAllAdmins();
+        if (allAdmins.length <= 1) {
+          return res.status(409).json({ 
+            error: "Cannot demote the last admin. At least one admin must remain in the system." 
+          });
+        }
+      }
+
+      await storage.updateUserRole(userId, role);
+
+      const updatedUser = await storage.getUserById(userId);
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found after update" });
+      }
+      
+      broadcastUserListUpdate('user_created', updatedUser);
+      
+      res.json({ 
+        success: true, 
+        user: updatedUser,
+        message: `User ${updatedUser.loginId} is now ${role === 'admin' ? 'an admin' : 'a regular user'}` 
+      });
+    } catch (error) {
+      console.error("Admin update role error:", error);
+      res.status(500).json({ error: "Failed to update user role" });
+    }
+  });
+
   app.get("/api/conversations", authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (!req.userId) {

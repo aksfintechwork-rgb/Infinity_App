@@ -39,7 +39,7 @@ Preferred communication style: Simple, everyday language.
 - **Project Tracking Dashboard**: Full project lifecycle management with auto-generated IDs, detailed tracking (status, progress, responsible persons, issues, dependencies, target dates), color-coded indicators, and CRUD operations with real-time updates.
 - **Performance Dashboard**: Admin-only analytics dashboard with comprehensive visualizations including overall statistics cards (total tasks, completion rate, active projects, team size), task completion trend charts, user performance bar charts, task distribution pie charts, detailed user statistics table, and project performance tracking. Features period-based filtering (week, month, quarter, year) with empty state handling and banking theme-aligned chart colors.
 - **User Productivity Tools**: Daily Work Log and a standalone private To-Do List with priority levels, completion tracking, and reminder system.
-- **User Management**: Admin tools for user deletion and task oversight.
+- **User Management**: Admin tools for user creation, deletion, task oversight, password reset, and role management. Admins can promote users to admin or demote admins to regular users with built-in safeguards: prevents self-demotion (admins cannot demote themselves) and prevents demoting the last admin (at least one admin must remain).
 - **Security & Access**: Role-based access control, secure file management with ownership validation, and self-service password change.
 
 ## External Dependencies
