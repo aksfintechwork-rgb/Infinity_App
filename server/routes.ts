@@ -2600,6 +2600,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Room name and URL are required" });
       }
 
+      // Check if any receivers are busy before initiating the call
+      if (conversationId) {
+        const members = await storage.getConversationMembers(conversationId);
+        if (members && members.length > 0) {
+          const receiverIds = members.map(m => m.id).filter(id => id !== req.userId);
+          
+          const busyUsers: number[] = [];
+          const caller = await storage.getUserById(req.userId);
+          
+          for (const userId of receiverIds) {
+            const isBusy = await storage.isUserInActiveCall(userId);
+            if (isBusy) {
+              busyUsers.push(userId);
+              
+              // Create a missed call record
+              const missedCall = await storage.createMissedCall({
+                callerId: req.userId,
+                receiverId: userId,
+                conversationId: conversationId,
+                callType: callType || 'video',
+              });
+              
+              // Notify the busy user about the missed call
+              if (wss && caller) {
+                wss.clients.forEach((client: any) => {
+                  if (client.readyState === WebSocket.OPEN && client.userId === userId) {
+                    console.log(`[POST /api/calls] Sending missed_call notification to user ${userId}`);
+                    client.send(JSON.stringify({
+                      type: 'missed_call',
+                      data: {
+                        id: missedCall.id,
+                        conversationId: conversationId,
+                        callType: callType || 'video',
+                        from: {
+                          id: caller.id,
+                          name: caller.name,
+                          avatar: caller.avatar,
+                        },
+                        missedAt: missedCall.missedAt,
+                      },
+                    }));
+                  }
+                });
+              }
+            }
+          }
+          
+          // If all receivers are busy, return busy status
+          if (busyUsers.length === receiverIds.length && busyUsers.length > 0) {
+            console.log(`[POST /api/calls] All receivers are busy for conversation ${conversationId}`);
+            return res.status(409).json({ 
+              error: "All recipients are currently on another call",
+              busyUsers: busyUsers,
+              status: 'busy'
+            });
+          }
+          
+          // If some receivers are busy, log it but continue with the call for available users
+          if (busyUsers.length > 0) {
+            console.log(`[POST /api/calls] Some receivers are busy for conversation ${conversationId}:`, busyUsers);
+          }
+        }
+      }
+
       const call = await storage.createActiveCall({
         roomName,
         roomUrl,
@@ -2828,6 +2892,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("End call error:", error);
       res.status(500).json({ error: "Failed to end call" });
+    }
+  });
+
+  app.get("/api/missed-calls", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const missedCalls = await storage.getMissedCallsByReceiver(req.userId);
+      res.json(missedCalls);
+    } catch (error) {
+      console.error("Get missed calls error:", error);
+      res.status(500).json({ error: "Failed to get missed calls" });
+    }
+  });
+
+  app.patch("/api/missed-calls/:id/viewed", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid missed call ID" });
+      }
+
+      const missedCall = await storage.getMissedCallById(id);
+      
+      if (!missedCall) {
+        return res.status(404).json({ error: "Missed call not found" });
+      }
+
+      if (missedCall.receiverId !== req.userId) {
+        return res.status(403).json({ error: "You are not authorized to modify this missed call" });
+      }
+
+      await storage.markMissedCallAsViewed(id);
+
+      broadcastUpdate({
+        type: 'missed_call_viewed',
+        missedCallId: id,
+        userId: req.userId,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Mark missed call as viewed error:", error);
+      res.status(500).json({ error: "Failed to mark missed call as viewed" });
+    }
+  });
+
+  app.delete("/api/missed-calls/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid missed call ID" });
+      }
+
+      const missedCall = await storage.getMissedCallById(id);
+      
+      if (!missedCall) {
+        return res.status(404).json({ error: "Missed call not found" });
+      }
+
+      if (missedCall.receiverId !== req.userId) {
+        return res.status(403).json({ error: "You are not authorized to delete this missed call" });
+      }
+
+      await storage.deleteMissedCall(id);
+
+      broadcastUpdate({
+        type: 'missed_call_deleted',
+        missedCallId: id,
+        userId: req.userId,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete missed call error:", error);
+      res.status(500).json({ error: "Failed to delete missed call" });
     }
   });
 

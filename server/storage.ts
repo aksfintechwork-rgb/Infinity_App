@@ -170,6 +170,7 @@ export interface IStorage {
   isUserInActiveCall(userId: number): Promise<boolean>;
   
   createMissedCall(missedCall: InsertMissedCall): Promise<MissedCall>;
+  getMissedCallById(id: number): Promise<MissedCall | undefined>;
   getMissedCallsByReceiver(receiverId: number): Promise<MissedCallWithDetails[]>;
   markMissedCallAsViewed(id: number): Promise<void>;
   deleteMissedCall(id: number): Promise<void>;
@@ -1475,6 +1476,16 @@ export class PostgresStorage implements IStorage {
 
   async createMissedCall(missedCall: InsertMissedCall): Promise<MissedCall> {
     const result = await db.insert(missedCalls).values(missedCall).returning();
+    return result[0];
+  }
+
+  async getMissedCallById(id: number): Promise<MissedCall | undefined> {
+    const result = await db
+      .select()
+      .from(missedCalls)
+      .where(eq(missedCalls.id, id))
+      .limit(1);
+    
     return result[0];
   }
 
