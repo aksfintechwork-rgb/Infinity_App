@@ -59,6 +59,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
 
+  // WebSocket must be initialized unconditionally (React hooks rule)
   const ws = useWebSocket(token);
   const { toast } = useToast();
 
