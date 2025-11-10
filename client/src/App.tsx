@@ -242,10 +242,18 @@ function App() {
       setAllUsers((prev) => {
         // Deduplication: only add if user doesn't already exist
         if (prev.some((u) => u.id === user.id)) {
-          return prev;
+          // User already exists, update them instead (for role changes)
+          return prev.map((u) => u.id === user.id ? user : u);
         }
         return [...prev, user];
       });
+      
+      // CRITICAL: If this is the current user, update their data immediately (for role changes)
+      if (currentUser && user.id === currentUser.id) {
+        console.log('[ROLE UPDATE] Detected role change for current user, updating from:', currentUser.role, 'to:', user.role);
+        setCurrentUser(user);
+      }
+      
       console.log('New user created:', user.name);
     });
 
