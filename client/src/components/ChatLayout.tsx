@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone, PhoneOff, Folder, HardDrive, ListChecks, BarChart3 } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone, PhoneOff, Folder, HardDrive, ListChecks, BarChart3, X } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
@@ -1501,6 +1501,15 @@ export default function ChatLayout({
                   <p className="text-xs text-secondary-foreground/70 font-medium">Team Chat</p>
                 </div>
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMobileMenuOpen(false)}
+                data-testid="button-close-mobile-menu"
+                className="hover-elevate active-elevate-2"
+              >
+                <X className="w-5 h-5" />
+              </Button>
             </div>
 
             <div className="p-3 border-b border-border">
