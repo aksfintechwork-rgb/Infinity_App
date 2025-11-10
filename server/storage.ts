@@ -38,6 +38,9 @@ import {
   type ActiveCallWithDetails,
   type ActiveCallParticipant,
   type InsertActiveCallParticipant,
+  type MissedCall,
+  type InsertMissedCall,
+  type MissedCallWithDetails,
   type Todo,
   type InsertTodo,
   type PushSubscription,
@@ -58,6 +61,7 @@ import {
   driveFiles,
   activeCalls,
   activeCallParticipants,
+  missedCalls,
   todos,
   pushSubscriptions,
 } from "@shared/schema";
@@ -163,6 +167,12 @@ export interface IStorage {
   getActiveCallByConversation(conversationId: number): Promise<ActiveCallWithDetails | undefined>;
   getAllActiveCalls(): Promise<ActiveCallWithDetails[]>;
   endCall(id: number): Promise<void>;
+  isUserInActiveCall(userId: number): Promise<boolean>;
+  
+  createMissedCall(missedCall: InsertMissedCall): Promise<MissedCall>;
+  getMissedCallsByReceiver(receiverId: number): Promise<MissedCallWithDetails[]>;
+  markMissedCallAsViewed(id: number): Promise<void>;
+  deleteMissedCall(id: number): Promise<void>;
   
   addCallParticipant(participant: InsertActiveCallParticipant): Promise<ActiveCallParticipant>;
   getCallParticipants(callId: number): Promise<User[]>;
@@ -1446,6 +1456,62 @@ export class PostgresStorage implements IStorage {
         eq(activeCallParticipants.callId, id),
         sql`${activeCallParticipants.leftAt} IS NULL`
       ));
+  }
+
+  async isUserInActiveCall(userId: number): Promise<boolean> {
+    const result = await db
+      .select({ id: activeCallParticipants.id })
+      .from(activeCallParticipants)
+      .innerJoin(activeCalls, eq(activeCallParticipants.callId, activeCalls.id))
+      .where(and(
+        eq(activeCallParticipants.userId, userId),
+        eq(activeCalls.status, 'active'),
+        sql`${activeCallParticipants.leftAt} IS NULL`
+      ))
+      .limit(1);
+    
+    return result.length > 0;
+  }
+
+  async createMissedCall(missedCall: InsertMissedCall): Promise<MissedCall> {
+    const result = await db.insert(missedCalls).values(missedCall).returning();
+    return result[0];
+  }
+
+  async getMissedCallsByReceiver(receiverId: number): Promise<MissedCallWithDetails[]> {
+    const result = await db
+      .select({
+        id: missedCalls.id,
+        callerId: missedCalls.callerId,
+        receiverId: missedCalls.receiverId,
+        conversationId: missedCalls.conversationId,
+        callType: missedCalls.callType,
+        missedAt: missedCalls.missedAt,
+        viewed: missedCalls.viewed,
+        viewedAt: missedCalls.viewedAt,
+        callerName: users.name,
+        callerAvatar: users.avatar,
+      })
+      .from(missedCalls)
+      .innerJoin(users, eq(missedCalls.callerId, users.id))
+      .where(eq(missedCalls.receiverId, receiverId))
+      .orderBy(desc(missedCalls.missedAt));
+    
+    return result;
+  }
+
+  async markMissedCallAsViewed(id: number): Promise<void> {
+    await db
+      .update(missedCalls)
+      .set({
+        viewed: true,
+        viewedAt: new Date(),
+      })
+      .where(eq(missedCalls.id, id));
+  }
+
+  async deleteMissedCall(id: number): Promise<void> {
+    await db.delete(missedCalls).where(eq(missedCalls.id, id));
   }
 
   async addCallParticipant(participant: InsertActiveCallParticipant): Promise<ActiveCallParticipant> {
