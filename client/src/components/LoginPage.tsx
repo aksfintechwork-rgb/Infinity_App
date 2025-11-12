@@ -71,86 +71,56 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen flex items-center justify-center bg-background p-4 md:p-6">
-      <div className="w-full max-w-md">
-        <div className="flex flex-col items-center justify-center mb-6 md:mb-8">
-          <img src={logoImage} alt="SUPREMO TRADERS" className="w-40 md:w-48 h-auto mb-3 md:mb-4" />
-          <h1 className="text-lg md:text-xl font-semibold text-center text-foreground">Team Communication Platform</h1>
-        </div>
+    <div ref={containerRef} style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F0E8', padding: '24px' }}>
+      <div style={{ width: '100%', maxWidth: '448px', backgroundColor: 'white', padding: '32px', borderRadius: '8px', border: '2px solid #C54E1F' }}>
+        <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#C54E1F', marginBottom: '24px', textAlign: 'center' }}>
+          SUPREMO TRADERS
+        </h1>
+        <p style={{ fontSize: '18px', color: '#333', marginBottom: '32px', textAlign: 'center' }}>
+          Team Communication Platform
+        </p>
 
-        <Card className="border-2">
-          <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-xl md:text-2xl">Welcome Back</CardTitle>
-            <CardDescription className="text-sm md:text-base">Sign in to the SUPREMO TRADERS team platform</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Alert className="mb-4 bg-accent/50 border-accent">
-              <Info className="h-4 w-4 text-primary" />
-              <AlertDescription className="text-sm">
-                <strong>First time logging in?</strong> Contact your administrator for your login credentials.
-              </AlertDescription>
-            </Alert>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="login-id" className="text-base">Login ID</Label>
-                <Input
-                  id="login-id"
-                  type="text"
-                  placeholder="Enter your login ID"
-                  value={loginId}
-                  onChange={(e) => setLoginId(e.target.value)}
-                  required
-                  data-testid="input-login-id"
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck="false"
-                  className="h-12 text-base"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="login-password" className="text-base">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="login-password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    data-testid="input-login-password"
-                    autoComplete="current-password"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    className="pr-12 h-12 text-base"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-12 w-12 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                    data-testid="button-toggle-password"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-              <Button type="submit" className="w-full h-12 text-base font-semibold mt-6" data-testid="button-login">
-                Sign In
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-        
-        <div className="text-center text-sm text-muted-foreground mt-4 md:mt-6 space-y-2">
-          <p>Don't have login credentials yet?</p>
-          <p className="text-xs">Contact your system administrator to get started</p>
-        </div>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+              Login ID
+            </label>
+            <input
+              type="text"
+              value={loginId}
+              onChange={(e) => setLoginId(e.target.value)}
+              required
+              style={{ width: '100%', padding: '12px', fontSize: '16px', border: '2px solid #ddd', borderRadius: '4px' }}
+              data-testid="input-loginid"
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{ width: '100%', padding: '12px', fontSize: '16px', border: '2px solid #ddd', borderRadius: '4px' }}
+              data-testid="input-password"
+            />
+          </div>
+
+          <button
+            type="submit"
+            style={{ width: '100%', padding: '16px', fontSize: '18px', fontWeight: 'bold', color: 'white', backgroundColor: '#C54E1F', border: 'none', borderRadius: '4px', cursor: 'pointer', marginTop: '16px' }}
+            data-testid="button-login"
+          >
+            Sign In
+          </button>
+        </form>
+
+        <p style={{ marginTop: '24px', fontSize: '14px', color: '#666', textAlign: 'center', padding: '12px', backgroundColor: '#FFF3E0', borderRadius: '4px', border: '1px solid #FFE0B2' }}>
+          First time here? Contact your administrator for credentials.
+        </p>
       </div>
     </div>
   );
