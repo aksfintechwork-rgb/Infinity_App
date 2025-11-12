@@ -71,8 +71,11 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   };
 
   return (
-    <div ref={containerRef} style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F0E8', padding: '24px' }}>
-      <div style={{ width: '100%', maxWidth: '448px', backgroundColor: 'white', padding: '32px', borderRadius: '8px', border: '2px solid #C54E1F' }}>
+    <div ref={containerRef} style={{ minHeight: '100vh', display: 'block', backgroundColor: '#FF0000', padding: '0', margin: '0' }}>
+      <div style={{ width: '100%', height: '200px', backgroundColor: '#00FF00', padding: '50px', fontSize: '48px', fontWeight: 'bold', color: '#0000FF', textAlign: 'center' }}>
+        TEST - CAN YOU SEE THIS?
+      </div>
+      <div style={{ width: '100%', maxWidth: '448px', backgroundColor: 'white', padding: '32px', borderRadius: '8px', border: '5px solid #000000', margin: '50px auto' }}>
         <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#C54E1F', marginBottom: '24px', textAlign: 'center' }}>
           SUPREMO TRADERS
         </h1>
