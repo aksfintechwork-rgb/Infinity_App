@@ -184,11 +184,15 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
 
   useEffect(() => {
     if (isCreateOpen && !selectedDate) {
-      // Only clear fields if we're not opening from a day click
+      // Clear fields and set default datetime values when opening without a date selection
+      const now = new Date();
+      const defaultStartTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+      const defaultEndTime = new Date(defaultStartTime.getTime() + 60 * 60 * 1000); // 1 hour after start
+      
       setTitle('');
       setDescription('');
-      setStartTime('');
-      setEndTime('');
+      setStartTime(format(defaultStartTime, "yyyy-MM-dd'T'HH:mm"));
+      setEndTime(format(defaultEndTime, "yyyy-MM-dd'T'HH:mm"));
       setMeetingLink('');
       setSelectedParticipants([]);
       setRecurrencePattern('none');
