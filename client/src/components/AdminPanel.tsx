@@ -18,7 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/hooks/use-toast';
-import { Users, UserPlus, Shield, User, KeyRound, CheckCircle, XCircle, Trash2, Lock } from 'lucide-react';
+import { Users, UserPlus, Shield, User, KeyRound, CheckCircle, XCircle, Trash2, Lock, Edit2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -52,6 +52,9 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
   
   const [resetPasswordData, setResetPasswordData] = useState<{ userId: number; userName: string; loginId: string; newPassword: string } | null>(null);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  
+  const [editUserData, setEditUserData] = useState<{ userId: number; name: string; loginId: string } | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-users'],
@@ -142,6 +145,28 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
     },
   });
 
+  const updateUserDetailsMutation = useMutation({
+    mutationFn: ({ userId, details }: { userId: number; details: { name?: string; loginId?: string } }) => 
+      api.updateUserDetails(token, userId, details),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setIsEditDialogOpen(false);
+      setEditUserData(null);
+      toast({
+        title: 'User Updated Successfully',
+        description: data.message,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update user details',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUser.name || !newUser.loginId || !newUser.password) {
@@ -181,6 +206,45 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
       newPassword: '',
     });
     setIsResetDialogOpen(true);
+  };
+
+  const openEditDialog = (user: any) => {
+    setEditUserData({
+      userId: user.id,
+      name: user.name,
+      loginId: user.loginId,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateUser = () => {
+    if (!editUserData) return;
+    
+    if (!editUserData.name.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Name cannot be empty',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!editUserData.loginId.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Login ID cannot be empty',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    updateUserDetailsMutation.mutate({
+      userId: editUserData.userId,
+      details: {
+        name: editUserData.name,
+        loginId: editUserData.loginId,
+      },
+    });
   };
 
   const handleTestCredentials = async (e: React.FormEvent) => {
@@ -540,6 +604,16 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                      onClick={() => openEditDialog(user)}
+                      data-testid={`button-edit-user-${user.id}`}
+                      title="Edit user details"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
                       onClick={() => openResetDialog(user)}
                       data-testid={`button-reset-password-${user.id}`}
                       title="Reset password"
@@ -634,6 +708,69 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
               data-testid="button-confirm-reset"
             >
               {resetPasswordMutation.isPending ? 'Resetting...' : 'Reset Password'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent data-testid="dialog-edit-user">
+          <DialogHeader>
+            <DialogTitle>Edit User Details</DialogTitle>
+            <DialogDescription>
+              Update name and login ID for this user
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Full Name</Label>
+              <Input
+                id="edit-name"
+                type="text"
+                data-testid="input-edit-name"
+                placeholder="Enter full name"
+                value={editUserData?.name || ''}
+                onChange={(e) => 
+                  setEditUserData(prev => 
+                    prev ? { ...prev, name: e.target.value } : null
+                  )
+                }
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-loginid">Login ID</Label>
+              <Input
+                id="edit-loginid"
+                type="text"
+                data-testid="input-edit-loginid"
+                placeholder="Enter login ID"
+                value={editUserData?.loginId || ''}
+                onChange={(e) => 
+                  setEditUserData(prev => 
+                    prev ? { ...prev, loginId: e.target.value } : null
+                  )
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Login ID must be unique across all users
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEditDialogOpen(false)}
+              data-testid="button-cancel-edit-user"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleUpdateUser}
+              disabled={updateUserDetailsMutation.isPending}
+              data-testid="button-confirm-edit-user"
+            >
+              {updateUserDetailsMutation.isPending ? 'Updating...' : 'Update User'}
             </Button>
           </DialogFooter>
         </DialogContent>

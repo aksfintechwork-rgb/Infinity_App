@@ -229,3 +229,21 @@ export async function updateUserRole(token: string, userId: number, role: 'admin
 
   return response.json();
 }
+
+export async function updateUserDetails(token: string, userId: number, details: { name?: string; loginId?: string }) {
+  const response = await fetch(`${API_BASE}/admin/users/${userId}/details`, {
+    method: 'PATCH',
+    headers: { 
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}` 
+    },
+    body: JSON.stringify(details),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update user details');
+  }
+
+  return response.json();
+}

@@ -422,6 +422,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/admin/users/:userId/details", authMiddleware, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+
+      const { name, loginId } = req.body;
+      
+      if (!name && !loginId) {
+        return res.status(400).json({ error: "At least one field (name or loginId) must be provided" });
+      }
+
+      if (name !== undefined && (!name || name.trim() === '')) {
+        return res.status(400).json({ error: "Name cannot be empty" });
+      }
+
+      if (loginId !== undefined && (!loginId || loginId.trim() === '')) {
+        return res.status(400).json({ error: "Login ID cannot be empty" });
+      }
+
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Check if loginId is being changed and if the new one already exists
+      if (loginId && loginId !== user.loginId) {
+        const existingUser = await storage.getUserByLoginId(loginId);
+        if (existingUser && existingUser.id !== userId) {
+          return res.status(409).json({ error: "Login ID already exists" });
+        }
+      }
+
+      await storage.updateUserDetails(userId, { name, loginId });
+
+      const updatedUser = await storage.getUserById(userId);
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found after update" });
+      }
+      
+      broadcastUserListUpdate('user_created', updatedUser);
+      
+      res.json({ 
+        success: true, 
+        user: updatedUser,
+        message: `User details updated successfully` 
+      });
+    } catch (error) {
+      console.error("Admin update user details error:", error);
+      res.status(500).json({ error: "Failed to update user details" });
+    }
+  });
+
   app.patch("/api/admin/users/:userId/role", authMiddleware, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const userId = parseInt(req.params.userId);
