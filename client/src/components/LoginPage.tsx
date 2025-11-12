@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,39 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Debug: Log computed styles and dimensions
+    const timer = setTimeout(() => {
+      const container = containerRef.current;
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const computed = window.getComputedStyle(container);
+        console.log('🔍 [LOGIN CONTAINER DEBUG]', {
+          dimensions: {
+            width: rect.width,
+            height: rect.height,
+            top: rect.top,
+            left: rect.left
+          },
+          computedStyles: {
+            display: computed.display,
+            visibility: computed.visibility,
+            opacity: computed.opacity,
+            transform: computed.transform,
+            position: computed.position,
+            zIndex: computed.zIndex,
+            pointerEvents: computed.pointerEvents,
+            backgroundColor: computed.backgroundColor,
+            color: computed.color
+          },
+          classNames: container.className
+        });
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +71,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 md:p-6">
+    <div ref={containerRef} className="min-h-screen flex items-center justify-center bg-background p-4 md:p-6">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center justify-center mb-6 md:mb-8">
           <img src={logoImage} alt="SUPREMO TRADERS" className="w-40 md:w-48 h-auto mb-3 md:mb-4" />
