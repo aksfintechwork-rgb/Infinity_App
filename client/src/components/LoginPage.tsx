@@ -71,35 +71,17 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   };
 
   return (
-    <div ref={containerRef} style={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #FF0000 0%, #00FF00 50%, #0000FF 100%)',
-      padding: '24px',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '24px'
-    }}>
-      <div style={{
-        padding: '48px',
-        background: '#000000',
-        color: '#FFFFFF',
-        fontSize: '48px',
-        fontWeight: 'bold',
-        textAlign: 'center',
-        border: '10px solid #FFFF00',
-        boxShadow: '0 0 50px rgba(255,255,255,0.8)'
-      }}>
-        CAN YOU SEE THIS TEXT?
-      </div>
-      <div style={{ width: '100%', maxWidth: '448px', backgroundColor: '#FFFFFF', padding: '32px', border: '10px solid #000000', boxShadow: '0 0 30px rgba(0,0,0,0.8)' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#C54E1F', marginBottom: '8px', textAlign: 'center' }}>
-          SUPREMO TRADERS
-        </h1>
-        <p style={{ fontSize: '16px', color: '#000000', marginBottom: '32px', textAlign: 'center', fontWeight: 'bold' }}>
-          Team Communication Platform
-        </p>
+    <div ref={containerRef} className="min-h-screen flex items-center justify-center bg-background p-6">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center text-primary">
+            SUPREMO TRADERS
+          </CardTitle>
+          <CardDescription className="text-center">
+            Team Communication Platform
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
@@ -142,7 +124,8 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         <p style={{ marginTop: '24px', fontSize: '14px', color: '#666', textAlign: 'center', padding: '12px', backgroundColor: '#FFF3E0', borderRadius: '4px', border: '1px solid #FFE0B2' }}>
           First time here? Contact your administrator for credentials.
         </p>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
