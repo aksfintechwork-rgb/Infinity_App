@@ -167,6 +167,7 @@ export interface IStorage {
   getActiveCallByRoomName(roomName: string): Promise<ActiveCallWithDetails | undefined>;
   getActiveCallByConversation(conversationId: number): Promise<ActiveCallWithDetails | undefined>;
   getAllActiveCalls(): Promise<ActiveCallWithDetails[]>;
+  getActiveCallsForUser(userId: number): Promise<ActiveCallWithDetails[]>;
   endCall(id: number): Promise<void>;
   isUserInActiveCall(userId: number): Promise<boolean>;
   
@@ -1445,6 +1446,41 @@ export class PostgresStorage implements IStorage {
         sql`${activeCallParticipants.leftAt} IS NULL`
       ))
       .where(eq(activeCalls.status, 'active'))
+      .groupBy(activeCalls.id, users.name)
+      .orderBy(desc(activeCalls.startedAt));
+    
+    return result;
+  }
+
+  async getActiveCallsForUser(userId: number): Promise<ActiveCallWithDetails[]> {
+    const result = await db
+      .select({
+        id: activeCalls.id,
+        roomName: activeCalls.roomName,
+        roomUrl: activeCalls.roomUrl,
+        conversationId: activeCalls.conversationId,
+        hostId: activeCalls.hostId,
+        callType: activeCalls.callType,
+        status: activeCalls.status,
+        startedAt: activeCalls.startedAt,
+        endedAt: activeCalls.endedAt,
+        hostName: users.name,
+        participantCount: sql<number>`COUNT(DISTINCT ${activeCallParticipants.userId})::int`,
+        participants: sql<string[]>`ARRAY_AGG(DISTINCT ${users.name}) FILTER (WHERE ${users.name} IS NOT NULL)`,
+      })
+      .from(activeCalls)
+      .innerJoin(users, eq(activeCalls.hostId, users.id))
+      .leftJoin(activeCallParticipants, and(
+        eq(activeCallParticipants.callId, activeCalls.id),
+        sql`${activeCallParticipants.leftAt} IS NULL`
+      ))
+      .where(and(
+        eq(activeCalls.status, 'active'),
+        or(
+          eq(activeCalls.hostId, userId),
+          sql`EXISTS(SELECT 1 FROM ${activeCallParticipants} WHERE ${activeCallParticipants.callId} = ${activeCalls.id} AND ${activeCallParticipants.userId} = ${userId} AND ${activeCallParticipants.leftAt} IS NULL)`
+        )
+      ))
       .groupBy(activeCalls.id, users.name)
       .orderBy(desc(activeCalls.startedAt));
     

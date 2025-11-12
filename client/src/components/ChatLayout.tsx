@@ -1252,8 +1252,19 @@ export default function ChatLayout({
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => {
+                      onClick={async () => {
                         const conversationId = outgoingCall?.conversationId || activeCall?.conversationId;
+                        const roomName = outgoingCall?.roomName || activeCall?.roomName;
+                        
+                        // End call in database if we have a roomName
+                        if (roomName) {
+                          try {
+                            await apiRequest('POST', '/api/calls/end-by-room', { roomName });
+                          } catch (error) {
+                            console.error('Failed to end call:', error);
+                          }
+                        }
+                        
                         // Send WebSocket event to notify receiver that call was cancelled/ended
                         if (ws?.send && conversationId) {
                           ws.send({
@@ -1284,8 +1295,19 @@ export default function ChatLayout({
                     <Button
                       variant="destructive"
                       size="icon"
-                      onClick={() => {
+                      onClick={async () => {
                         const conversationId = outgoingCall?.conversationId || activeCall?.conversationId;
+                        const roomName = outgoingCall?.roomName || activeCall?.roomName;
+                        
+                        // End call in database if we have a roomName
+                        if (roomName) {
+                          try {
+                            await apiRequest('POST', '/api/calls/end-by-room', { roomName });
+                          } catch (error) {
+                            console.error('Failed to end call:', error);
+                          }
+                        }
+                        
                         // Send WebSocket event to notify receiver that call was cancelled/ended
                         if (ws?.send && conversationId) {
                           ws.send({

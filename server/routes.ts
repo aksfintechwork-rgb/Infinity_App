@@ -2622,6 +2622,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/calls", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const activeCalls = await storage.getActiveCallsForUser(req.userId);
+      res.json(activeCalls);
+    } catch (error) {
+      console.error("Get calls error:", error);
+      res.status(500).json({ error: "Failed to get calls" });
+    }
+  });
+
   app.get("/api/calls/active", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const activeCalls = await storage.getAllActiveCalls();
@@ -2946,6 +2960,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       console.error("End call error:", error);
+      res.status(500).json({ error: "Failed to end call" });
+    }
+  });
+
+  app.post("/api/calls/end-by-room", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { roomName } = req.body;
+      if (!roomName) {
+        return res.status(400).json({ error: "Room name is required" });
+      }
+      
+      const call = await storage.getActiveCallByRoomName(roomName);
+      if (!call) {
+        return res.json({ success: true, message: "Call already ended or not found" });
+      }
+
+      if (call.hostId !== req.userId) {
+        const user = await storage.getUserById(req.userId);
+        if (user?.role !== 'admin') {
+          return res.status(403).json({ error: "Only the host or admin can end the call" });
+        }
+      }
+
+      await storage.endCall(call.id);
+
+      broadcastUpdate({
+        type: 'call_ended',
+        callId: call.id,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("End call by room error:", error);
       res.status(500).json({ error: "Failed to end call" });
     }
   });
