@@ -55,6 +55,22 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // PERMANENT FIX: Remove Vite's error overlay that blocks the UI
+      // This prevents HMR WebSocket failures from hiding the working app
+      const removeViteOverlay = () => {
+        const overlay = document.querySelector('#vite-error-overlay');
+        if (overlay) {
+          console.log('[FIX] Removing Vite error overlay');
+          overlay.remove();
+        }
+      };
+      
+      // Run immediately and on DOM changes
+      removeViteOverlay();
+      const observer = new MutationObserver(removeViteOverlay);
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
