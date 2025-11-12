@@ -472,7 +472,10 @@ function App() {
     setMessages([]);
   };
 
+  console.log('[DEBUG APP] Render state - isLoading:', isLoading, 'currentUser:', currentUser, 'token:', token);
+  
   if (isLoading) {
+    console.log('[DEBUG APP] Rendering loading screen');
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -483,6 +486,7 @@ function App() {
     );
   }
 
+  console.log('[DEBUG APP] Rendering main app');
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
