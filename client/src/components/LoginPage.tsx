@@ -71,12 +71,33 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   };
 
   return (
-    <div ref={containerRef} style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F0E8', padding: '24px' }}>
-      <div style={{ width: '100%', maxWidth: '448px', backgroundColor: 'white', padding: '32px', borderRadius: '8px', border: '2px solid #C54E1F' }}>
+    <div ref={containerRef} style={{ 
+      minHeight: '100vh', 
+      background: 'linear-gradient(135deg, #FF0000 0%, #00FF00 50%, #0000FF 100%)',
+      padding: '24px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '24px'
+    }}>
+      <div style={{
+        padding: '48px',
+        background: '#000000',
+        color: '#FFFFFF',
+        fontSize: '48px',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        border: '10px solid #FFFF00',
+        boxShadow: '0 0 50px rgba(255,255,255,0.8)'
+      }}>
+        CAN YOU SEE THIS TEXT?
+      </div>
+      <div style={{ width: '100%', maxWidth: '448px', backgroundColor: '#FFFFFF', padding: '32px', border: '10px solid #000000', boxShadow: '0 0 30px rgba(0,0,0,0.8)' }}>
         <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#C54E1F', marginBottom: '8px', textAlign: 'center' }}>
           SUPREMO TRADERS
         </h1>
-        <p style={{ fontSize: '16px', color: '#666', marginBottom: '32px', textAlign: 'center' }}>
+        <p style={{ fontSize: '16px', color: '#000000', marginBottom: '32px', textAlign: 'center', fontWeight: 'bold' }}>
           Team Communication Platform
         </p>
 
