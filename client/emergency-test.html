@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Emergency Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f0e8 !important;
+            color: #000 !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 40px;
+            background: white;
+            border: 3px solid #C54E1F;
+            border-radius: 8px;
+            text-align: center;
+        }
+        h1 {
+            color: #C54E1F !important;
+            font-size: 32px !important;
+            margin-bottom: 20px !important;
+            display: block !important;
+        }
+        p {
+            color: #000 !important;
+            font-size: 18px !important;
+            line-height: 1.6 !important;
+            display: block !important;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ EMERGENCY TEST PAGE</h1>
+        <div class="status">
+            <p><strong>If you can see this text, your browser works fine!</strong></p>
+        </div>
+        <p>This proves:</p>
+        <p>✓ Your browser can render HTML</p>
+        <p>✓ Your browser can display CSS</p>
+        <p>✓ Colors and text are visible</p>
+        <br>
+        <p>The main app should work too. There's a CSS conflict hiding it.</p>
+    </div>
+    
+    <script>
+        console.log('Emergency test page loaded successfully!');
+        console.log('Background color:', window.getComputedStyle(document.body).backgroundColor);
+        console.log('Text color:', window.getComputedStyle(document.body).color);
+        console.log('Display:', window.getComputedStyle(document.body).display);
+    </script>
+</body>
+</html>
