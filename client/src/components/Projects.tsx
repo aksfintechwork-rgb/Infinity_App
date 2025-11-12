@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { Plus, Menu, Pencil, Trash2, Calendar as CalendarIcon, FileText, AlertCircle, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -82,7 +82,6 @@ type ProjectFormValues = z.infer<typeof projectFormSchema>;
 export default function Projects({ currentUser, allUsers, onOpenMobileMenu }: ProjectsProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const { toast } = useToast();
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectFormSchema),

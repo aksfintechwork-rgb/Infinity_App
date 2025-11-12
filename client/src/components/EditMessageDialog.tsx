@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 interface EditMessageDialogProps {
   isOpen: boolean;
@@ -28,7 +28,6 @@ export default function EditMessageDialog({
 }: EditMessageDialogProps) {
   const [body, setBody] = useState(currentBody);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
 
   // Sync local body state when messageId or currentBody changes
   useEffect(() => {

@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Plus, Trash2, Check, Menu, Calendar, Clock, Bell } from 'lucide-react';
 import type { Todo } from '@shared/schema';
 import { format } from 'date-fns';
@@ -38,7 +38,6 @@ export default function TodoList({ currentUser, onOpenMobileMenu }: TodoListProp
   const [newTodoDate, setNewTodoDate] = useState('');
   const [newTodoTime, setNewTodoTime] = useState('');
   const [newTodoReminderEnabled, setNewTodoReminderEnabled] = useState(false);
-  const { toast } = useToast();
 
   const { data: todos = [], isLoading } = useQuery<Todo[]>({
     queryKey: ['/api/todos'],

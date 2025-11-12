@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repeat, Sparkles, Copy, Languages, Pencil, Zap, Menu, ChevronLeft, ChevronRight, MoreVertical, Edit2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, parseISO, addDays, addWeeks, addMonths as addMonthsToDate, isBefore, isAfter } from 'date-fns';
 import { toZonedTime, fromZonedTime, formatInTimeZone } from 'date-fns-tz';
@@ -181,7 +181,6 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [instantMeetingLink, setInstantMeetingLink] = useState('');
   const [showInstantMeetingDialog, setShowInstantMeetingDialog] = useState(false);
-  const { toast} = useToast();
 
   useEffect(() => {
     if (isCreateOpen && !selectedDate) {

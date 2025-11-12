@@ -5,7 +5,7 @@ import { Video, Clock } from 'lucide-react';
 import { Meeting } from '@shared/schema';
 import { isToday, isTomorrow, addHours } from 'date-fns';
 import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 const IST_TIMEZONE = 'Asia/Kolkata';
 
@@ -24,7 +24,6 @@ interface UpcomingMeetingsProps {
 }
 
 export function UpcomingMeetings({ currentUser }: UpcomingMeetingsProps) {
-  const { toast } = useToast();
 
   const { data: meetings = [] } = useQuery<MeetingWithParticipants[]>({
     queryKey: ['/api/meetings/my-meetings'],

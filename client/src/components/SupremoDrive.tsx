@@ -69,7 +69,6 @@ interface SupremoDriveProps {
 }
 
 export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoDriveProps) {
-  const { toast } = useToast();
   const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
   const [folderPath, setFolderPath] = useState<Array<{ id: number | null; name: string }>>([{ id: null, name: "Drive" }]);
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);

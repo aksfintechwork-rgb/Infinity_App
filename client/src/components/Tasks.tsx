@@ -16,7 +16,7 @@ import { z } from 'zod';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 interface User {
   id: number;
@@ -105,7 +105,6 @@ export default function Tasks({ currentUser, allUsers, ws, onOpenMobileMenu }: T
   const [sortBy, setSortBy] = useState<'recent' | 'dueDate' | 'status'>('recent');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
   const isAdmin = currentUser.role === 'admin';
 
   // Listen for WebSocket task updates

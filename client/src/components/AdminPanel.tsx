@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Users, UserPlus, Shield, User, KeyRound, CheckCircle, XCircle, Trash2, Lock } from 'lucide-react';
 import {
   Dialog,
@@ -35,7 +35,6 @@ interface AdminPanelProps {
 }
 
 export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newUser, setNewUser] = useState({
     name: '',

@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Plus, Trash2, Save, Send, Menu, Calendar, Clock, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -67,7 +67,6 @@ export default function DailyWorksheet({ currentUser, onOpenMobileMenu }: DailyW
   const [tempEndHour, setTempEndHour] = useState<number>(18);
   
   const [hourlyLogs, setHourlyLogs] = useState<HourlyLog[]>([]);
-  const { toast } = useToast();
 
   // Load work hours from localStorage on mount
   useEffect(() => {

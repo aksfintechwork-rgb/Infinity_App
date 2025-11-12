@@ -3,7 +3,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Phone, PhoneOff, Video } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 interface IncomingCallModalProps {
   isOpen: boolean;
@@ -22,7 +22,6 @@ export default function IncomingCallModal({
   onAccept,
   onReject,
 }: IncomingCallModalProps) {
-  const { toast } = useToast();
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillator1Ref = useRef<OscillatorNode | null>(null);
   const oscillator2Ref = useRef<OscillatorNode | null>(null);

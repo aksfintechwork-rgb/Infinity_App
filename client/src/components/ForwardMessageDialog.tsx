@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface Conversation {
@@ -38,7 +38,6 @@ export default function ForwardMessageDialog({
 }: ForwardMessageDialogProps) {
   const [selectedConversations, setSelectedConversations] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
 
   const availableConversations = conversations.filter(
     (conv) => conv.id !== currentConversationId

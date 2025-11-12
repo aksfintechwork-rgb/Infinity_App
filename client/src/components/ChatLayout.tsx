@@ -30,7 +30,7 @@ import { useOutgoingRingtone } from '@/hooks/use-outgoing-ringtone';
 import logoImage from '@assets/image_1761659890673.png';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { formatLastSeen } from '@/lib/utils';
 import { nanoid } from 'nanoid';
 
@@ -168,7 +168,6 @@ export default function ChatLayout({
 
   const isAdmin = currentUser.role === 'admin';
   const token = localStorage.getItem('auth_token') || '';
-  const { toast } = useToast();
 
   const { data: pinnedConversationIds = [] } = useQuery<number[]>({
     queryKey: ['/api/pinned-conversations'],

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Copy, Check, Link2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
@@ -51,7 +51,6 @@ export default function InviteToCallDialog({
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [copied, setCopied] = useState(false);
-  const { toast } = useToast();
 
   // Filter users: exclude only current user (allow inviting anyone to the call)
   const availableUsers = allUsers.filter(

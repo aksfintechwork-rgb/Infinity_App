@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 
 type MissedCall = {
@@ -31,7 +31,6 @@ interface MissedCallsListProps {
 }
 
 export function MissedCallsList({ open, onOpenChange, onCallBack }: MissedCallsListProps) {
-  const { toast } = useToast();
   const [viewSyncInFlight, setViewSyncInFlight] = useState(false);
 
   const { data: missedCalls = [] } = useQuery<MissedCall[]>({
