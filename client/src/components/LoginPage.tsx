@@ -38,17 +38,17 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 md:p-6" style={{ backgroundColor: '#F5F0E8', minHeight: '100vh' }}>
-      <div className="w-full max-w-md" style={{ maxWidth: '28rem' }}>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 md:p-6">
+      <div className="w-full max-w-md">
         <div className="flex flex-col items-center justify-center mb-6 md:mb-8">
-          <img src={logoImage} alt="SUPREMO TRADERS" className="w-40 md:w-48 h-auto mb-3 md:mb-4" style={{ width: '12rem', height: 'auto' }} />
-          <h1 className="text-lg md:text-xl font-semibold text-center text-foreground" style={{ color: '#333', fontSize: '1.25rem', fontWeight: 600 }}>Team Communication Platform</h1>
+          <img src={logoImage} alt="SUPREMO TRADERS" className="w-40 md:w-48 h-auto mb-3 md:mb-4" />
+          <h1 className="text-lg md:text-xl font-semibold text-center text-foreground">Team Communication Platform</h1>
         </div>
 
-        <Card className="border-2" style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '0.5rem', border: '2px solid #ddd' }}>
+        <Card className="border-2">
           <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-xl md:text-2xl" style={{ color: '#333', fontSize: '1.5rem', fontWeight: 600 }}>Welcome Back</CardTitle>
-            <CardDescription className="text-sm md:text-base" style={{ color: '#666', fontSize: '0.875rem' }}>Sign in to the SUPREMO TRADERS team platform</CardDescription>
+            <CardTitle className="text-xl md:text-2xl">Welcome Back</CardTitle>
+            <CardDescription className="text-sm md:text-base">Sign in to the SUPREMO TRADERS team platform</CardDescription>
           </CardHeader>
           <CardContent>
             <Alert className="mb-4 bg-accent/50 border-accent">
@@ -107,7 +107,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                   </Button>
                 </div>
               </div>
-              <Button type="submit" className="w-full h-12 text-base font-semibold mt-6" data-testid="button-login" style={{ width: '100%', height: '3rem', backgroundColor: '#C54E1F', color: 'white', fontSize: '1rem', fontWeight: 600, borderRadius: '0.5rem', border: 'none', cursor: 'pointer' }}>
+              <Button type="submit" className="w-full h-12 text-base font-semibold mt-6" data-testid="button-login">
                 Sign In
               </Button>
             </form>
