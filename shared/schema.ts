@@ -21,6 +21,7 @@ export const users = pgTable("users", {
   role: text("role").notNull().default("user"),
   avatar: text("avatar"),
   lastSeenAt: timestamp("last_seen_at"),
+  firstLoginToday: timestamp("first_login_today"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

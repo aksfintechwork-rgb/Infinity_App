@@ -78,6 +78,7 @@ export interface IStorage {
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
   updateUserRole(userId: number, role: 'admin' | 'user'): Promise<void>;
   updateUserLastSeen(userId: number): Promise<void>;
+  updateUserFirstLoginToday(userId: number, timestamp: Date): Promise<void>;
   updateUserDetails(userId: number, details: { name?: string; loginId?: string }): Promise<void>;
   deleteUser(userId: number): Promise<void>;
   
@@ -242,6 +243,10 @@ export class PostgresStorage implements IStorage {
 
   async updateUserLastSeen(userId: number): Promise<void> {
     await db.update(users).set({ lastSeenAt: new Date() }).where(eq(users.id, userId));
+  }
+
+  async updateUserFirstLoginToday(userId: number, timestamp: Date): Promise<void> {
+    await db.update(users).set({ firstLoginToday: timestamp }).where(eq(users.id, userId));
   }
 
   async updateUserDetails(userId: number, details: { name?: string; loginId?: string }): Promise<void> {

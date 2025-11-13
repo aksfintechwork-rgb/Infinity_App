@@ -216,6 +216,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.log(`[LOGIN] ✅ Successful login for user: "${user.name}"`);
 
+      // Track first login of the day
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const lastLoginDate = user.firstLoginToday ? new Date(user.firstLoginToday) : null;
+      const lastLoginDay = lastLoginDate ? new Date(lastLoginDate.getFullYear(), lastLoginDate.getMonth(), lastLoginDate.getDate()) : null;
+      
+      // If user hasn't logged in today, update firstLoginToday
+      if (!lastLoginDay || lastLoginDay < today) {
+        await storage.updateUserFirstLoginToday(user.id, now);
+        console.log(`[LOGIN] 📅 First login today for user: "${user.name}"`);
+      }
 
       const token = generateToken(user.id);
       const { password: _, ...userWithoutPassword } = user;
