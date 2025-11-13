@@ -18,7 +18,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/hooks/use-toast';
-import { Users, UserPlus, Shield, User, KeyRound, CheckCircle, XCircle, Trash2, Lock, Edit2 } from 'lucide-react';
+import { Users, UserPlus, Shield, User, KeyRound, CheckCircle, XCircle, Trash2, Lock, Edit2, Clock } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,32 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
     password: '',
     role: 'user' as 'admin' | 'user',
   });
+
+  // Helper function to format last seen time
+  const formatLastSeen = (lastSeenAt: string | null) => {
+    if (!lastSeenAt) return 'Never';
+    const lastSeen = new Date(lastSeenAt);
+    const now = new Date();
+    const diffMinutes = Math.floor((now.getTime() - lastSeen.getTime()) / (1000 * 60));
+    
+    if (diffMinutes < 2) return 'Online now';
+    return formatDistanceToNow(lastSeen, { addSuffix: true });
+  };
+
+  // Helper function to format first login today
+  const formatFirstLoginToday = (firstLoginToday: string | null) => {
+    if (!firstLoginToday) return 'Not logged in today';
+    const loginTime = new Date(firstLoginToday);
+    const today = new Date();
+    const loginDay = new Date(loginTime.getFullYear(), loginTime.getMonth(), loginTime.getDate());
+    const currentDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    if (loginDay.getTime() !== currentDay.getTime()) {
+      return 'Not logged in today';
+    }
+    
+    return loginTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  };
 
   const [credentialTest, setCredentialTest] = useState({
     loginId: '',
@@ -524,6 +551,17 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
                           {user.email}
                         </div>
                       )}
+                      <div className="flex items-center gap-4 mt-1">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground" data-testid={`text-user-last-seen-${user.id}`}>
+                          <Clock className="w-3 h-3" />
+                          <span>{formatLastSeen(user.lastSeenAt)}</span>
+                        </div>
+                        {formatFirstLoginToday(user.firstLoginToday) !== 'Not logged in today' && (
+                          <div className="text-xs text-muted-foreground" data-testid={`text-user-first-login-${user.id}`}>
+                            First login: {formatFirstLoginToday(user.firstLoginToday)}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
