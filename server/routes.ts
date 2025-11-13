@@ -2758,21 +2758,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.userId,
       });
 
-      // Broadcast incoming call notification to conversation members
+      // Broadcast incoming call notification to ALL conversation members (including busy users)
       if (conversationId) {
         const caller = await storage.getUserById(req.userId);
         if (caller) {
           const members = await storage.getConversationMembers(conversationId);
           if (members && members.length > 0) {
-            const memberIds = members.map(m => m.id);
+            const memberIds = members.map(m => m.id).filter(id => id !== req.userId);
             
-            console.log(`[POST /api/calls] Broadcasting incoming_call to conversation ${conversationId} members:`, memberIds);
+            console.log(`[POST /api/calls] Broadcasting incoming_call to ALL conversation ${conversationId} members (including busy):`, memberIds);
             
-            // Broadcast to all members except the caller
+            // Broadcast to ALL members except the caller (even if they're busy)
             const connectedUserIds: number[] = [];
             if (wss) {
               wss.clients.forEach((client: any) => {
-                if (client.readyState === WebSocket.OPEN && memberIds.includes(client.userId) && client.userId !== req.userId) {
+                if (client.readyState === WebSocket.OPEN && memberIds.includes(client.userId)) {
                   connectedUserIds.push(client.userId);
                   console.log(`[POST /api/calls] Sending incoming_call to user ${client.userId}`);
                   client.send(JSON.stringify({
@@ -2792,11 +2792,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
             }
             
-            // Send push notifications to members who don't have a visible tab
+            // Send push notifications to ALL members who don't have a visible tab (including busy users)
             const usersNeedingPush = memberIds.filter(id => 
-              id !== req.userId && shouldSendPushNotification(id)
+              shouldSendPushNotification(id)
             );
-            console.log(`[POST /api/calls] Sending push notifications to ${usersNeedingPush.length} users (offline or tab hidden)`);
+            console.log(`[POST /api/calls] Sending push notifications to ${usersNeedingPush.length} users (offline, tab hidden, or busy)`);
             const finalCallType = callType || 'video';
             for (const userId of usersNeedingPush) {
               await sendPushNotification(userId, {
@@ -2806,6 +2806,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 callData: { conversationId, roomName, callType: finalCallType, from: { id: caller.id, name: caller.name, avatar: caller.avatar } },
               });
             }
+            
+            console.log(`[POST /api/calls] ✅ Successfully notified ${connectedUserIds.length} online users and ${usersNeedingPush.length} offline/busy users`);
           }
         }
       }
