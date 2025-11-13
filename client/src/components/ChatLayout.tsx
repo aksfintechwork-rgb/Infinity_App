@@ -573,27 +573,33 @@ export default function ChatLayout({
     if (!incomingCall) return;
 
     try {
+      // Get the room URL from the database (room was already created by caller)
+      const response = await apiRequest('GET', `/api/calls?conversationId=${incomingCall.conversationId}`);
+      const calls = await response.json();
+      
+      const activeCall = calls.find((call: any) => 
+        call.conversationId === incomingCall.conversationId && 
+        call.status === 'active'
+      );
+      
+      if (!activeCall || !activeCall.roomUrl) {
+        throw new Error('Call not found');
+      }
+      
       // Send call answered notification to caller via WebSocket (stops their outgoing ringtone)
       if (ws?.isConnected) {
         ws.send({
           type: 'call_answered',
           data: {
             conversationId: incomingCall.conversationId,
+            callType: incomingCall.callType,
+            roomName: activeCall.roomName,
           }
         });
       }
-
-      // Create room first via backend API
-      const response = await apiRequest('POST', '/api/daily/create-room', { roomName: incomingCall.roomName });
       
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to create room');
-      }
-      
-      // Open the room in new window and join immediately with user name, video off by default
-      const callUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
+      // Join the existing room with user name, video off by default
+      const callUrl = `${activeCall.roomUrl}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
       const callWindow = window.open(callUrl, '_blank', 'noopener,noreferrer');
       
       // Track window to detect when call ends
@@ -603,8 +609,8 @@ export default function ChatLayout({
       setActiveCall({
         conversationId: incomingCall.conversationId,
         callType: incomingCall.callType,
-        roomName: incomingCall.roomName,
-        roomUrl: data.url
+        roomName: activeCall.roomName,
+        roomUrl: activeCall.roomUrl
       });
 
       toast({

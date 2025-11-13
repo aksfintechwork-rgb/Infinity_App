@@ -1384,7 +1384,10 @@ export class PostgresStorage implements IStorage {
         eq(activeCallParticipants.callId, activeCalls.id),
         sql`${activeCallParticipants.leftAt} IS NULL`
       ))
-      .where(eq(activeCalls.roomName, roomName))
+      .where(and(
+        eq(activeCalls.roomName, roomName),
+        eq(activeCalls.status, 'active')
+      ))
       .groupBy(activeCalls.id, users.name)
       .limit(1);
     
