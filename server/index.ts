@@ -77,6 +77,11 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Add health check endpoint for deployment verification
+  app.get('/health', (_req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -105,24 +110,28 @@ app.use((req, res, next) => {
       serveStatic(app);
     }
     
-    // Initialize database with admin user if empty (non-blocking)
-    initializeDatabase()
-      .then(() => log('Database initialized'))
-      .catch((err) => log(`Database initialization error: ${err.message}`));
-    
-    // Start task reminder service (checks every 60 minutes) (non-blocking)
-    taskReminderService.start(60)
-      .then(() => log('Task reminder service started'))
-      .catch((err) => log(`Task reminder service error: ${err.message}`));
-    
-    // Start meeting reminder service (checks every 1 minute) (non-blocking)
-    meetingReminderService.start(1)
-      .then(() => log('Meeting reminder service started'))
-      .catch((err) => log(`Meeting reminder service error: ${err.message}`));
-    
-    // Start todo reminder service (checks every 60 minutes) (non-blocking)
-    todoReminderService.start(60)
-      .then(() => log('Todo reminder service started'))
-      .catch((err) => log(`Todo reminder service error: ${err.message}`));
+    // Defer expensive startup operations to after server is ready
+    // This ensures health checks pass quickly during deployment
+    setTimeout(() => {
+      // Initialize database with admin user if empty (non-blocking)
+      initializeDatabase()
+        .then(() => log('Database initialized'))
+        .catch((err) => log(`Database initialization error: ${err.message}`));
+      
+      // Start task reminder service (checks every 60 minutes) (non-blocking)
+      taskReminderService.start(60)
+        .then(() => log('Task reminder service started'))
+        .catch((err) => log(`Task reminder service error: ${err.message}`));
+      
+      // Start meeting reminder service (checks every 1 minute) (non-blocking)
+      meetingReminderService.start(1)
+        .then(() => log('Meeting reminder service started'))
+        .catch((err) => log(`Meeting reminder service error: ${err.message}`));
+      
+      // Start todo reminder service (checks every 60 minutes) (non-blocking)
+      todoReminderService.start(60)
+        .then(() => log('Todo reminder service started'))
+        .catch((err) => log(`Todo reminder service error: ${err.message}`));
+    }, 2000); // Delay background services by 2 seconds to allow health checks to pass
   });
 })();
