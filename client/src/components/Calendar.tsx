@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repeat, Sparkles, Copy, Languages, Pencil, Zap, Menu, ChevronLeft, ChevronRight, MoreVertical, Edit2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
+import { openCallWindow } from '@/lib/callWindow';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, parseISO, addDays, addWeeks, addMonths as addMonthsToDate, isBefore, isAfter } from 'date-fns';
 import { toZonedTime, fromZonedTime, formatInTimeZone } from 'date-fns-tz';
 
@@ -425,10 +426,10 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
       
       // Open in new window with user name and camera off by default - Daily.co instant join with NO lobby!
       const meetingUrl = ensureCameraOff(data.url, currentUser.name);
-      const newWindow = window.open(meetingUrl, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
+      const newWindow = openCallWindow(meetingUrl);
       
       // Check if popup was blocked
-      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      if (!newWindow) {
         toast({
           title: 'Popup blocked',
           description: 'Please allow popups for this site to join video meetings in a new window.',
@@ -557,9 +558,9 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
       
       // Open in new window with user name and camera off by default
       const meetingUrl = ensureCameraOff(data.url, currentUser.name);
-      const newWindow = window.open(meetingUrl, '_blank', 'width=1200,height=800,resizable=yes,scrollbars=yes');
+      const newWindow = openCallWindow(meetingUrl);
       
-      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      if (!newWindow) {
         toast({
           title: 'Popup blocked',
           description: 'Please allow popups for this site to join video meetings.',

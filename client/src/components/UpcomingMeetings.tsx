@@ -6,6 +6,7 @@ import { Meeting } from '@shared/schema';
 import { isToday, isTomorrow, addHours } from 'date-fns';
 import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { toast } from '@/hooks/use-toast';
+import { openCallWindow } from '@/lib/callWindow';
 
 const IST_TIMEZONE = 'Asia/Kolkata';
 
@@ -84,9 +85,9 @@ export function UpcomingMeetings({ currentUser }: UpcomingMeetingsProps) {
       
       // Daily.co - instant join with NO lobby, user name, and camera off by default!
       const meetingUrl = ensureCameraOff(data.url, currentUser.name);
-      const newWindow = window.open(meetingUrl, '_blank', 'noopener,noreferrer');
+      const newWindow = openCallWindow(meetingUrl);
       
-      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      if (!newWindow) {
         toast({
           title: 'Popup blocked',
           description: 'Please allow popups to join the meeting',

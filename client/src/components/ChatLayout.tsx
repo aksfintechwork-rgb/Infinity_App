@@ -33,6 +33,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { formatLastSeen } from '@/lib/utils';
+import { openCallWindow } from '@/lib/callWindow';
 import { nanoid } from 'nanoid';
 
 interface User {
@@ -573,17 +574,25 @@ export default function ChatLayout({
     if (!incomingCall) return;
 
     try {
+      console.log('[CALL DEBUG] Accepting incoming call for conversation:', incomingCall.conversationId);
+      
       // Get the room URL from the database (room was already created by caller)
       const response = await apiRequest('GET', `/api/calls?conversationId=${incomingCall.conversationId}`);
       const calls = await response.json();
       
+      console.log('[CALL DEBUG] Retrieved calls from database:', calls);
+      
+      // Find the call - can be pending (just created) or active (caller already joined)
       const activeCall = calls.find((call: any) => 
         call.conversationId === incomingCall.conversationId && 
-        call.status === 'active'
+        (call.status === 'active' || call.status === 'pending')
       );
       
+      console.log('[CALL DEBUG] Found call:', activeCall);
+      
       if (!activeCall || !activeCall.roomUrl) {
-        throw new Error('Call not found');
+        console.error('[CALL DEBUG] Call not found or missing roomUrl. Calls:', calls);
+        throw new Error('Call not found or missing room URL');
       }
       
       // Send call answered notification to caller via WebSocket (stops their outgoing ringtone)
@@ -600,7 +609,19 @@ export default function ChatLayout({
       
       // Join the existing room with user name, video off by default
       const callUrl = `${activeCall.roomUrl}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
-      const callWindow = window.open(callUrl, '_blank', 'noopener,noreferrer');
+      
+      console.log('[CALL DEBUG] Opening call window with URL:', callUrl);
+      
+      const callWindow = openCallWindow(callUrl);
+      
+      if (!callWindow) {
+        toast({
+          title: 'Popup blocked',
+          description: 'Please allow popups for this site to join calls.',
+          variant: 'destructive'
+        });
+        throw new Error('Failed to open call window. Please allow popups for this site.');
+      }
       
       // Track window to detect when call ends
       callWindowRef.current = callWindow;
@@ -618,10 +639,10 @@ export default function ChatLayout({
         description: `Connected to ${incomingCall.from.name}`,
       });
     } catch (error) {
-      console.error('Error joining call:', error);
+      console.error('[CALL DEBUG] Error joining call:', error);
       toast({
         title: 'Error',
-        description: 'Failed to join call. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to join call. Please try again.',
         variant: 'destructive'
       });
     }
@@ -714,7 +735,16 @@ export default function ChatLayout({
       
       // Open the room in new window with user name and video off by default - instant join!
       const callUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
-      const callWindow = window.open(callUrl, '_blank', 'noopener,noreferrer');
+      const callWindow = openCallWindow(callUrl);
+      
+      if (!callWindow) {
+        toast({
+          title: 'Popup blocked',
+          description: 'Please allow popups for this site to start calls.',
+          variant: 'destructive'
+        });
+        return;
+      }
       
       // Store window reference to monitor when it's closed
       callWindowRef.current = callWindow;
@@ -823,7 +853,16 @@ export default function ChatLayout({
       
       // Open the room in new window with video disabled and user name for audio calls
       const audioCallUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
-      const callWindow = window.open(audioCallUrl, '_blank', 'noopener,noreferrer');
+      const callWindow = openCallWindow(audioCallUrl);
+      
+      if (!callWindow) {
+        toast({
+          title: 'Popup blocked',
+          description: 'Please allow popups for this site to start calls.',
+          variant: 'destructive'
+        });
+        return;
+      }
       
       // Store window reference to monitor when it's closed
       callWindowRef.current = callWindow;
@@ -909,7 +948,16 @@ export default function ChatLayout({
       
       // Open the room in new window with video disabled and user name for audio calls - instant join!
       const audioCallUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
-      const callWindow = window.open(audioCallUrl, '_blank', 'noopener,noreferrer');
+      const callWindow = openCallWindow(audioCallUrl);
+      
+      if (!callWindow) {
+        toast({
+          title: 'Popup blocked',
+          description: 'Please allow popups for this site to start calls.',
+          variant: 'destructive'
+        });
+        return;
+      }
       
       // Store window reference to monitor when it's closed
       callWindowRef.current = callWindow;
