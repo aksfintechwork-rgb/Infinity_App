@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, boolean, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, boolean, timestamp, integer, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -72,7 +72,10 @@ export const conversationMembers = pgTable("conversation_members", {
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
   canViewHistory: boolean("can_view_history").notNull().default(true),
-});
+}, (table) => ({
+  conversationIdIdx: index("conversation_members_conversation_id_idx").on(table.conversationId),
+  userIdIdx: index("conversation_members_user_id_idx").on(table.userId),
+}));
 
 const _baseConversationMemberSchema = createInsertSchema(conversationMembers, {});
 
@@ -91,7 +94,10 @@ export const pinnedConversations = pgTable("pinned_conversations", {
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   conversationId: integer("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
   pinnedAt: timestamp("pinned_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index("pinned_conversations_user_id_idx").on(table.userId),
+  conversationIdIdx: index("pinned_conversations_conversation_id_idx").on(table.conversationId),
+}));
 
 const _basePinnedConversationSchema = createInsertSchema(pinnedConversations, {});
 
@@ -111,7 +117,10 @@ export const conversationReadStatus = pgTable("conversation_read_status", {
   conversationId: integer("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
   lastReadMessageId: integer("last_read_message_id"),
   lastReadAt: timestamp("last_read_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index("conversation_read_status_user_id_idx").on(table.userId),
+  conversationIdIdx: index("conversation_read_status_conversation_id_idx").on(table.conversationId),
+}));
 
 const _baseConversationReadStatusSchema = createInsertSchema(conversationReadStatus, {});
 
@@ -136,7 +145,11 @@ export const messages = pgTable("messages", {
   // Self-reference requires explicit type cast to avoid circular dependency
   replyToId: integer("reply_to_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  conversationIdIdx: index("messages_conversation_id_idx").on(table.conversationId),
+  senderIdIdx: index("messages_sender_id_idx").on(table.senderId),
+  createdAtIdx: index("messages_created_at_idx").on(table.createdAt),
+}));
 
 const _baseMessageSchema = createInsertSchema(messages, {});
 
@@ -204,7 +217,10 @@ export const meetingParticipants = pgTable("meeting_participants", {
   meetingId: integer("meeting_id").notNull().references(() => meetings.id, { onDelete: "cascade" }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   addedAt: timestamp("added_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  meetingIdIdx: index("meeting_participants_meeting_id_idx").on(table.meetingId),
+  userIdIdx: index("meeting_participants_user_id_idx").on(table.userId),
+}));
 
 const _baseMeetingParticipantSchema = createInsertSchema(meetingParticipants, {});
 
@@ -236,7 +252,12 @@ export const tasks = pgTable("tasks", {
   lastReminderSent: timestamp("last_reminder_sent"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  createdByIdx: index("tasks_created_by_idx").on(table.createdBy),
+  assignedToIdx: index("tasks_assigned_to_idx").on(table.assignedTo),
+  statusIdx: index("tasks_status_idx").on(table.status),
+  projectIdIdx: index("tasks_project_id_idx").on(table.projectId),
+}));
 
 const _baseTaskSchema = createInsertSchema(tasks, {
   startDate: z.string().optional().nullable().refine((val) => !val || !isNaN(Date.parse(val)), {
@@ -273,7 +294,11 @@ export const taskSupportRequests = pgTable("task_support_requests", {
   message: text("message"),
   status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  taskIdIdx: index("task_support_requests_task_id_idx").on(table.taskId),
+  requesterIdIdx: index("task_support_requests_requester_id_idx").on(table.requesterId),
+  supporterIdIdx: index("task_support_requests_supporter_id_idx").on(table.supporterId),
+}));
 
 const _baseSupportRequestSchema = createInsertSchema(taskSupportRequests, {});
 
@@ -300,7 +325,10 @@ export const dailyWorksheets = pgTable("daily_worksheets", {
   submittedAt: timestamp("submitted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index("daily_worksheets_user_id_idx").on(table.userId),
+  dateIdx: index("daily_worksheets_date_idx").on(table.date),
+}));
 
 const _baseDailyWorksheetSchema = createInsertSchema(dailyWorksheets, {
   date: z.string().transform((val) => new Date(val)),
@@ -364,7 +392,10 @@ export const projects = pgTable("projects", {
   priority: text("priority").notNull().default("medium"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  responsiblePersonIdIdx: index("projects_responsible_person_id_idx").on(table.responsiblePersonId),
+  statusIdx: index("projects_status_idx").on(table.status),
+}));
 
 const _baseProjectSchema = createInsertSchema(projects, {
   projectName: z.string().min(1, "Project name is required"),
@@ -410,7 +441,10 @@ export const driveFolders = pgTable("drive_folders", {
   lastSyncedAt: timestamp("last_synced_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  createdByIdIdx: index("drive_folders_created_by_id_idx").on(table.createdById),
+  parentIdIdx: index("drive_folders_parent_id_idx").on(table.parentId),
+}));
 
 const _baseDriveFolderSchema = createInsertSchema(driveFolders, {
   name: z.string().min(1, "Folder name is required"),
@@ -451,7 +485,10 @@ export const driveFiles = pgTable("drive_files", {
   syncStatus: text("sync_status").notNull().default("not_synced"),
   lastSyncedAt: timestamp("last_synced_at"),
   uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  folderIdIdx: index("drive_files_folder_id_idx").on(table.folderId),
+  uploadedByIdIdx: index("drive_files_uploaded_by_id_idx").on(table.uploadedById),
+}));
 
 const _baseDriveFileSchema = createInsertSchema(driveFiles, {
   name: z.string().min(1, "File name is required"),
@@ -521,7 +558,10 @@ export const activeCallParticipants = pgTable("active_call_participants", {
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
   leftAt: timestamp("left_at"),
-});
+}, (table) => ({
+  callIdIdx: index("active_call_participants_call_id_idx").on(table.callId),
+  userIdIdx: index("active_call_participants_user_id_idx").on(table.userId),
+}));
 
 const _baseActiveCallParticipantSchema = createInsertSchema(activeCallParticipants, {});
 
@@ -544,7 +584,10 @@ export const missedCalls = pgTable("missed_calls", {
   missedAt: timestamp("missed_at").notNull().defaultNow(),
   viewed: boolean("viewed").notNull().default(false),
   viewedAt: timestamp("viewed_at"),
-});
+}, (table) => ({
+  receiverIdIdx: index("missed_calls_receiver_id_idx").on(table.receiverId),
+  callerIdIdx: index("missed_calls_caller_id_idx").on(table.callerId),
+}));
 
 const _baseMissedCallSchema = createInsertSchema(missedCalls, {
   callType: callTypeEnum.default("video"),
@@ -579,7 +622,10 @@ export const todos = pgTable("todos", {
   reminderSent: boolean("reminder_sent").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index("todos_user_id_idx").on(table.userId),
+  completedIdx: index("todos_completed_idx").on(table.completed),
+}));
 
 const _baseTodoSchema = createInsertSchema(todos, {
   task: z.string().min(1, "Task is required"),
@@ -608,7 +654,9 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   p256dhKey: text("p256dh_key").notNull(),
   authKey: text("auth_key").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index("push_subscriptions_user_id_idx").on(table.userId),
+}));
 
 const _basePushSubscriptionSchema = createInsertSchema(pushSubscriptions, {});
 
