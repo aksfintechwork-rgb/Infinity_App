@@ -32,23 +32,15 @@ export class TaskReminderService {
   }
 
   private async ensureSystemUser(): Promise<number> {
-    const existingUser = await db.query.users.findFirst({
-      where: eq(users.loginId, 'atul-reminder')
+    const adminUser = await db.query.users.findFirst({
+      where: eq(users.loginId, 'admin')
     });
 
-    if (existingUser) {
-      return existingUser.id;
+    if (!adminUser) {
+      throw new Error('[TaskReminder] Admin user not found. Cannot send reminders.');
     }
 
-    const [systemUser] = await db.insert(users).values({
-      name: 'Atul',
-      loginId: 'atul-reminder',
-      email: 'atul@supremo.internal',
-      password: 'disabled',
-      role: 'admin'
-    }).returning();
-
-    return systemUser.id;
+    return adminUser.id;
   }
 
   async start(checkIntervalMinutes: number = 60) {
