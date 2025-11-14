@@ -27,10 +27,11 @@ export function openCallWindow(url: string): Window | null {
   const height = Math.max(minHeight, Math.min(desiredHeight, maxHeight));
   
   // Calculate position to center on current screen (multi-monitor support)
+  // Allow negative coordinates for monitors positioned left/above primary
   const screenX = window.screenX || 0;
   const screenY = window.screenY || 0;
-  const left = Math.max(0, screenX + (availableWidth - width) / 2);
-  const top = Math.max(0, screenY + (availableHeight - height) / 2);
+  const left = screenX + (availableWidth - width) / 2;
+  const top = screenY + (availableHeight - height) / 2;
   
   const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,noopener=yes,noreferrer=yes`;
   
