@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone, PhoneOff, Folder, HardDrive, ListChecks, BarChart3, X, PhoneMissed } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone, PhoneOff, Folder, HardDrive, ListChecks, BarChart3, X, PhoneMissed, ChevronDown, ChevronUp } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
@@ -119,6 +119,13 @@ export default function ChatLayout({
   const [isDark, setIsDark] = useState(false);
   const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar' | 'tasks' | 'todo' | 'worksheet' | 'admin-worksheets' | 'projects' | 'drive' | 'dashboard'>('chat');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNavExpanded, setIsNavExpanded] = useState(() => {
+    // Restore user's preference from localStorage
+    // If user has previously set a preference, use it
+    // Otherwise, default to false (collapsed) for clean chat focus
+    const saved = localStorage.getItem('sidebar-nav-expanded');
+    return saved !== null ? saved === 'true' : false;
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastConversationIdRef = useRef<number | null>(null);
@@ -181,6 +188,23 @@ export default function ChatLayout({
   });
 
   const unviewedMissedCallsCount = missedCalls.filter(call => !call.viewed).length;
+
+  // Auto-collapse navigation whenever Chat view is entered
+  useEffect(() => {
+    if (currentView === 'chat') {
+      setIsNavExpanded(false);
+    }
+  }, [currentView]);
+
+  // Persist navigation expansion preference for non-chat views
+  useEffect(() => {
+    if (currentView !== 'chat') {
+      localStorage.setItem('sidebar-nav-expanded', String(isNavExpanded));
+    }
+  }, [isNavExpanded, currentView]);
+
+  // Derived value: show full nav only when expanded OR on non-chat views
+  const shouldShowFullNav = currentView !== 'chat' || isNavExpanded;
 
   const pinMutation = useMutation({
     mutationFn: async (conversationId: number) => {
@@ -1026,101 +1050,143 @@ export default function ChatLayout({
         </div>
 
         <div className="px-3 py-3 border-b border-border flex-shrink-0 bg-background">
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant={currentView === 'chat' ? 'default' : 'ghost'}
-              onClick={() => setCurrentView('chat')}
-              data-testid="button-view-chat"
-              className="h-11 justify-start font-medium text-sm"
-            >
-              <MessageSquare className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span className="truncate">Chat</span>
-            </Button>
-            <Button
-              variant={currentView === 'tasks' ? 'default' : 'ghost'}
-              onClick={() => setCurrentView('tasks')}
-              data-testid="button-view-tasks"
-              className="h-11 justify-start font-medium text-sm"
-            >
-              <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span className="truncate">Tasks</span>
-            </Button>
-            <Button
-              variant={currentView === 'todo' ? 'default' : 'ghost'}
-              onClick={() => setCurrentView('todo')}
-              data-testid="button-view-todo"
-              className="h-11 justify-start font-medium text-sm"
-            >
-              <ListChecks className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span className="truncate">To-Do</span>
-            </Button>
-            <Button
-              variant={currentView === 'calendar' ? 'default' : 'ghost'}
-              onClick={() => setCurrentView('calendar')}
-              data-testid="button-view-calendar"
-              className="h-11 justify-start font-medium text-sm"
-            >
-              <CalendarIcon className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span className="truncate">Calendar</span>
-            </Button>
-            <Button
-              variant={currentView === 'worksheet' ? 'default' : 'ghost'}
-              onClick={() => setCurrentView('worksheet')}
-              data-testid="button-view-worksheet"
-              className="h-11 justify-start font-medium text-sm"
-            >
-              <FileText className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span className="truncate">Work Log</span>
-            </Button>
-            <Button
-              variant={currentView === 'projects' ? 'default' : 'ghost'}
-              onClick={() => setCurrentView('projects')}
-              data-testid="button-view-projects"
-              className="h-11 justify-start font-medium text-sm"
-            >
-              <Folder className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span className="truncate">Projects</span>
-            </Button>
-            <Button
-              variant={currentView === 'drive' ? 'default' : 'ghost'}
-              onClick={() => setCurrentView('drive')}
-              data-testid="button-view-drive"
-              className="h-11 justify-start font-medium text-sm"
-            >
-              <HardDrive className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span className="truncate">Supremo Drive</span>
-            </Button>
-            {isAdmin && (
-              <>
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant={currentView === 'chat' ? 'default' : 'ghost'}
+                onClick={() => setCurrentView('chat')}
+                data-testid="button-view-chat"
+                className="h-11 justify-start font-medium text-sm"
+              >
+                <MessageSquare className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Chat</span>
+              </Button>
+
+              {/* Toggle button - only show on Chat view */}
+              {currentView === 'chat' && (
                 <Button
-                  variant={currentView === 'admin' ? 'default' : 'ghost'}
-                  onClick={() => setCurrentView('admin')}
-                  data-testid="button-view-admin"
-                  className="h-11 justify-start font-medium text-sm"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsNavExpanded(!isNavExpanded)}
+                  aria-expanded={isNavExpanded}
+                  aria-controls="nav-options"
+                  data-testid="button-toggle-nav"
+                  className="h-11 justify-center"
                 >
-                  <Shield className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span className="truncate">Admin</span>
+                  {isNavExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                 </Button>
-                <Button
-                  variant={currentView === 'dashboard' ? 'default' : 'ghost'}
-                  onClick={() => setCurrentView('dashboard')}
-                  data-testid="button-view-dashboard"
-                  className="h-11 justify-start font-medium text-sm"
-                >
-                  <BarChart3 className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span className="truncate">Dashboard</span>
-                </Button>
-                <Button
-                  variant={currentView === 'admin-worksheets' ? 'default' : 'ghost'}
-                  onClick={() => setCurrentView('admin-worksheets')}
-                  data-testid="button-view-admin-worksheets"
-                  className="h-11 justify-start font-medium text-sm"
-                >
-                  <FileText className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span className="truncate">Team Logs</span>
-                </Button>
-              </>
-            )}
+              )}
+            </div>
+
+            {/* Navigation options - collapsible on Chat view, always visible on other views */}
+            <div
+              id="nav-options"
+              role="group"
+              className={`grid grid-cols-2 gap-2 ${
+                currentView === 'chat'
+                  ? `transition-all duration-200 origin-top ${
+                      isNavExpanded 
+                        ? 'opacity-100 max-h-[500px]' 
+                        : 'opacity-0 max-h-0 overflow-hidden'
+                    }`
+                  : ''
+              }`}
+            >
+              <Button
+                variant={currentView === 'tasks' ? 'default' : 'ghost'}
+                onClick={() => setCurrentView('tasks')}
+                data-testid="button-view-tasks"
+                className="h-11 justify-start font-medium text-sm"
+                tabIndex={currentView === 'chat' && !isNavExpanded ? -1 : 0}
+              >
+                <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Tasks</span>
+              </Button>
+              <Button
+                variant={currentView === 'todo' ? 'default' : 'ghost'}
+                onClick={() => setCurrentView('todo')}
+                data-testid="button-view-todo"
+                className="h-11 justify-start font-medium text-sm"
+                tabIndex={currentView === 'chat' && !isNavExpanded ? -1 : 0}
+              >
+                <ListChecks className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">To-Do</span>
+              </Button>
+              <Button
+                variant={currentView === 'calendar' ? 'default' : 'ghost'}
+                onClick={() => setCurrentView('calendar')}
+                data-testid="button-view-calendar"
+                className="h-11 justify-start font-medium text-sm"
+                tabIndex={currentView === 'chat' && !isNavExpanded ? -1 : 0}
+              >
+                <CalendarIcon className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Calendar</span>
+              </Button>
+              <Button
+                variant={currentView === 'worksheet' ? 'default' : 'ghost'}
+                onClick={() => setCurrentView('worksheet')}
+                data-testid="button-view-worksheet"
+                className="h-11 justify-start font-medium text-sm"
+                tabIndex={currentView === 'chat' && !isNavExpanded ? -1 : 0}
+              >
+                <FileText className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Work Log</span>
+              </Button>
+              <Button
+                variant={currentView === 'projects' ? 'default' : 'ghost'}
+                onClick={() => setCurrentView('projects')}
+                data-testid="button-view-projects"
+                className="h-11 justify-start font-medium text-sm"
+                tabIndex={currentView === 'chat' && !isNavExpanded ? -1 : 0}
+              >
+                <Folder className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Projects</span>
+              </Button>
+              <Button
+                variant={currentView === 'drive' ? 'default' : 'ghost'}
+                onClick={() => setCurrentView('drive')}
+                data-testid="button-view-drive"
+                className="h-11 justify-start font-medium text-sm"
+                tabIndex={currentView === 'chat' && !isNavExpanded ? -1 : 0}
+              >
+                <HardDrive className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Supremo Drive</span>
+              </Button>
+              {isAdmin && (
+                <>
+                  <Button
+                    variant={currentView === 'admin' ? 'default' : 'ghost'}
+                    onClick={() => setCurrentView('admin')}
+                    data-testid="button-view-admin"
+                    className="h-11 justify-start font-medium text-sm"
+                    tabIndex={currentView === 'chat' && !isNavExpanded ? -1 : 0}
+                  >
+                    <Shield className="w-4 h-4 mr-2 flex-shrink-0" />
+                    <span className="truncate">Admin</span>
+                  </Button>
+                  <Button
+                    variant={currentView === 'dashboard' ? 'default' : 'ghost'}
+                    onClick={() => setCurrentView('dashboard')}
+                    data-testid="button-view-dashboard"
+                    className="h-11 justify-start font-medium text-sm"
+                    tabIndex={currentView === 'chat' && !isNavExpanded ? -1 : 0}
+                  >
+                    <BarChart3 className="w-4 h-4 mr-2 flex-shrink-0" />
+                    <span className="truncate">Dashboard</span>
+                  </Button>
+                  <Button
+                    variant={currentView === 'admin-worksheets' ? 'default' : 'ghost'}
+                    onClick={() => setCurrentView('admin-worksheets')}
+                    data-testid="button-view-admin-worksheets"
+                    className="h-11 justify-start font-medium text-sm"
+                    tabIndex={currentView === 'chat' && !isNavExpanded ? -1 : 0}
+                  >
+                    <FileText className="w-4 h-4 mr-2 flex-shrink-0" />
+                    <span className="truncate">Team Logs</span>
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
