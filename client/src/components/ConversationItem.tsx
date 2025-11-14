@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,7 +50,7 @@ const formatTimestamp = (timestamp: string) => {
   }
 };
 
-export default function ConversationItem({
+const ConversationItem = memo(function ConversationItem({
   id,
   title,
   members,
@@ -194,4 +195,6 @@ export default function ConversationItem({
       </div>
     </div>
   );
-}
+});
+
+export default ConversationItem;
