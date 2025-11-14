@@ -11,6 +11,9 @@ interface ConversationItemProps {
   isGroup: boolean;
   lastMessage?: string;
   lastMessageTime?: string;
+  lastMessageSenderId?: number;
+  isLastMessageReadByOthers?: boolean;
+  currentUserId?: number;
   unreadCount?: number;
   isActive?: boolean;
   avatarUrl?: string;
@@ -53,6 +56,9 @@ export default function ConversationItem({
   isGroup,
   lastMessage,
   lastMessageTime,
+  lastMessageSenderId,
+  isLastMessageReadByOthers = false,
+  currentUserId,
   unreadCount = 0,
   isActive = false,
   avatarUrl,
@@ -168,7 +174,7 @@ export default function ConversationItem({
         
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            {lastMessage && !hasUnread && (
+            {lastMessage && lastMessageSenderId === currentUserId && isLastMessageReadByOthers && (
               <CheckCheck className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
             )}
             <p className={`text-sm truncate ${hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>

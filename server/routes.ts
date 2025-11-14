@@ -561,6 +561,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const otherMembers = members.filter(m => m.id !== req.userId);
           const memberNames = otherMembers.map(m => m.name.split(' ')[0]).join(', ');
           
+          // Check if last message was sent by current user and if others have read it
+          let isLastMessageReadByOthers = false;
+          if (lastMessage && lastMessage.senderId === req.userId) {
+            // Check if all other members have read this message
+            const readStatuses = await Promise.all(
+              otherMembers.map(member => storage.getReadStatus(member.id, conv.id))
+            );
+            
+            // Message is read by others if ALL other members have lastReadMessageId >= lastMessage.id
+            isLastMessageReadByOthers = readStatuses.every(status => 
+              status && status.lastReadMessageId && status.lastReadMessageId >= lastMessage.id
+            );
+          }
+          
           return {
             ...conv,
             members: memberNames,
@@ -568,6 +582,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             memberCount: members.length,
             lastMessage: lastMessage?.body || undefined,
             lastMessageTime: lastMessage?.createdAt || undefined,
+            lastMessageSenderId: lastMessage?.senderId || undefined,
+            isLastMessageReadByOthers,
             unreadCount,
           };
         })

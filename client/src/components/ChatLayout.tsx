@@ -1117,6 +1117,7 @@ export default function ChatLayout({
                     <ConversationItem
                       key={conv.id}
                       {...conv}
+                      currentUserId={currentUser.id}
                       isActive={conv.id === activeConversationId}
                       isOnline={isConversationOnline(conv)}
                       isPinned={pinnedConversationIds.includes(conv.id)}
@@ -1561,6 +1562,9 @@ export default function ChatLayout({
                           isGroup={conv.isGroup}
                           lastMessage={conv.lastMessage}
                           lastMessageTime={conv.lastMessageTime}
+                          lastMessageSenderId={conv.lastMessageSenderId}
+                          isLastMessageReadByOthers={conv.isLastMessageReadByOthers}
+                          currentUserId={currentUser.id}
                           unreadCount={conv.unreadCount}
                           isActive={activeConversationId === conv.id}
                           avatarUrl={conv.avatarUrl}
@@ -1787,6 +1791,7 @@ export default function ChatLayout({
                       <ConversationItem
                         key={conv.id}
                         {...conv}
+                        currentUserId={currentUser.id}
                         isActive={conv.id === activeConversationId}
                         isOnline={isConversationOnline(conv)}
                         isPinned={pinnedConversationIds.includes(conv.id)}
