@@ -101,7 +101,7 @@ export interface IStorage {
   
   createMessage(message: InsertMessage): Promise<Message>;
   getMessageById(id: number): Promise<Message | undefined>;
-  getMessagesByConversationId(conversationId: number): Promise<Message[]>;
+  getMessagesByConversationId(conversationId: number, limit?: number): Promise<Message[]>;
   getLastMessageByConversationId(conversationId: number): Promise<Message | undefined>;
   updateMessage(id: number, updates: { body?: string; attachmentUrl?: string | null }): Promise<Message | undefined>;
   deleteMessage(id: number): Promise<void>;
@@ -447,12 +447,19 @@ export class PostgresStorage implements IStorage {
     return result[0];
   }
 
-  async getMessagesByConversationId(conversationId: number): Promise<Message[]> {
-    return db
+  async getMessagesByConversationId(conversationId: number, limit?: number): Promise<Message[]> {
+    const query = db
       .select()
       .from(messages)
       .where(eq(messages.conversationId, conversationId))
-      .orderBy(messages.createdAt);
+      .orderBy(desc(messages.createdAt));
+    
+    if (limit) {
+      const limitedMessages = await query.limit(limit);
+      return limitedMessages.reverse();
+    }
+    
+    return query.then(msgs => msgs.reverse());
   }
 
   async updateMessage(id: number, updates: { body?: string; attachmentUrl?: string | null }): Promise<Message | undefined> {

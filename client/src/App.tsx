@@ -365,7 +365,7 @@ function App() {
   const loadConversationMessages = async (conversationId: number) => {
     try {
       setActiveConversationId(conversationId);
-      const msgs = await api.getMessages(token!, conversationId);
+      const msgs = await api.getMessages(token!, conversationId, 50);
       
       setMessages((prev) => {
         // CRITICAL FIX: Remove messages for this conversation, then add fresh ones from API

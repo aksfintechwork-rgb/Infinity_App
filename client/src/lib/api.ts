@@ -115,8 +115,12 @@ export async function createConversation(token: string, title: string, memberIds
   return response.json();
 }
 
-export async function getMessages(token: string, conversationId: number) {
-  const response = await fetch(`${API_BASE}/conversations/${conversationId}/messages`, {
+export async function getMessages(token: string, conversationId: number, limit?: number) {
+  const url = limit 
+    ? `${API_BASE}/conversations/${conversationId}/messages?limit=${limit}`
+    : `${API_BASE}/conversations/${conversationId}/messages`;
+  
+  const response = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
 

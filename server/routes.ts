@@ -847,7 +847,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "You are not a member of this conversation" });
       }
 
-      let messages = await storage.getMessagesByConversationId(conversationId);
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      let messages = await storage.getMessagesByConversationId(conversationId, limit);
       
       if (!memberInfo.canViewHistory && memberInfo.joinedAt) {
         messages = messages.filter(msg => new Date(msg.createdAt) >= new Date(memberInfo.joinedAt!));
