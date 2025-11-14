@@ -1,13 +1,14 @@
 /**
- * Opens a call window (Daily.co) on the current screen with proper multi-monitor support.
+ * Opens a blank call window immediately to preserve user gesture,
+ * then navigates to the URL when ready. This prevents popup blockers.
  * 
  * Uses window.screenX/screenY to detect the current monitor position and centers
  * the popup window on that screen instead of defaulting to the primary monitor.
  * 
- * @param url - The Daily.co meeting URL to open
+ * @param url - Optional Daily.co meeting URL to open immediately
  * @returns Window object if successful, null if popup was blocked
  */
-export function openCallWindow(url: string): Window | null {
+export function openCallWindow(url?: string): Window | null {
   // Desired dimensions
   const desiredWidth = 1200;
   const desiredHeight = 800;
@@ -40,11 +41,28 @@ export function openCallWindow(url: string): Window | null {
     console.log('[CALL WINDOW] Opening on current screen - Position:', { left, top, width, height });
   }
   
-  const newWindow = window.open(url, '_blank', features);
+  // Open blank window or with URL
+  const targetUrl = url || 'about:blank';
+  const newWindow = window.open(targetUrl, '_blank', features);
   
   if (!newWindow && import.meta.env.DEV) {
     console.error('[CALL WINDOW] Failed to open - popup may be blocked');
   }
   
   return newWindow;
+}
+
+/**
+ * Navigate an already-opened call window to a URL.
+ * Used when window was opened as blank to preserve user gesture.
+ * 
+ * @param window - The window object to navigate
+ * @param url - The URL to navigate to
+ */
+export function navigateCallWindow(window: Window, url: string): void {
+  try {
+    window.location.href = url;
+  } catch (error) {
+    console.error('[CALL WINDOW] Failed to navigate:', error);
+  }
 }

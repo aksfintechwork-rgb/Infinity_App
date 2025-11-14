@@ -33,7 +33,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { formatLastSeen } from '@/lib/utils';
-import { openCallWindow } from '@/lib/callWindow';
+import { openCallWindow, navigateCallWindow } from '@/lib/callWindow';
 import { nanoid } from 'nanoid';
 
 interface User {
@@ -597,6 +597,19 @@ export default function ChatLayout({
   const handleAcceptCall = async () => {
     if (!incomingCall) return;
 
+    // Open blank window IMMEDIATELY to preserve user gesture and avoid popup blockers
+    const callWindow = openCallWindow();
+    
+    if (!callWindow) {
+      toast({
+        title: 'Popup blocked',
+        description: 'Please allow popups for this site to join calls.',
+        variant: 'destructive'
+      });
+      setIncomingCall(null);
+      return;
+    }
+
     try {
       console.log('[CALL DEBUG] Accepting incoming call for conversation:', incomingCall.conversationId);
       
@@ -631,21 +644,12 @@ export default function ChatLayout({
         });
       }
       
-      // Join the existing room with user name, video off by default
+      // Navigate the already-open window to the call URL
       const callUrl = `${activeCall.roomUrl}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
       
-      console.log('[CALL DEBUG] Opening call window with URL:', callUrl);
+      console.log('[CALL DEBUG] Navigating call window to URL:', callUrl);
       
-      const callWindow = openCallWindow(callUrl);
-      
-      if (!callWindow) {
-        toast({
-          title: 'Popup blocked',
-          description: 'Please allow popups for this site to join calls.',
-          variant: 'destructive'
-        });
-        throw new Error('Failed to open call window. Please allow popups for this site.');
-      }
+      navigateCallWindow(callWindow, callUrl);
       
       // Track window to detect when call ends
       callWindowRef.current = callWindow;
@@ -664,6 +668,7 @@ export default function ChatLayout({
       });
     } catch (error) {
       console.error('[CALL DEBUG] Error joining call:', error);
+      callWindow.close();
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to join call. Please try again.',
@@ -708,6 +713,18 @@ export default function ChatLayout({
   const handleStartCall = async () => {
     if (!activeConversation) return;
     
+    // Open blank window IMMEDIATELY to preserve user gesture and avoid popup blockers
+    const callWindow = openCallWindow();
+    
+    if (!callWindow) {
+      toast({
+        title: 'Popup blocked',
+        description: 'Please allow popups for this site to start calls.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
     // Generate a unique room name for Daily.co with nanoid suffix to prevent duplicates
     const roomName = `supremo-video-${activeConversation.id}-${nanoid(8)}`;
     
@@ -735,6 +752,7 @@ export default function ChatLayout({
           if (callResponse.status === 409) {
             const errorData = await callResponse.json();
             
+            callWindow.close();
             playBusyTone();
             
             toast({
@@ -749,6 +767,7 @@ export default function ChatLayout({
         }
       } catch (dbError) {
         console.error('Failed to register call in database:', dbError);
+        callWindow.close();
         toast({
           title: 'Error',
           description: 'Failed to initiate call. Please try again.',
@@ -757,18 +776,9 @@ export default function ChatLayout({
         return;
       }
       
-      // Open the room in new window with user name and video off by default - instant join!
+      // Navigate the already-open window to the call URL
       const callUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
-      const callWindow = openCallWindow(callUrl);
-      
-      if (!callWindow) {
-        toast({
-          title: 'Popup blocked',
-          description: 'Please allow popups for this site to start calls.',
-          variant: 'destructive'
-        });
-        return;
-      }
+      navigateCallWindow(callWindow, callUrl);
       
       // Store window reference to monitor when it's closed
       callWindowRef.current = callWindow;
@@ -813,6 +823,7 @@ export default function ChatLayout({
       });
     } catch (error) {
       console.error('Error creating room:', error);
+      callWindow.close();
       toast({
         title: 'Error',
         description: 'Failed to start video call. Please try again.',
@@ -825,6 +836,18 @@ export default function ChatLayout({
     // Find the conversation
     const conversation = conversations.find(c => c.id === conversationId);
     if (!conversation) return;
+
+    // Open blank window IMMEDIATELY to preserve user gesture and avoid popup blockers
+    const callWindow = openCallWindow();
+    
+    if (!callWindow) {
+      toast({
+        title: 'Popup blocked',
+        description: 'Please allow popups for this site to start calls.',
+        variant: 'destructive'
+      });
+      return;
+    }
 
     // Generate a unique room name for Daily.co with nanoid suffix to prevent duplicates
     const roomName = `supremo-audio-${conversationId}-${nanoid(8)}`;
@@ -853,6 +876,7 @@ export default function ChatLayout({
           if (callResponse.status === 409) {
             const errorData = await callResponse.json();
             
+            callWindow.close();
             playBusyTone();
             
             toast({
@@ -867,6 +891,7 @@ export default function ChatLayout({
         }
       } catch (dbError) {
         console.error('Failed to register call in database:', dbError);
+        callWindow.close();
         toast({
           title: 'Error',
           description: 'Failed to initiate call. Please try again.',
@@ -875,18 +900,9 @@ export default function ChatLayout({
         return;
       }
       
-      // Open the room in new window with video disabled and user name for audio calls
+      // Navigate the already-open window to the call URL
       const audioCallUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
-      const callWindow = openCallWindow(audioCallUrl);
-      
-      if (!callWindow) {
-        toast({
-          title: 'Popup blocked',
-          description: 'Please allow popups for this site to start calls.',
-          variant: 'destructive'
-        });
-        return;
-      }
+      navigateCallWindow(callWindow, audioCallUrl);
       
       // Store window reference to monitor when it's closed
       callWindowRef.current = callWindow;
@@ -924,6 +940,7 @@ export default function ChatLayout({
       });
     } catch (error) {
       console.error('Error creating room:', error);
+      callWindow.close();
       toast({
         title: 'Error',
         description: 'Failed to start audio call. Please try again.',
@@ -944,6 +961,18 @@ export default function ChatLayout({
 
   const handleStartAudioCall = async () => {
     if (!activeConversation) return;
+    
+    // Open blank window IMMEDIATELY to preserve user gesture and avoid popup blockers
+    const callWindow = openCallWindow();
+    
+    if (!callWindow) {
+      toast({
+        title: 'Popup blocked',
+        description: 'Please allow popups for this site to start calls.',
+        variant: 'destructive'
+      });
+      return;
+    }
     
     // Generate a deterministic room name for Daily.co
     const roomName = `supremo-audio-${activeConversation.id}`;
@@ -968,20 +997,18 @@ export default function ChatLayout({
         });
       } catch (dbError) {
         console.error('Failed to register call in database:', dbError);
-      }
-      
-      // Open the room in new window with video disabled and user name for audio calls - instant join!
-      const audioCallUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
-      const callWindow = openCallWindow(audioCallUrl);
-      
-      if (!callWindow) {
+        callWindow.close();
         toast({
-          title: 'Popup blocked',
-          description: 'Please allow popups for this site to start calls.',
+          title: 'Error',
+          description: 'Failed to initiate call. Please try again.',
           variant: 'destructive'
         });
         return;
       }
+      
+      // Navigate the already-open window to the call URL
+      const audioCallUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
+      navigateCallWindow(callWindow, audioCallUrl);
       
       // Store window reference to monitor when it's closed
       callWindowRef.current = callWindow;
@@ -1026,6 +1053,7 @@ export default function ChatLayout({
       });
     } catch (error) {
       console.error('Error creating room:', error);
+      callWindow.close();
       toast({
         title: 'Error',
         description: 'Failed to start audio call. Please try again.',
