@@ -29,6 +29,7 @@ Preferred communication style: Simple, everyday language.
 - **Database**: PostgreSQL via Neon serverless HTTP driver, managed with Drizzle ORM.
 - **Schema**: Comprehensive schema for users, conversations, messages, meetings (with AI summaries), tasks, projects, active calls, and standalone to-dos.
 - **Data Preservation**: All existing data must be preserved; schema changes must be backward compatible and non-destructive.
+- **Performance Optimizations**: Ultra-fast response times achieved through comprehensive database indexing (25+ indexes on all foreign keys across 15+ tables), intelligent React Query caching (5min staleTime, 10min gcTime), message pagination (50-message default limit), and component memoization (React.memo on ConversationItem).
 
 ### Core Features
 - **Real-time Communication**: Direct messages, group chats, file sharing (Excel, images, video, audio up to 50MB), presence tracking, enhanced desktop notifications with on-screen toast pop-ups for ALL incoming messages, message replies, and sender-only message deletion. Automatic URL detection and clickable links in chat messages. Chat auto-scrolls to latest messages while respecting user scroll position for reading history.
