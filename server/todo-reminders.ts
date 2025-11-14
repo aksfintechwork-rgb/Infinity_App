@@ -108,7 +108,7 @@ export class TodoReminderService {
       await db.insert(messages).values({
         conversationId: existingConversation.id,
         senderId: this.systemUserId,
-        content: message,
+        body: message,
       });
 
       console.log(`[TodoReminder] Sent reminder for todo ${todo.id} to user ${todo.userName}`);

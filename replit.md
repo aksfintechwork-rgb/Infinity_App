@@ -1,7 +1,18 @@
 # SUPREMO TRADERS LLP Team Communication Platform
 
 ## Overview
-This project is an internal, real-time communication platform for SUPREMO TRADERS LLP, designed to enhance collaboration and productivity. It provides core communication features like direct messaging, group chats, and file sharing, alongside advanced tools such as a meeting calendar with AI summarization, robust video conferencing, comprehensive task management, and a project tracking dashboard. The platform prioritizes data preservation, security, and integrity across all updates.
+This project is an internal, real-time communication platform for SUPREMO TRADERS LLP, designed to enhance collaboration and productivity. It provides core communication features like direct messaging, group chats, and file sharing, alongside advanced tools such as a meeting calendar with AI summarization, robust video conferencing, comprehensive task management, and a project tracking dashboard.
+
+## ⚠️ CRITICAL: Data Preservation Policy
+**This platform is in PRODUCTION with active users and data. ALL future updates MUST preserve existing data and functionality.**
+
+See `DEVELOPMENT_LOCK.md` for complete development guidelines and safety requirements. Key rules:
+- ❌ NEVER delete database tables or columns
+- ❌ NEVER change existing API endpoints in breaking ways
+- ❌ NEVER modify file storage paths or Google Drive sync metadata
+- ✅ All schema changes must be backward compatible (additive only)
+- ✅ Test all changes on staging database clone first
+- ✅ Maintain rollback capability for every deployment
 
 ### Login Experience
 The login page provides a secure, user-friendly experience with:
