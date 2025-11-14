@@ -1220,9 +1220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             enable_screenshare: true,
             start_video_off: true,
             start_audio_off: false,
-            enable_prejoin_ui: true,
-            enable_network_ui: true,
-            enable_noise_cancellation_ui: true
+            enable_prejoin_ui: false
           }
         })
       });
