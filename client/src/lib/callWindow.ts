@@ -34,22 +34,49 @@ export function openCallWindow(url?: string): Window | null {
   const left = screenX + (availableWidth - width) / 2;
   const top = screenY + (availableHeight - height) / 2;
   
-  const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,noopener=yes,noreferrer=yes`;
+  const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`;
   
   // Development-only logging
   if (import.meta.env.DEV) {
-    console.log('[CALL WINDOW] Opening on current screen - Position:', { left, top, width, height });
+    console.log('[CALL WINDOW] Opening call window - Position:', { left, top, width, height });
   }
   
   // Open blank window or with URL
   const targetUrl = url || 'about:blank';
-  const newWindow = window.open(targetUrl, '_blank', features);
   
-  if (!newWindow && import.meta.env.DEV) {
-    console.error('[CALL WINDOW] Failed to open - popup may be blocked');
+  try {
+    const newWindow = window.open(targetUrl, '_blank', features);
+    
+    // window.open() can return null in some browsers even when successful
+    // Especially with about:blank. Only truly blocked if both null AND closed.
+    if (!newWindow) {
+      if (import.meta.env.DEV) {
+        console.warn('[CALL WINDOW] window.open returned null - may be blocked or may succeed anyway');
+      }
+      return null;
+    }
+    
+    // Security: Prevent reverse-tabnabbing by nullifying opener reference
+    // This mitigates the security risk while still allowing us to control the window
+    newWindow.opener = null;
+    
+    // Additional check: verify window isn't immediately closed (real block)
+    if (newWindow.closed) {
+      if (import.meta.env.DEV) {
+        console.error('[CALL WINDOW] Window was blocked by popup blocker');
+      }
+      return null;
+    }
+    
+    if (import.meta.env.DEV) {
+      console.log('[CALL WINDOW] Window opened successfully');
+    }
+    
+    return newWindow;
+  } catch (error) {
+    console.error('[CALL WINDOW] Exception opening window:', error);
+    return null;
   }
-  
-  return newWindow;
 }
 
 /**
