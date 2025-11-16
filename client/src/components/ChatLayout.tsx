@@ -136,6 +136,7 @@ export default function ChatLayout({
     conversationId: number;
     callType: 'audio' | 'video';
     roomName: string;
+    roomUrl: string;
   } | null>(null);
 
   // Outgoing call state
@@ -398,6 +399,7 @@ export default function ChatLayout({
         conversationId: data.conversationId,
         callType: data.callType,
         roomName: data.roomName,
+        roomUrl: data.roomUrl,
       });
     });
 
@@ -576,6 +578,9 @@ export default function ChatLayout({
           ? `supremo-video-${outgoingCall!.conversationId}`
           : `supremo-audio-${outgoingCall!.conversationId}`);
 
+    // Get room URL from callInfo
+    const roomUrl = callInfo.roomUrl;
+
     // Send invitation via WebSocket
     ws.send({
       type: 'invite_to_call',
@@ -584,6 +589,7 @@ export default function ChatLayout({
         conversationId: callInfo.conversationId,
         callType: callInfo.callType,
         roomName,
+        roomUrl,
         from: {
           id: currentUser.id,
           name: currentUser.name,
@@ -611,24 +617,11 @@ export default function ChatLayout({
     }
 
     try {
-      console.log('[CALL DEBUG] Accepting incoming call for conversation:', incomingCall.conversationId);
+      console.log('[CALL DEBUG] Accepting incoming call:', incomingCall);
       
-      // Get the room URL from the database (room was already created by caller)
-      const response = await apiRequest('GET', `/api/calls?conversationId=${incomingCall.conversationId}`);
-      const calls = await response.json();
-      
-      console.log('[CALL DEBUG] Retrieved calls from database:', calls);
-      
-      // Find the call - can be pending (just created) or active (caller already joined)
-      const activeCall = calls.find((call: any) => 
-        call.conversationId === incomingCall.conversationId && 
-        (call.status === 'active' || call.status === 'pending')
-      );
-      
-      console.log('[CALL DEBUG] Found call:', activeCall);
-      
-      if (!activeCall || !activeCall.roomUrl) {
-        console.error('[CALL DEBUG] Call not found or missing roomUrl. Calls:', calls);
+      // Use the room URL from the incoming call notification (sent via WebSocket)
+      // This avoids race conditions with database queries
+      if (!incomingCall.roomUrl || !incomingCall.roomName) {
         throw new Error('Call not found or missing room URL');
       }
       
@@ -639,13 +632,13 @@ export default function ChatLayout({
           data: {
             conversationId: incomingCall.conversationId,
             callType: incomingCall.callType,
-            roomName: activeCall.roomName,
+            roomName: incomingCall.roomName,
           }
         });
       }
       
       // Navigate the already-open window to the call URL
-      const callUrl = `${activeCall.roomUrl}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
+      const callUrl = `${incomingCall.roomUrl}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
       
       console.log('[CALL DEBUG] Navigating call window to URL:', callUrl);
       
@@ -658,8 +651,8 @@ export default function ChatLayout({
       setActiveCall({
         conversationId: incomingCall.conversationId,
         callType: incomingCall.callType,
-        roomName: activeCall.roomName,
-        roomUrl: activeCall.roomUrl
+        roomName: incomingCall.roomName,
+        roomUrl: incomingCall.roomUrl
       });
 
       toast({
@@ -798,6 +791,7 @@ export default function ChatLayout({
           data: {
             conversationId: activeConversation.id,
             roomName: roomName,
+            roomUrl: data.url,
             callType: 'video',
             from: {
               id: currentUser.id,
@@ -914,6 +908,7 @@ export default function ChatLayout({
           data: {
             conversationId: conversationId,
             roomName: roomName,
+            roomUrl: data.url,
             callType: 'audio',
             from: {
               id: currentUser.id,
@@ -1028,6 +1023,7 @@ export default function ChatLayout({
           data: {
             conversationId: activeConversation.id,
             roomName: roomName,
+            roomUrl: data.url,
             callType: 'audio',
             from: {
               id: currentUser.id,

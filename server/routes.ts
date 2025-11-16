@@ -2798,6 +2798,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       conversationId,
                       callType: callType || 'video',
                       roomName,
+                      roomUrl,
                       from: {
                         id: caller.id,
                         name: caller.name,
@@ -3203,7 +3204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (message.type === 'incoming_call') {
           // Broadcast incoming call notification to all members of the conversation
-          const { conversationId, callType, roomName, from } = message.data;
+          const { conversationId, callType, roomName, roomUrl, from } = message.data;
           
           // Get conversation members
           const members = await storage.getConversationMembers(conversationId);
@@ -3223,6 +3224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   conversationId,
                   callType,
                   roomName,
+                  roomUrl,
                   from,
                 },
               }));
@@ -3248,7 +3250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (message.type === 'invite_to_call') {
           // Send call invitation to specific user
-          const { userId, conversationId, callType, roomName, from } = message.data;
+          const { userId, conversationId, callType, roomName, roomUrl, from } = message.data;
           
           console.log(`[invite_to_call] Sending invitation to user ${userId} from ${from.name} for ${callType} call in conversation ${conversationId}`);
           
@@ -3264,6 +3266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   conversationId,
                   callType,
                   roomName,
+                  roomUrl,
                   from,
                 },
               }));
