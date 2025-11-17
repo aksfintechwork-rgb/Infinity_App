@@ -339,7 +339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid input", details: validation.error });
       }
 
-      const { name, loginId, email, password, avatar, role } = validation.data as z.infer<typeof insertUserSchema>;
+      const { name, loginId, email, password, avatar, role } = validation.data;
 
       const existingUser = await storage.getUserByLoginId(loginId);
       if (existingUser) {
@@ -933,7 +933,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const conversation = await storage.getConversationById(validation.data.conversationId);
         
         if (conversation && wss) {
-          const memberIds = conversation.memberIds.filter(id => id !== req.userId);
+          const memberIds = (conversation as any).memberIds.filter((id: number) => id !== req.userId);
           
           // Check which users need push notifications (no visible tab)
           const usersNeedingPush: number[] = [];
@@ -2867,6 +2867,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const inviter = await storage.getUserById(req.userId);
       if (!inviter) {
         return res.status(401).json({ error: "User not found" });
+      }
+
+      if (!wss) {
+        return res.status(500).json({ error: "WebSocket server not initialized" });
       }
 
       wss.clients.forEach((client: any) => {
