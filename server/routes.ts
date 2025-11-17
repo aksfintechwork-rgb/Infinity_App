@@ -3206,6 +3206,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
         
+        // Handle new messages sent via WebSocket
+        if (message.type === 'new_message') {
+          try {
+            const { conversationId, body, attachmentUrl, replyToId } = message.data;
+            
+            // Create message in database
+            const newMessage = await storage.createMessage({
+              conversationId,
+              senderId: ws.userId!,
+              body,
+              attachmentUrl,
+              replyToId,
+            });
+            
+            // Get sender info
+            const sender = await storage.getUserById(ws.userId!);
+            
+            // Get replied-to message if exists
+            let repliedToMessage = null;
+            if (replyToId) {
+              const replyMsg = await storage.getMessageById(replyToId);
+              if (replyMsg) {
+                const replySender = await storage.getUserById(replyMsg.senderId);
+                repliedToMessage = {
+                  id: replyMsg.id,
+                  senderName: replySender?.name || 'Unknown',
+                  body: replyMsg.body,
+                  attachmentUrl: replyMsg.attachmentUrl
+                };
+              }
+            }
+            
+            // Get conversation members to broadcast to
+            const members = await storage.getConversationMembers(conversationId);
+            const memberIds = members.map(m => m.id);
+            
+            // Prepare message payload
+            const messagePayload = {
+              ...newMessage,
+              senderName: sender?.name || 'Unknown',
+              senderAvatar: sender?.avatar,
+              repliedToMessage,
+            };
+            
+            // Broadcast to all conversation members
+            wss.clients.forEach((client: WebSocketClient) => {
+              if (client.readyState === WebSocket.OPEN && client.userId && memberIds.includes(client.userId)) {
+                client.send(JSON.stringify({
+                  type: 'new_message',
+                  data: messagePayload,
+                }));
+              }
+            });
+            
+            // Send push notifications to offline/hidden members
+            const usersNeedingPush = memberIds.filter(id => 
+              id !== ws.userId && shouldSendPushNotification(id)
+            );
+            
+            if (usersNeedingPush.length > 0) {
+              const messagePreview = body 
+                ? (body.length > 50 ? body.substring(0, 50) + '...' : body)
+                : (attachmentUrl ? 'Attachment sent' : 'New message');
+              
+              for (const userId of usersNeedingPush) {
+                await sendPushNotification(userId, {
+                  type: 'message',
+                  title: `${sender?.name || 'Someone'} sent a message`,
+                  body: messagePreview,
+                  url: `/?conversation=${conversationId}`,
+                  conversationId,
+                });
+              }
+            }
+          } catch (error) {
+            console.error('Failed to process new_message:', error);
+            ws.send(JSON.stringify({ type: 'error', error: 'Failed to send message' }));
+          }
+          return;
+        }
+        
         if (message.type === 'incoming_call') {
           // Broadcast incoming call notification to all members of the conversation
           const { conversationId, callType, roomName, roomUrl, from } = message.data;

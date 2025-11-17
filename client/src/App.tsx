@@ -6,6 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import LoginPage from './components/LoginPage';
 import ChatLayout from './components/ChatLayout';
+import { PageLoader } from './components/PageLoader';
 import * as api from './lib/api';
 import { useWebSocket } from './lib/websocket';
 import { requestNotificationPermission, notifyNewMessage, initializeAudio } from './lib/notifications';
@@ -490,6 +491,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <PageLoader />
         {!currentUser ? (
           <LoginPage onLogin={handleLogin} />
         ) : (
