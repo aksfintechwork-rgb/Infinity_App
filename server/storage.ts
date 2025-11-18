@@ -177,6 +177,7 @@ export interface IStorage {
   getMissedCallsByReceiver(receiverId: number): Promise<MissedCallWithDetails[]>;
   markMissedCallAsViewed(id: number): Promise<void>;
   deleteMissedCall(id: number): Promise<void>;
+  deleteAllMissedCallsForUser(receiverId: number): Promise<void>;
   
   addCallParticipant(participant: InsertActiveCallParticipant): Promise<ActiveCallParticipant>;
   getCallParticipants(callId: number): Promise<User[]>;
@@ -1581,6 +1582,10 @@ export class PostgresStorage implements IStorage {
 
   async deleteMissedCall(id: number): Promise<void> {
     await db.delete(missedCalls).where(eq(missedCalls.id, id));
+  }
+
+  async deleteAllMissedCallsForUser(receiverId: number): Promise<void> {
+    await db.delete(missedCalls).where(eq(missedCalls.receiverId, receiverId));
   }
 
   async addCallParticipant(participant: InsertActiveCallParticipant): Promise<ActiveCallParticipant> {

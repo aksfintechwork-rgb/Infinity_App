@@ -3180,6 +3180,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/missed-calls", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      await storage.deleteAllMissedCallsForUser(req.userId);
+
+      broadcastUpdate({
+        type: 'all_missed_calls_cleared',
+        userId: req.userId,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Clear all missed calls error:", error);
+      res.status(500).json({ error: "Failed to clear all missed calls" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   wss = new WebSocketServer({ server: httpServer, path: '/ws' });
