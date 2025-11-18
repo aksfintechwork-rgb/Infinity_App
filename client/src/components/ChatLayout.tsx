@@ -28,7 +28,7 @@ import ForwardMessageDialog from './ForwardMessageDialog';
 import InviteToCallDialog from './InviteToCallDialog';
 import { MissedCallsList } from './MissedCallsList';
 import { useOutgoingRingtone } from '@/hooks/use-outgoing-ringtone';
-import logoImage from '@assets/image_1761659890673.png';
+import logoImage from '@assets/generated_images/Infinity_Solutions_corporate_logo_0b3b8420.png';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
@@ -1064,10 +1064,10 @@ export default function ChatLayout({
         <div className="h-[72px] border-b border-border flex items-center px-5 flex-shrink-0 bg-secondary/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
-              <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-8 h-8 object-contain" data-testid="img-brand-logo" />
+              <img src={logoImage} alt="Infinity Solutions Logo" className="w-8 h-8 object-contain" data-testid="img-brand-logo" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-secondary-foreground tracking-tight">SUPREMO TRADERS</h1>
+              <h1 className="text-base font-bold text-secondary-foreground tracking-tight">Infinity Solutions</h1>
               <p className="text-xs text-muted-foreground font-medium">Team Chat</p>
             </div>
           </div>
@@ -1174,7 +1174,7 @@ export default function ChatLayout({
                 tabIndex={currentView === 'chat' && !isNavExpanded ? -1 : 0}
               >
                 <HardDrive className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span className="truncate">Supremo Drive</span>
+                <span className="truncate">Infinity Drive</span>
               </Button>
               {isAdmin && (
                 <>
@@ -1639,9 +1639,9 @@ export default function ChatLayout({
             <div className="md:hidden flex flex-col h-full">
               <div className="min-h-[64px] border-b border-border flex items-center justify-between px-4 flex-shrink-0 bg-secondary">
                 <div className="flex items-center gap-3">
-                  <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-9 h-9 object-contain rounded" />
+                  <img src={logoImage} alt="Infinity Solutions Logo" className="w-9 h-9 object-contain rounded" />
                   <div>
-                    <h1 className="text-sm font-bold text-secondary-foreground">SUPREMO TRADERS</h1>
+                    <h1 className="text-sm font-bold text-secondary-foreground">Infinity Solutions</h1>
                     <p className="text-xs text-secondary-foreground/70 font-medium">Team Chat</p>
                   </div>
                 </div>
@@ -1781,9 +1781,9 @@ export default function ChatLayout({
             <div className="flex flex-col h-full">
             <div className="min-h-[72px] border-b border-border flex items-center justify-between px-4 py-3 bg-secondary">
               <div className="flex items-center gap-3">
-                <img src={logoImage} alt="SUPREMO TRADERS Logo" className="w-10 h-10 object-contain rounded" />
+                <img src={logoImage} alt="Infinity Solutions Logo" className="w-10 h-10 object-contain rounded" />
                 <div>
-                  <h1 className="text-base font-bold text-secondary-foreground">SUPREMO TRADERS</h1>
+                  <h1 className="text-base font-bold text-secondary-foreground">Infinity Solutions</h1>
                   <p className="text-xs text-secondary-foreground/70 font-medium">Team Chat</p>
                 </div>
               </div>
@@ -1861,7 +1861,7 @@ export default function ChatLayout({
                   className="h-11 text-sm font-semibold rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
                 >
                   <HardDrive className="w-4 h-4 mr-1.5" />
-                  Supremo Drive
+                  Infinity Drive
                 </Button>
                 {isAdmin && (
                   <>

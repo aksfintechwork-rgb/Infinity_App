@@ -316,7 +316,7 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <h1 className="text-xl font-semibold" data-testid="text-supremo-drive-title">Supremo Drive</h1>
+          <h1 className="text-xl font-semibold" data-testid="text-supremo-drive-title">Infinity Drive</h1>
         </div>
         <div className="flex gap-2">
           <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>

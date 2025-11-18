@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Info } from 'lucide-react';
-import logoImage from '@assets/image_1761743625103.png';
+import logoImage from '@assets/generated_images/Infinity_Solutions_corporate_logo_0b3b8420.png';
 
 interface LoginPageProps {
   onLogin: (loginId: string, password: string) => void;
@@ -73,9 +73,14 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   return (
     <div ref={containerRef} className="min-h-screen flex items-center justify-center bg-background p-6">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
+        <CardHeader className="space-y-4">
+          <div className="flex justify-center">
+            <div className="w-20 h-20 rounded-lg bg-white flex items-center justify-center shadow-sm">
+              <img src={logoImage} alt="Infinity Solutions Logo" className="w-16 h-16 object-contain" />
+            </div>
+          </div>
           <CardTitle className="text-2xl font-bold text-center text-primary">
-            SUPREMO TRADERS
+            Infinity Solutions
           </CardTitle>
           <CardDescription className="text-center">
             Team Communication Platform
