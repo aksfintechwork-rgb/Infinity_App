@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Eye, EyeOff, Info } from 'lucide-react';
-import logoImage from '@assets/generated_images/Infinity_Solutions_corporate_logo_0b3b8420.png';
+import { Eye, EyeOff, MapPin, Clock, Phone } from 'lucide-react';
+import logoImage from '@assets/image_1763461605012.png';
 
 interface LoginPageProps {
   onLogin: (loginId: string, password: string) => void;
@@ -15,39 +14,6 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Debug: Log computed styles and dimensions
-    const timer = setTimeout(() => {
-      const container = containerRef.current;
-      if (container) {
-        const rect = container.getBoundingClientRect();
-        const computed = window.getComputedStyle(container);
-        console.log('🔍 [LOGIN CONTAINER DEBUG]', {
-          dimensions: {
-            width: rect.width,
-            height: rect.height,
-            top: rect.top,
-            left: rect.left
-          },
-          computedStyles: {
-            display: computed.display,
-            visibility: computed.visibility,
-            opacity: computed.opacity,
-            transform: computed.transform,
-            position: computed.position,
-            zIndex: computed.zIndex,
-            pointerEvents: computed.pointerEvents,
-            backgroundColor: computed.backgroundColor,
-            color: computed.color
-          },
-          classNames: container.className
-        });
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,78 +25,206 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     const cleanLoginId = sanitize(loginId);
     const cleanPassword = nfkc(password);
     
-    // Diagnostic logging to verify submission
-    console.log('🔐 [LOGIN v2.0] Submitting login:', {
-      original: { loginId, passwordLength: password.length },
-      cleaned: { loginId: cleanLoginId, passwordLength: cleanPassword.length },
-      hiddenCharsRemoved: loginId !== cleanLoginId || password !== cleanPassword,
-      timestamp: new Date().toISOString()
-    });
-    
     onLogin(cleanLoginId, cleanPassword);
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen flex items-center justify-center bg-background p-6">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-4">
-          <div className="flex justify-center">
-            <div className="w-20 h-20 rounded-lg bg-white flex items-center justify-center shadow-sm">
-              <img src={logoImage} alt="Infinity Solutions Logo" className="w-16 h-16 object-contain" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/5 to-background p-4">
+      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
+        {/* Left Side - Company Info */}
+        <div className="hidden lg:flex flex-col space-y-8 p-8">
+          {/* Logo Section with Background Effect */}
+          <div className="relative">
+            <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur-xl"></div>
+            <div className="relative glass-strong rounded-2xl p-8 border border-border/50">
+              <img 
+                src={logoImage} 
+                alt="Infinity Technology Logo" 
+                className="w-full h-auto object-contain"
+              />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-center text-primary">
-            Infinity Solutions
-          </CardTitle>
-          <CardDescription className="text-center">
-            Team Communication Platform
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-              Login ID
-            </label>
-            <input
-              type="text"
-              value={loginId}
-              onChange={(e) => setLoginId(e.target.value)}
-              required
-              style={{ width: '100%', padding: '12px', fontSize: '16px', border: '2px solid #ddd', borderRadius: '4px' }}
-              data-testid="input-loginid"
-            />
+          {/* Company Details */}
+          <div className="space-y-6">
+            <h2 className="text-3xl font-bold text-foreground">
+              Welcome to Infinity Technology
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              Your trusted partner in innovative technology solutions
+            </p>
+
+            {/* Contact Details Cards */}
+            <div className="space-y-4">
+              {/* Address */}
+              <div className="glass rounded-lg p-4 border border-border/30 hover-elevate transition-all">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 p-2 rounded-lg bg-primary/10">
+                    <MapPin className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-1">Address</h3>
+                    <p className="text-sm text-muted-foreground">
+                      J-446, Off Anukul Circle<br />
+                      MIDC Bhosari, Pune - 411026
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Work Hours */}
+              <div className="glass rounded-lg p-4 border border-border/30 hover-elevate transition-all">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 p-2 rounded-lg bg-primary/10">
+                    <Clock className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-1">Work Hours</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Monday - Saturday<br />
+                      9:00 AM to 7:00 PM
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Phone Numbers */}
+              <div className="glass rounded-lg p-4 border border-border/30 hover-elevate transition-all">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 p-2 rounded-lg bg-primary/10">
+                    <Phone className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-1">Contact</h3>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p>8600100720</p>
+                      <p>8600100721</p>
+                      <p>8600100725</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Login Form */}
+        <div className="flex flex-col space-y-6">
+          {/* Mobile Logo */}
+          <div className="lg:hidden relative mb-4">
+            <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 to-accent/20 rounded-xl blur-lg"></div>
+            <div className="relative glass-strong rounded-xl p-6 border border-border/50">
+              <img 
+                src={logoImage} 
+                alt="Infinity Technology Logo" 
+                className="w-full h-auto object-contain"
+              />
+            </div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{ width: '100%', padding: '12px', fontSize: '16px', border: '2px solid #ddd', borderRadius: '4px' }}
-              data-testid="input-password"
-            />
+          {/* Login Card */}
+          <Card className="border-border/50 shadow-xl">
+            <CardHeader className="space-y-1 pb-4">
+              <CardTitle className="text-2xl font-bold text-center">
+                Sign In
+              </CardTitle>
+              <CardDescription className="text-center">
+                Enter your credentials to access the platform
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="loginId" className="text-foreground font-medium">
+                    Login ID
+                  </Label>
+                  <Input
+                    id="loginId"
+                    type="text"
+                    value={loginId}
+                    onChange={(e) => setLoginId(e.target.value)}
+                    required
+                    placeholder="Enter your login ID"
+                    className="h-11"
+                    data-testid="input-loginid"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-foreground font-medium">
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      placeholder="Enter your password"
+                      className="h-11 pr-10"
+                      data-testid="input-password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-11 w-11 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                      data-testid="button-toggle-password"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full h-11 text-base font-semibold"
+                  data-testid="button-login"
+                >
+                  Sign In
+                </Button>
+
+                {/* Info Alert */}
+                <div className="mt-4 p-4 rounded-lg bg-accent/20 border border-accent/30">
+                  <p className="text-sm text-foreground/80 text-center">
+                    First time here? Contact your administrator for credentials.
+                  </p>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Mobile Contact Info */}
+          <div className="lg:hidden space-y-3">
+            <div className="glass rounded-lg p-3 border border-border/30">
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+                <p className="text-muted-foreground">J-446, Off Anukul Circle, MIDC Bhosari, Pune - 411026</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="glass rounded-lg p-3 border border-border/30">
+                <div className="flex items-center gap-2 text-sm">
+                  <Clock className="w-4 h-4 text-primary flex-shrink-0" />
+                  <p className="text-muted-foreground">Mon-Sat 9AM-7PM</p>
+                </div>
+              </div>
+              <div className="glass rounded-lg p-3 border border-border/30">
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="w-4 h-4 text-primary flex-shrink-0" />
+                  <p className="text-muted-foreground">8600100720</p>
+                </div>
+              </div>
+            </div>
           </div>
-
-          <button
-            type="submit"
-            style={{ width: '100%', padding: '16px', fontSize: '18px', fontWeight: 'bold', color: 'white', backgroundColor: '#C54E1F', border: 'none', borderRadius: '4px', cursor: 'pointer', marginTop: '16px' }}
-            data-testid="button-login"
-          >
-            Sign In
-          </button>
-        </form>
-
-        <p style={{ marginTop: '24px', fontSize: '14px', color: '#666', textAlign: 'center', padding: '12px', backgroundColor: '#FFF3E0', borderRadius: '4px', border: '1px solid #FFE0B2' }}>
-          First time here? Contact your administrator for credentials.
-        </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
