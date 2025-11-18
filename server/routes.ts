@@ -24,7 +24,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   if (vapidPublicKey && vapidPrivateKey) {
     webpush.setVapidDetails(
-      'mailto:admin@infinitysolutions.com',
+      'mailto:admin@infinitytechnology.com',
       vapidPublicKey,
       vapidPrivateKey
     );
