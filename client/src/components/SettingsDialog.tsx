@@ -37,6 +37,13 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
     setSettings(prev => ({ ...prev, darkMode: isDark }));
   }, [open]);
 
+  useEffect(() => {
+    if (!open) {
+      document.body.style.pointerEvents = '';
+      document.body.style.overflow = '';
+    }
+  }, [open]);
+
   const handleSettingChange = (key: keyof typeof settings, value: boolean) => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
@@ -69,7 +76,7 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
           <div className="space-y-4">
             <div>
               <h3 className="text-sm font-semibold mb-3">Appearance</h3>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover-elevate">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-md bg-purple-100 dark:bg-purple-900/30">
                     <Moon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
@@ -95,7 +102,7 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
             <div>
               <h3 className="text-sm font-semibold mb-3">Notifications</h3>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover-elevate">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-md bg-blue-100 dark:bg-blue-900/30">
                       <Bell className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -115,7 +122,7 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover-elevate">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-md bg-green-100 dark:bg-green-900/30">
                       <Volume2 className="w-4 h-4 text-green-600 dark:text-green-400" />
@@ -142,7 +149,7 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
             <div>
               <h3 className="text-sm font-semibold mb-3">Notification Types</h3>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover-elevate">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-md bg-purple-100 dark:bg-purple-900/30">
                       <MessageSquare className="w-4 h-4 text-purple-600 dark:text-purple-400" />
@@ -162,7 +169,7 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover-elevate">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-md bg-amber-100 dark:bg-amber-900/30">
                       <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400" />
@@ -182,7 +189,7 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover-elevate">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-md bg-teal-100 dark:bg-teal-900/30">
                       <CalendarIcon className="w-4 h-4 text-teal-600 dark:text-teal-400" />

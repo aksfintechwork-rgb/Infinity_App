@@ -335,14 +335,19 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
                   placeholder="Folder name"
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newFolderName.trim() && !createFolderMutation.isPending) {
+                      handleCreateFolder();
+                    }
+                  }}
                   data-testid="input-folder-name"
                 />
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsCreateFolderOpen(false)}>
+                  <Button variant="outline" onClick={() => setIsCreateFolderOpen(false)} disabled={createFolderMutation.isPending}>
                     Cancel
                   </Button>
-                  <Button onClick={handleCreateFolder} disabled={!newFolderName.trim()} data-testid="button-create-folder">
-                    Create
+                  <Button onClick={handleCreateFolder} disabled={!newFolderName.trim() || createFolderMutation.isPending} data-testid="button-create-folder">
+                    {createFolderMutation.isPending ? 'Creating...' : 'Create'}
                   </Button>
                 </div>
               </div>

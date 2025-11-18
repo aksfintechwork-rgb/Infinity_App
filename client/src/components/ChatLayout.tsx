@@ -499,9 +499,22 @@ export default function ChatLayout({
     if ((!outgoingCall && !activeCall) || !callWindowRef.current) return;
 
     // Check if window is closed every 500ms
-    windowCheckIntervalRef.current = setInterval(() => {
+    windowCheckIntervalRef.current = setInterval(async () => {
       if (callWindowRef.current && callWindowRef.current.closed) {
-        // Window was closed - clear all call states
+        // Window was closed - end the call in the database
+        const callToEnd = activeCall || outgoingCall;
+        if (callToEnd?.roomName) {
+          try {
+            await apiRequest('POST', '/api/calls/end-by-room', {
+              roomName: callToEnd.roomName
+            });
+            console.log('[Call Monitor] Successfully ended call after window closed');
+          } catch (error) {
+            console.error('[Call Monitor] Failed to end call after window closed:', error);
+          }
+        }
+        
+        // Clear all call states
         setOutgoingCall(null);
         setActiveCall(null);
         callWindowRef.current = null;
