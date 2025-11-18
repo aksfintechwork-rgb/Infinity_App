@@ -138,19 +138,40 @@ export default function ChatLayout({
   
   // Ref callback that tracks when container mounts/unmounts
   const attachScrollContainerRef = useCallback((node: HTMLDivElement | null) => {
+    console.log('[ScrollButton] Ref callback called', { node, hasNode: !!node });
     scrollContainerRef.current = node;
     // Increment counter to trigger useEffect re-run when container changes
-    setScrollContainerMounted(prev => prev + 1);
+    setScrollContainerMounted(prev => {
+      const newValue = prev + 1;
+      console.log('[ScrollButton] Incrementing mounted counter', { prev, newValue });
+      return newValue;
+    });
   }, []);
   
   // Manage scroll event listener in useEffect
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
-    if (!scrollContainer) return;
+    if (!scrollContainer) {
+      console.log('[ScrollButton] No scroll container found');
+      return;
+    }
+    
+    console.log('[ScrollButton] Setting up scroll listener', {
+      scrollHeight: scrollContainer.scrollHeight,
+      scrollTop: scrollContainer.scrollTop,
+      clientHeight: scrollContainer.clientHeight
+    });
     
     const handleScrollEvent = () => {
       const distanceFromBottom = 
         scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight;
+      console.log('[ScrollButton] Scroll event fired', {
+        scrollHeight: scrollContainer.scrollHeight,
+        scrollTop: scrollContainer.scrollTop,
+        clientHeight: scrollContainer.clientHeight,
+        distanceFromBottom,
+        shouldShow: distanceFromBottom > 300
+      });
       // Show button when user has scrolled up more than 300px from bottom
       setShowScrollButton(distanceFromBottom > 300);
     };
@@ -158,6 +179,7 @@ export default function ChatLayout({
     scrollContainer.addEventListener('scroll', handleScrollEvent);
     
     return () => {
+      console.log('[ScrollButton] Removing scroll listener');
       scrollContainer.removeEventListener('scroll', handleScrollEvent);
     };
   }, [scrollContainerMounted]);
