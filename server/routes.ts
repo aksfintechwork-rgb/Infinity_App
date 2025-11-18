@@ -1406,7 +1406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Supremo Drive Routes
+  // Infinity Drive Routes
   app.get("/api/drive/folders", authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (!req.userId) {

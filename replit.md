@@ -1,7 +1,7 @@
-# SUPREMO TRADERS LLP Team Communication Platform
+# Infinity Solutions Team Communication Platform
 
 ## Overview
-This project is an internal, real-time communication platform for SUPREMO TRADERS LLP, designed to enhance collaboration and productivity. It provides core communication features like direct messaging, group chats, and file sharing, alongside advanced tools such as a meeting calendar with AI summarization, robust video conferencing, comprehensive task management, and a project tracking dashboard.
+This project is an internal, real-time communication platform for Infinity Solutions, designed to enhance collaboration and productivity. It provides core communication features like direct messaging, group chats, and file sharing, alongside advanced tools such as a meeting calendar with AI summarization, robust video conferencing, comprehensive task management, and a project tracking dashboard.
 
 ## ⚠️ CRITICAL: Data Preservation Policy
 **This platform is in PRODUCTION with active users and data. ALL future updates MUST preserve existing data and functionality.**
@@ -16,7 +16,7 @@ See `DEVELOPMENT_LOCK.md` for complete development guidelines and safety require
 
 ### Login Experience
 The login page provides a secure, user-friendly experience with:
-- Clean, branded interface with SUPREMO TRADERS logo
+- Clean, branded interface with Infinity Solutions logo
 - Helpful info alert for first-time users directing them to contact administrators
 - Password visibility toggle for easier input
 - Mobile-responsive design
@@ -52,7 +52,7 @@ Preferred communication style: Simple, everyday language.
 - **Performance Dashboard**: Admin-only analytics dashboard with comprehensive visualizations including overall statistics cards (total tasks, completion rate, active projects, team size), task completion trend charts, user performance bar charts, task distribution pie charts, detailed user statistics table, and project performance tracking. Features period-based filtering (week, month, quarter, year) with empty state handling and banking theme-aligned chart colors.
 - **User Productivity Tools**: Daily Work Log and a standalone private To-Do List with priority levels, completion tracking, and automated reminder system (sent from Admin account).
 - **User Management**: Admin tools for user creation, deletion, task oversight, password reset, and role management. Admins can promote users to admin or demote admins to regular users with built-in safeguards: prevents self-demotion (admins cannot demote themselves) and prevents demoting the last admin (at least one admin must remain).
-- **Supremo Drive with Google Drive Integration**: Local file storage with optional Google Drive sync. Features include: (1) Upload files to local storage, (2) Sync local files to Google Drive with status tracking (not_synced, queued, in_progress, synced, error), (3) Import files from Google Drive to local storage, (4) List Google Drive files, (5) Folder-based organization with ownership validation. All sync operations preserve existing Google Drive IDs to enable re-sync and updates.
+- **Infinity Drive with Google Drive Integration**: Local file storage with optional Google Drive sync. Features include: (1) Upload files to local storage, (2) Sync local files to Google Drive with status tracking (not_synced, queued, in_progress, synced, error), (3) Import files from Google Drive to local storage, (4) List Google Drive files, (5) Folder-based organization with ownership validation. All sync operations preserve existing Google Drive IDs to enable re-sync and updates.
 - **Security & Access**: Role-based access control, secure file management with ownership validation, folder-level authorization checks for Google Drive imports, and self-service password change.
 
 ## External Dependencies

@@ -1,4 +1,4 @@
-# SUPREMO TRADERS LLP - Team Communication Platform
+# Infinity Solutions - Team Communication Platform
 ## Complete Feature Documentation
 
 **Project Type:** Internal Team Communication & Collaboration Platform  
@@ -23,7 +23,7 @@
 | Daily Work Log | Track daily team activities | Personal daily work logging for all users | workLogs (id, userId, date, description, createdAt, updatedAt) | User accesses work log → Selects date → Enters activities/notes → Saves entry → Can view/edit past logs → Managers can view team logs | Personal tracking tool. Editable entries. Date-based organization. | Completed | Live |
 | To-Do List (Personal) | Individual task management | Standalone private to-do list with priority levels, completion tracking, automated reminders | todos (id, userId, title, description, priority, completed, dueDate, createdAt, updatedAt) | User creates todo → Sets priority and due date → System sends reminders from Admin account → User marks complete → Tracks completion status | Priority levels: low, medium, high, urgent. Private to each user. Automated reminder system. | Completed | Live |
 | User Management | Admin tools for team management | User creation, deletion, task oversight, password reset, role management | users (id, username, password, name, email, role, avatar, lastSeen, bio, phone, department) | Admin accesses user management → Creates/edits/deletes users → Assigns roles (admin/user) → Resets passwords → Promotes/demotes users → Views user tasks | Safeguards: prevents self-demotion, prevents demoting last admin. Admin can oversee all user tasks. Profile management for all users. | Completed | Live |
-| Supremo Drive | File storage with Google Drive sync | Local file storage with optional Google Drive sync, folder organization, ownership validation | files (id, name, mimeType, size, url, uploadedById, folderId, googleDriveId, syncStatus, errorMessage, createdAt, updatedAt), folders (id, name, parentId, createdById, createdAt, updatedAt) | User uploads file → Stored in local uploads/ directory → Optional: User syncs to Google Drive → System tracks sync status (not_synced, queued, in_progress, synced, error) → Can import from Google Drive → Folder-based organization | Sync preserves existing Google Drive IDs for re-sync. Folder-level authorization. Ownership validation. Google Drive integration via Replit connector with automatic OAuth. | Completed | Live |
+| Infinity Drive | File storage with Google Drive sync | Local file storage with optional Google Drive sync, folder organization, ownership validation | files (id, name, mimeType, size, url, uploadedById, folderId, googleDriveId, syncStatus, errorMessage, createdAt, updatedAt), folders (id, name, parentId, createdById, createdAt, updatedAt) | User uploads file → Stored in local uploads/ directory → Optional: User syncs to Google Drive → System tracks sync status (not_synced, queued, in_progress, synced, error) → Can import from Google Drive → Folder-based organization | Sync preserves existing Google Drive IDs for re-sync. Folder-level authorization. Ownership validation. Google Drive integration via Replit connector with automatic OAuth. | Completed | Live |
 | Push Notifications | Real-time alerts for messages and calls | Web Push Notifications with sound/vibration for messages and calls, works when app closed or in background | pushSubscriptions (id, userId, endpoint, p256dh, auth, createdAt) | User grants notification permission → Browser registers service worker → System stores subscription → Events trigger (new message/call) → Background tab awareness checks visibility → Sends push only to offline/hidden tabs → User receives notification with sound/vibration | Smart routing: notifications sent only when user has no visible tabs. Uses Page Visibility API. Supports both incoming calls and new messages. | Completed | Live |
 | Conversation Read Status | Track unread messages | Mark conversations as read, unread count tracking | conversationReadStatus (userId, conversationId, lastReadMessageId, unreadCount, updatedAt) | User opens conversation → System marks as read → Updates lastReadMessageId → Calculates unread count → Displays unread badge → Real-time sync across devices | History visibility control based on member join date. Unread count indicators. Real-time updates. | Completed | Live |
 | Presence Tracking | Show online/offline status | Real-time user presence and last seen timestamps | users (lastSeen), WebSocket connection tracking | User connects → WebSocket establishes → System updates lastSeen on activity → Broadcasts presence to others → User disconnects → Final lastSeen update → Others see offline status | Updates on any WebSocket activity. Tab visibility awareness. Connection heartbeat via ping/pong. | Completed | Live |
@@ -83,8 +83,8 @@ Key Entities:
 - `workLogs` - Daily work logs
 - `todos` - Personal to-do lists
 - `activeCalls` - Live video calls
-- `files` - Supremo Drive files
-- `folders` - Supremo Drive folders
+- `files` - Infinity Drive files
+- `folders` - Infinity Drive folders
 - `pushSubscriptions` - Push notification subscriptions
 
 ---
