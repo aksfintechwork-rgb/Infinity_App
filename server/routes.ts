@@ -169,8 +169,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: z.string().min(6, "Password must be at least 6 characters long"),
         designation: z.string().min(1, "Designation is required"),
         department: z.string().min(1, "Department is required"),
-        contactEmail: z.string().email("Invalid contact email").optional().nullable(),
-      });
+        contactEmail: z.string().email("Invalid contact email").optional().or(z.literal('')).nullable(),
+      }).transform((data) => ({
+        ...data,
+        // Convert empty strings to null for optional fields
+        email: data.email || null,
+        contactEmail: data.contactEmail || null,
+      }));
 
       const validationResult = registrationSchema.safeParse(req.body);
       
