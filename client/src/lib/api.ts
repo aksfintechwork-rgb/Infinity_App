@@ -12,16 +12,24 @@ interface AuthResponse {
   token: string;
 }
 
-export async function register(name: string, loginId: string, email: string, password: string): Promise<AuthResponse> {
+export async function register(data: {
+  name: string;
+  loginId: string;
+  email: string;
+  password: string;
+  designation: string;
+  department: string;
+  contactEmail: string;
+}): Promise<AuthResponse> {
   const response = await fetch(`${API_BASE}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, loginId, email, password }),
+    body: JSON.stringify(data),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || 'Registration failed');
+    throw { response: { data: error } }; // Match axios error format for consistency
   }
 
   return response.json();

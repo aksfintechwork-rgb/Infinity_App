@@ -4,7 +4,9 @@ import { queryClient } from './lib/queryClient';
 import { Toaster } from '@/components/ui/toaster';
 import { toast } from '@/hooks/use-toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { Route, Switch, useLocation } from 'wouter';
 import LoginPage from './components/LoginPage';
+import RegisterPage from './components/RegisterPage';
 import ChatLayout from './components/ChatLayout';
 import { PageLoader } from './components/PageLoader';
 import * as api from './lib/api';
@@ -396,9 +398,51 @@ function App() {
       localStorage.setItem('auth_token', response.token);
       setToken(response.token);
       setCurrentUser(response.user);
+      
+      toast({
+        title: "Login successful",
+        description: `Welcome back, ${response.user.name}!`,
+      });
     } catch (error: any) {
       console.error('Login failed:', error);
-      // Toast removed to fix React hook error
+      toast({
+        title: "Login failed",
+        description: error.response?.data?.error || "Invalid credentials",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRegister = async (data: {
+    name: string;
+    loginId: string;
+    email: string;
+    password: string;
+    designation: string;
+    department: string;
+    contactEmail: string;
+  }) => {
+    try {
+      // Initialize audio from this user gesture
+      initializeAudio();
+      
+      const response = await api.register(data);
+      localStorage.setItem('auth_token', response.token);
+      setToken(response.token);
+      setCurrentUser(response.user);
+      
+      toast({
+        title: "Registration successful",
+        description: `Welcome to Infinity Technology, ${response.user.name}!`,
+      });
+    } catch (error: any) {
+      console.error('Registration failed:', error);
+      toast({
+        title: "Registration failed",
+        description: error.response?.data?.error || "Registration failed. Please try again.",
+        variant: "destructive",
+      });
+      throw error; // Re-throw to let the RegisterPage handle it
     }
   };
 
@@ -493,7 +537,14 @@ function App() {
       <TooltipProvider>
         <PageLoader />
         {!currentUser ? (
-          <LoginPage onLogin={handleLogin} />
+          <Switch>
+            <Route path="/register">
+              <RegisterPage onRegister={handleRegister} />
+            </Route>
+            <Route path="/">
+              <LoginPage onLogin={handleLogin} />
+            </Route>
+          </Switch>
         ) : (
           <ChatLayout
             currentUser={currentUser}
