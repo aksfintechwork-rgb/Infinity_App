@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone, PhoneOff, Folder, HardDrive, ListChecks, BarChart3, X, PhoneMissed, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Search, Hash, Moon, Sun, MessageSquare, Shield, Calendar as CalendarIcon, UserPlus, Menu, CheckCircle2, Video, ArrowLeft, Users, FileText, Phone, PhoneOff, Folder, HardDrive, ListChecks, BarChart3, X, PhoneMissed, ChevronDown, ChevronUp, ArrowDown } from 'lucide-react';
 import ConversationItem from './ConversationItem';
 import Message from './Message';
 import MessageInput from './MessageInput';
@@ -127,8 +127,40 @@ export default function ChatLayout({
     return saved !== null ? saved === 'true' : false;
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastConversationIdRef = useRef<number | null>(null);
+  
+  // Track if user has scrolled away from bottom
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  
+  // Ref to store scroll container
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [scrollContainerMounted, setScrollContainerMounted] = useState(0);
+  
+  // Ref callback that tracks when container mounts/unmounts
+  const attachScrollContainerRef = useCallback((node: HTMLDivElement | null) => {
+    scrollContainerRef.current = node;
+    // Increment counter to trigger useEffect re-run when container changes
+    setScrollContainerMounted(prev => prev + 1);
+  }, []);
+  
+  // Manage scroll event listener in useEffect
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+    
+    const handleScrollEvent = () => {
+      const distanceFromBottom = 
+        scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight;
+      // Show button when user has scrolled up more than 300px from bottom
+      setShowScrollButton(distanceFromBottom > 300);
+    };
+    
+    scrollContainer.addEventListener('scroll', handleScrollEvent);
+    
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScrollEvent);
+    };
+  }, [scrollContainerMounted]);
   
   // Incoming call state
   const [incomingCall, setIncomingCall] = useState<{
@@ -349,6 +381,7 @@ export default function ChatLayout({
         requestAnimationFrame(() => {
           if (scrollContainer) {
             scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            setShowScrollButton(false);
           }
         });
       });
@@ -367,11 +400,24 @@ export default function ChatLayout({
         requestAnimationFrame(() => {
           if (scrollContainer) {
             scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            setShowScrollButton(false);
           }
         });
       });
     }
   }, [activeMessages, activeConversationId]);
+
+  // Function to scroll to bottom
+  const scrollToBottom = () => {
+    const scrollContainer = scrollContainerRef.current;
+    if (scrollContainer) {
+      scrollContainer.scrollTo({
+        top: scrollContainer.scrollHeight,
+        behavior: 'smooth'
+      });
+      setShowScrollButton(false);
+    }
+  };
 
   useEffect(() => {
     if (isDark) {
@@ -1611,8 +1657,8 @@ export default function ChatLayout({
             </div>
 
             <div 
-              ref={scrollContainerRef}
-              className="flex-1 overflow-y-auto px-3 md:px-6 py-4"
+              ref={attachScrollContainerRef}
+              className="flex-1 overflow-y-auto px-3 md:px-6 py-4 relative"
             >
               <div className="max-w-4xl mx-auto">
                 {activeMessages.map((msg) => (
@@ -1629,6 +1675,19 @@ export default function ChatLayout({
                 {isTyping && <TypingIndicator userName="Someone" />}
                 <div ref={messagesEndRef} />
               </div>
+
+              {/* Scroll to bottom button */}
+              {showScrollButton && (
+                <Button
+                  size="icon"
+                  onClick={scrollToBottom}
+                  className="absolute bottom-4 right-4 md:right-8 h-10 w-10 rounded-full shadow-lg z-10"
+                  data-testid="button-scroll-to-bottom"
+                  title="Scroll to latest messages"
+                >
+                  <ArrowDown className="w-5 h-5" />
+                </Button>
+              )}
             </div>
 
             <div className="flex-shrink-0">
