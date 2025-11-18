@@ -161,9 +161,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public registration disabled - only admins can create users via /api/admin/users
+  // Employee self-registration endpoint
   app.post("/api/auth/register", async (req, res) => {
-    return res.status(403).json({ error: "Public registration is disabled. Please contact your administrator for an account." });
+    try {
+      const { name, loginId, email, password, designation, department, contactEmail } = req.body;
+
+      // Validate required fields
+      if (!name || !loginId || !password) {
+        return res.status(400).json({ error: "Name, login ID, and password are required" });
+      }
+
+      if (!designation || !department) {
+        return res.status(400).json({ error: "Designation and department are required" });
+      }
+
+      // Validate loginId format
+      const loginIdRegex = /^[a-zA-Z0-9_-]+$/;
+      if (!loginIdRegex.test(loginId)) {
+        return res.status(400).json({ error: "Login ID can only contain letters, numbers, dashes, and underscores" });
+      }
+
+      if (loginId.length < 3 || loginId.length > 32) {
+        return res.status(400).json({ error: "Login ID must be between 3 and 32 characters" });
+      }
+
+      // Validate password strength
+      if (password.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters long" });
+      }
+
+      // Check if user already exists (case-insensitive)
+      const existingUser = await storage.getUserByLoginId(loginId.toLowerCase());
+      if (existingUser) {
+        return res.status(409).json({ error: "Login ID already exists" });
+      }
+
+      // Hash password and create user
+      const hashedPassword = await hashPassword(password);
+      const newUser = await storage.createUser({
+        name,
+        loginId: loginId.toLowerCase(),
+        email: email || null,
+        password: hashedPassword,
+        role: "user", // Always create as regular user (not admin)
+        designation,
+        department,
+        contactEmail: contactEmail || email || null
+      });
+
+      console.log(`[REGISTRATION] ✅ New user registered: ${newUser.name} (${newUser.loginId})`);
+
+      // Generate token and return user data
+      const token = generateToken(newUser.id);
+      const { password: _, ...userWithoutPassword } = newUser;
+
+      res.status(201).json({
+        user: userWithoutPassword,
+        token,
+        message: "Registration successful"
+      });
+    } catch (error: any) {
+      console.error("[REGISTRATION] ❌ Registration failed:", error);
+      res.status(500).json({ error: "Registration failed", details: error.message });
+    }
   });
 
   app.post("/api/auth/login", async (req, res) => {
