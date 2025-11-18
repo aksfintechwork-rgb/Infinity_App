@@ -1,4 +1,4 @@
-# Infinity Solutions - Team Communication Platform
+# Infinity Technology - Team Communication Platform
 ## Complete Feature Documentation
 
 **Project Type:** Internal Team Communication & Collaboration Platform  

@@ -142,7 +142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const adminUser = await storage.createUser({
         name: "Admin User",
         loginId: "admin",
-        email: "admin@infinitysolutions.com",
+        email: "admin@infinitytechnology.com",
         password: hashedPassword,
         role: "admin"
       });
