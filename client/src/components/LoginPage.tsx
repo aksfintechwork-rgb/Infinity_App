@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, MapPin, Clock, Phone } from 'lucide-react';
+import { Link } from 'wouter';
 import logoImage from '@assets/image_1763461605012.png';
 
 interface LoginPageProps {
@@ -190,12 +191,15 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                   Sign In
                 </Button>
 
-                {/* Info Alert */}
-                <div className="mt-4 p-4 rounded-lg bg-accent/20 border border-accent/30">
-                  <p className="text-sm text-foreground/80 text-center">
-                    First time here? Contact your administrator for credentials.
-                  </p>
-                </div>
+                {/* Registration Link */}
+                <p className="text-center text-sm text-muted-foreground">
+                  New employee?{' '}
+                  <Link href="/register">
+                    <span className="text-primary hover:underline cursor-pointer font-medium" data-testid="link-register">
+                      Register here
+                    </span>
+                  </Link>
+                </p>
               </form>
             </CardContent>
           </Card>

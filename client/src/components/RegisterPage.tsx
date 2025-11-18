@@ -50,8 +50,9 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -80,20 +81,32 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
       return;
     }
 
-    // Mobile-safe normalization
-    const nfkc = (s: string) => (s || '').normalize('NFKC');
-    const sanitize = (s: string) => nfkc(s).replace(/[\u0000-\u001F\u007F\u200B\u00A0]/g, '').trim();
+    setIsLoading(true);
 
-    // Submit registration data
-    onRegister({
-      name: sanitize(formData.name),
-      loginId: sanitize(formData.loginId.toLowerCase()),
-      email: formData.email || '',
-      password: nfkc(formData.password),
-      designation: formData.designation,
-      department: formData.department,
-      contactEmail: formData.contactEmail || formData.email || ''
-    });
+    try {
+      // Mobile-safe normalization
+      const nfkc = (s: string) => (s || '').normalize('NFKC');
+      const sanitize = (s: string) => nfkc(s).replace(/[\u0000-\u001F\u007F\u200B\u00A0]/g, '').trim();
+
+      // Submit registration data
+      await onRegister({
+        name: sanitize(formData.name),
+        loginId: sanitize(formData.loginId.toLowerCase()),
+        email: formData.email || '',
+        password: nfkc(formData.password),
+        designation: formData.designation,
+        department: formData.department,
+        contactEmail: formData.contactEmail || formData.email || ''
+      });
+      
+      // Success - component will be unmounted as user is now logged in
+      // No need to clear loading state as component unmounts
+    } catch (error: any) {
+      setError(error.response?.data?.error || 'Registration failed. Please try again.');
+    } finally {
+      // Always clear loading state (handles both success and failure)
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -363,9 +376,17 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
                   <Button 
                     type="submit" 
                     className="w-full h-11 text-base font-semibold"
+                    disabled={isLoading}
                     data-testid="button-register"
                   >
-                    Register Account
+                    {isLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
+                        Registering...
+                      </>
+                    ) : (
+                      'Register Account'
+                    )}
                   </Button>
 
                   {/* Login Link */}

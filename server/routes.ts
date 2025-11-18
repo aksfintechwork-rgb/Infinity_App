@@ -164,31 +164,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Employee self-registration endpoint
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { name, loginId, email, password, designation, department, contactEmail } = req.body;
+      // Validate using Zod schema
+      const registrationSchema = insertUserSchema.extend({
+        password: z.string().min(6, "Password must be at least 6 characters long"),
+        designation: z.string().min(1, "Designation is required"),
+        department: z.string().min(1, "Department is required"),
+        contactEmail: z.string().email("Invalid contact email").optional().nullable(),
+      });
 
-      // Validate required fields
-      if (!name || !loginId || !password) {
-        return res.status(400).json({ error: "Name, login ID, and password are required" });
+      const validationResult = registrationSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors.map(e => e.message).join(", ");
+        return res.status(400).json({ error: errors });
       }
 
-      if (!designation || !department) {
-        return res.status(400).json({ error: "Designation and department are required" });
-      }
-
-      // Validate loginId format
-      const loginIdRegex = /^[a-zA-Z0-9_-]+$/;
-      if (!loginIdRegex.test(loginId)) {
-        return res.status(400).json({ error: "Login ID can only contain letters, numbers, dashes, and underscores" });
-      }
-
-      if (loginId.length < 3 || loginId.length > 32) {
-        return res.status(400).json({ error: "Login ID must be between 3 and 32 characters" });
-      }
-
-      // Validate password strength
-      if (password.length < 6) {
-        return res.status(400).json({ error: "Password must be at least 6 characters long" });
-      }
+      const { name, loginId, email, password, designation, department, contactEmail } = validationResult.data;
 
       // Check if user already exists (case-insensitive)
       const existingUser = await storage.getUserByLoginId(loginId.toLowerCase());
