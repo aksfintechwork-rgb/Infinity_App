@@ -1,4 +1,4 @@
-# Design Guidelines: SUPREMO TRADERS LLP Team Communication Platform
+# Design Guidelines: Infinity Solutions Team Communication Platform
 
 ## Design Approach
 
@@ -84,7 +84,7 @@
 **Top Bar (64px):**
 - Background: White (#FFFFFF)
 - Border-bottom: 1px solid light beige (#E8DFD4)
-- Left: "SUPREMO TRADERS LLP" orange text (weight 700), circular logo (36px)
+- Left: "Infinity Solutions" orange text (weight 700), circular logo (36px)
 - Center: Conversation title (warm brown, weight 500) with member count badge
 - Right: Search icon (warm brown, hover bg cream), notification bell with orange badge, profile avatar (36px) with orange ring
 - Box-shadow: shadow-sm for subtle depth
@@ -239,4 +239,4 @@
 - Tablet (768-1023px): Two-column, sidebar overlay with backdrop
 - Mobile (<768px): Single stack, bottom navigation bar, full-screen chat view
 
-This design creates a professional, trustworthy banking-inspired communication platform where SUPREMO TRADERS LLP's team experiences warmth, clarity, efficiency, and business-grade polish in daily collaboration. The orange/coral and warm beige color scheme conveys energy and professionalism while maintaining excellent readability and accessibility.
+This design creates a professional, trustworthy banking-inspired communication platform where Infinity Solutions' team experiences warmth, clarity, efficiency, and business-grade polish in daily collaboration. The orange/coral and warm beige color scheme conveys energy and professionalism while maintaining excellent readability and accessibility.

@@ -363,7 +363,7 @@ export default function AdminPanel({ token, currentUserId }: AdminPanelProps) {
                   id="email"
                   data-testid="input-admin-email"
                   type="email"
-                  placeholder="john@supremotraders.com"
+                  placeholder="john@infinitysolutions.com"
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                 />

@@ -18,7 +18,7 @@ export async function initializeDatabase() {
       const adminUser = await storage.createUser({
         name: "Admin User",
         loginId: "admin",
-        email: "admin@supremotraders.com",
+        email: "admin@infinitysolutions.com",
         password: hashedPassword,
         role: "admin"
       });
@@ -41,7 +41,7 @@ export async function initializeDatabase() {
         const newAdmin = await storage.createUser({
           name: "Admin User",
           loginId: "admin",
-          email: "admin@supremotraders.com",
+          email: "admin@infinitysolutions.com",
           password: hashedPassword,
           role: "admin"
         });

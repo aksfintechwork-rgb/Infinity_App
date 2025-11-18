@@ -24,7 +24,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   if (vapidPublicKey && vapidPrivateKey) {
     webpush.setVapidDetails(
-      'mailto:admin@supremotraders.com',
+      'mailto:admin@infinitysolutions.com',
       vapidPublicKey,
       vapidPrivateKey
     );
@@ -142,7 +142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const adminUser = await storage.createUser({
         name: "Admin User",
         loginId: "admin",
-        email: "admin@supremotraders.com",
+        email: "admin@infinitysolutions.com",
         password: hashedPassword,
         role: "admin"
       });
