@@ -173,11 +173,12 @@ export function MissedCallsList({ open, onOpenChange, onCallBack }: MissedCallsL
                             size="sm"
                             variant="ghost"
                             onClick={() => handleMarkViewed(call.id)}
+                            disabled={markViewedMutation.isPending}
                             className="gap-2"
                             data-testid={`button-mark-viewed-${call.id}`}
                           >
                             <Check className="w-3 h-3" />
-                            Mark Read
+                            {markViewedMutation.isPending ? 'Marking...' : 'Mark Read'}
                           </Button>
                         )}
                         
