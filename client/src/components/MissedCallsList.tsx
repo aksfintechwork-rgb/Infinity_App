@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PhoneOff, Phone, PhoneMissed, Trash2, Check, MoreVertical } from 'lucide-react';
+import { PhoneOff, Phone, PhoneMissed, Trash2, Check, MoreVertical, X } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -31,8 +31,6 @@ interface MissedCallsListProps {
 }
 
 export function MissedCallsList({ open, onOpenChange, onCallBack }: MissedCallsListProps) {
-  const [viewSyncInFlight, setViewSyncInFlight] = useState(false);
-
   const { data: missedCalls = [] } = useQuery<MissedCall[]>({
     queryKey: ['/api/missed-calls'],
   });
@@ -61,17 +59,21 @@ export function MissedCallsList({ open, onOpenChange, onCallBack }: MissedCallsL
     },
   });
 
-  // Mark all unviewed calls as viewed when sheet opens
-  useEffect(() => {
-    if (open && missedCalls.length > 0 && !viewSyncInFlight) {
-      const unviewedCalls = missedCalls.filter(call => !call.viewed);
-      if (unviewedCalls.length > 0) {
-        setViewSyncInFlight(true);
-        Promise.all(unviewedCalls.map(call => markViewedMutation.mutateAsync(call.id)))
-          .finally(() => setViewSyncInFlight(false));
-      }
-    }
-  }, [open, missedCalls, viewSyncInFlight, markViewedMutation]);
+  const clearAllMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('DELETE', '/api/missed-calls', {});
+      if (!response.ok) throw new Error('Failed to clear all');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/missed-calls'] });
+      toast({
+        title: 'Cleared',
+        description: 'All missed calls removed',
+      });
+    },
+  });
+
+  // Auto-mark feature removed - users can manually mark calls as read using the "Mark Read" button
 
   const handleCallBack = (callerId: number, conversationId: number | null, callType: string, missedCallId: number) => {
     // Optimistically mark as viewed
@@ -90,19 +92,42 @@ export function MissedCallsList({ open, onOpenChange, onCallBack }: MissedCallsL
     deleteMutation.mutate(id);
   };
 
+  const handleClearAll = () => {
+    if (missedCalls.length === 0) return;
+    
+    if (window.confirm(`Are you sure you want to clear all ${missedCalls.length} missed call${missedCalls.length > 1 ? 's' : ''}?`)) {
+      clearAllMutation.mutate();
+    }
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-[400px] sm:w-[500px]" data-testid="sheet-missed-calls">
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <PhoneOff className="w-5 h-5 text-destructive" />
-            Missed Calls
+          <div className="flex items-center justify-between">
+            <SheetTitle className="flex items-center gap-2">
+              <PhoneOff className="w-5 h-5 text-destructive" />
+              Missed Calls
+              {missedCalls.length > 0 && (
+                <Badge variant="secondary">
+                  {missedCalls.length}
+                </Badge>
+              )}
+            </SheetTitle>
             {missedCalls.length > 0 && (
-              <Badge variant="secondary" className="ml-auto">
-                {missedCalls.length}
-              </Badge>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleClearAll}
+                disabled={clearAllMutation.isPending}
+                className="gap-2"
+                data-testid="button-clear-all"
+              >
+                <X className="w-4 h-4" />
+                Clear All
+              </Button>
             )}
-          </SheetTitle>
+          </div>
         </SheetHeader>
         
         <div className="mt-6 space-y-3 overflow-y-auto max-h-[calc(100vh-120px)]">
