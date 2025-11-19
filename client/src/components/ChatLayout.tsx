@@ -411,7 +411,7 @@ export default function ChatLayout({
     }
   };
 
-  // Auto-scroll to bottom: always on conversation switch, or when user is near bottom
+  // Auto-scroll to bottom: always on conversation switch, on initial load, or when user is near bottom
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
     if (!scrollContainer) return;
@@ -442,7 +442,8 @@ export default function ChatLayout({
     const isNearBottom = distanceFromBottom < 300;
 
     // Auto-scroll to bottom if user is near bottom (they want to see latest messages)
-    if (isNearBottom) {
+    // OR if scrollTop is 0 (at top, which means initial load - should go to bottom)
+    if (isNearBottom || scrollContainer.scrollTop === 0) {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (scrollContainer) {
@@ -591,7 +592,7 @@ export default function ChatLayout({
   useEffect(() => {
     if ((!outgoingCall && !activeCall) || !callWindowRef.current) return;
 
-    // Check if window is closed every 500ms
+    // Check if window is closed every 100ms for fast response
     windowCheckIntervalRef.current = setInterval(async () => {
       if (callWindowRef.current && callWindowRef.current.closed) {
         // Window was closed - end the call in the database
@@ -607,7 +608,7 @@ export default function ChatLayout({
           }
         }
         
-        // Clear all call states
+        // Clear all call states and return to application
         setOutgoingCall(null);
         setActiveCall(null);
         callWindowRef.current = null;
@@ -616,8 +617,14 @@ export default function ChatLayout({
           clearInterval(windowCheckIntervalRef.current);
           windowCheckIntervalRef.current = null;
         }
+        
+        // Show confirmation toast
+        toast({
+          title: 'Call ended',
+          description: 'Meeting window closed. Returned to application.',
+        });
       }
-    }, 500);
+    }, 100); // Faster polling for quick response
 
     return () => {
       if (windowCheckIntervalRef.current) {
@@ -625,7 +632,7 @@ export default function ChatLayout({
         windowCheckIntervalRef.current = null;
       }
     };
-  }, [outgoingCall, activeCall]);
+  }, [outgoingCall, activeCall, toast]);
 
   // Edit and forward message handlers
   const handleEditMessage = (messageId: number, currentBody: string) => {
@@ -949,23 +956,8 @@ export default function ChatLayout({
       roomUrl: callData.roomUrl
     });
     
-    // Send incoming call notification to other members via WebSocket
-    if (ws?.isConnected) {
-      ws.send({
-        type: 'incoming_call',
-        data: {
-          conversationId: callData.activeConversation.id,
-          roomName: callData.roomName,
-          roomUrl: callData.roomUrl,
-          callType: 'video',
-          from: {
-            id: currentUser.id,
-            name: currentUser.name,
-            avatar: currentUser.avatar
-          }
-        }
-      });
-    }
+    // NOTE: Don't send incoming_call WebSocket here - backend /api/calls already broadcasts it
+    // This prevents duplicate notifications to receiving users
 
     // Start outgoing call ringtone
     setOutgoingCall({
@@ -1058,23 +1050,8 @@ export default function ChatLayout({
       // Store window reference to monitor when it's closed
       callWindowRef.current = callWindow;
       
-      // Send incoming call notification to other members via WebSocket
-      if (ws?.isConnected) {
-        ws.send({
-          type: 'incoming_call',
-          data: {
-            conversationId: conversationId,
-            roomName: roomName,
-            roomUrl: data.url,
-            callType: 'audio',
-            from: {
-              id: currentUser.id,
-              name: currentUser.name,
-              avatar: currentUser.avatar
-            }
-          }
-        });
-      }
+      // NOTE: Don't send incoming_call WebSocket here - backend /api/calls already broadcasts it
+      // This prevents duplicate notifications to receiving users
 
       // Start outgoing call ringtone
       const displayName = conversation.title || conversation.members;
@@ -1189,25 +1166,8 @@ export default function ChatLayout({
         roomUrl: data.url
       });
       
-      // Send incoming call notification to other members via WebSocket
-      if (ws?.isConnected) {
-        ws.send({
-          type: 'incoming_call',
-          data: {
-            conversationId: activeConversation.id,
-            roomName: roomName,
-            roomUrl: data.url,
-            callType: 'audio',
-            from: {
-              id: currentUser.id,
-              name: currentUser.name,
-              avatar: currentUser.avatar
-            }
-          }
-        });
-      } else {
-        console.warn('[AUDIO CALL] WebSocket not connected');
-      }
+      // NOTE: Don't send incoming_call WebSocket here - backend /api/calls already broadcasts it
+      // This prevents duplicate notifications to receiving users
 
       // Start outgoing call ringtone
       setOutgoingCall({
