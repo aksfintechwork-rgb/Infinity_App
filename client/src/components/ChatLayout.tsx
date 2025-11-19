@@ -261,6 +261,25 @@ export default function ChatLayout({
   // Derived value: show full nav only when expanded OR on non-chat views
   const shouldShowFullNav = currentView !== 'chat' || isNavExpanded;
 
+  // ESC key to exit current chat and return to home sidebar
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        // Only exit chat if a conversation is currently active
+        if (activeConversationId !== null && currentView === 'chat') {
+          setActiveConversationId(null);
+          // Close mobile menu if open
+          setIsMobileMenuOpen(false);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleEscKey);
+    return () => {
+      window.removeEventListener('keydown', handleEscKey);
+    };
+  }, [activeConversationId, currentView]);
+
   const pinMutation = useMutation({
     mutationFn: async (conversationId: number) => {
       return await apiRequest('POST', `/api/conversations/${conversationId}/pin`);
