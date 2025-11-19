@@ -450,23 +450,4 @@
   .scale-in {
     animation: scaleIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
-
-  /* Zoom-responsive dialog CSS */
-  /* Ensure dialogs adapt properly to browser zoom levels */
-  [role="dialog"],
-  [data-radix-dialog-content] {
-    /* Use viewport units for max dimensions to scale with zoom */
-    max-height: 90vh;
-    max-width: min(90vw, 32rem);
-    
-    /* Ensure content doesn't overflow */
-    overflow: visible;
-  }
-
-  /* Dialog content areas should scroll if needed when zoomed */
-  [role="dialog"] > div,
-  [data-radix-dialog-content] > div {
-    max-height: inherit;
-    overflow-y: auto;
-  }
 }
