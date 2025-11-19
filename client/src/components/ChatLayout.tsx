@@ -588,6 +588,102 @@ export default function ChatLayout({
     };
   }, [outgoingCall, toast]);
 
+  // Listen for postMessage from call window when user joins/leaves
+  useEffect(() => {
+    const handleMessage = async (event: MessageEvent) => {
+      // Verify origin for security - must be from our domain
+      if (event.origin !== window.location.origin) {
+        // Log rejection for debugging
+        if (event.data?.type === 'call-user-joined' || event.data?.type === 'call-user-left') {
+          console.warn('[Call Flow] Rejected postMessage from different origin:', {
+            origin: event.origin,
+            expected: window.location.origin,
+            messageType: event.data?.type
+          });
+        }
+        return;
+      }
+      
+      // Ensure message has expected structure
+      if (!event.data || typeof event.data !== 'object') return;
+      
+      const { type, data } = event.data;
+      
+      // Log accepted message for debugging
+      console.log('[Call Flow] Received postMessage:', { type, origin: event.origin });
+      
+      if (type === 'call-user-joined') {
+        console.log('[Call Flow] Caller has joined the call, registering in database:', data);
+        
+        // Now that the caller has actually joined, register the call and notify others
+        try {
+          const callResponse = await apiRequest('POST', '/api/calls', {
+            roomName: data.roomName,
+            roomUrl: data.roomUrl,
+            conversationId: data.conversationId,
+            callType: data.callType,
+          });
+          
+          if (!callResponse.ok) {
+            if (callResponse.status === 409) {
+              const errorData = await callResponse.json();
+              
+              // Close the call window
+              if (callWindowRef.current && !callWindowRef.current.closed) {
+                callWindowRef.current.close();
+              }
+              
+              // Clear call states
+              setOutgoingCall(null);
+              setActiveCall(null);
+              callWindowRef.current = null;
+              
+              playBusyTone();
+              
+              toast({
+                title: 'Line busy',
+                description: errorData.error || 'All recipients are currently on another call',
+                variant: 'destructive'
+              });
+              
+              return;
+            }
+            throw new Error('Failed to register call');
+          }
+          
+          console.log('[Call Flow] Successfully registered call and notified other users');
+        } catch (error) {
+          console.error('[Call Flow] Failed to register call:', error);
+          
+          // Close the call window on error
+          if (callWindowRef.current && !callWindowRef.current.closed) {
+            callWindowRef.current.close();
+          }
+          
+          // Clear call states
+          setOutgoingCall(null);
+          setActiveCall(null);
+          callWindowRef.current = null;
+          
+          toast({
+            title: 'Error',
+            description: 'Failed to notify other participants. Please try again.',
+            variant: 'destructive'
+          });
+        }
+      } else if (type === 'call-user-left') {
+        console.log('[Call Flow] Caller left the call:', data);
+        // The window monitoring will handle cleanup
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [toast]);
+
   // Monitor call window - clear call state when window is closed
   useEffect(() => {
     if ((!outgoingCall && !activeCall) || !callWindowRef.current) return;
@@ -762,10 +858,21 @@ export default function ChatLayout({
         });
       }
       
-      // Navigate the already-open window to the call URL with meeting token
-      const callUrl = `${incomingCall.roomUrl}?t=${tokenData.token}`;
+      // Build URL for custom call page
+      const baseUrl = `${window.location.origin}/call.html`;
+      const callPageUrl = new URL(baseUrl);
+      callPageUrl.searchParams.set('roomUrl', incomingCall.roomUrl);
+      callPageUrl.searchParams.set('token', tokenData.token);
+      callPageUrl.searchParams.set('conversationId', incomingCall.conversationId.toString());
+      callPageUrl.searchParams.set('callType', incomingCall.callType);
+      callPageUrl.searchParams.set('roomName', incomingCall.roomName);
+      callPageUrl.searchParams.set('userName', currentUser.name);
+      callPageUrl.searchParams.set('video', incomingCall.callType === 'video' ? 'true' : 'false');
+      callPageUrl.searchParams.set('mic', 'true');
       
-      console.log('[CALL DEBUG] Navigating call window to URL with token');
+      const callUrl = callPageUrl.toString();
+      
+      console.log('[CALL DEBUG] Navigating call window to custom call page with token');
       
       navigateCallWindow(callWindow, callUrl);
       
@@ -847,43 +954,9 @@ export default function ChatLayout({
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Register the call in the database
-      try {
-        const callResponse = await apiRequest('POST', '/api/calls', {
-          roomName,
-          roomUrl: data.url,
-          conversationId: activeConversation.id,
-          callType: 'video',
-        });
-        
-        // Check if the response indicates busy status
-        if (!callResponse.ok) {
-          if (callResponse.status === 409) {
-            const errorData = await callResponse.json();
-            
-            playBusyTone();
-            
-            toast({
-              title: 'Line busy',
-              description: errorData.error || 'All recipients are currently on another call',
-              variant: 'destructive'
-            });
-            
-            return;
-          }
-          throw new Error('Failed to register call');
-        }
-      } catch (dbError) {
-        console.error('Failed to register call in database:', dbError);
-        toast({
-          title: 'Error',
-          description: 'Failed to initiate call. Please try again.',
-          variant: 'destructive'
-        });
-        return;
-      }
-      
       // Store the meeting URL and show pre-meeting dialog
+      // NOTE: We don't register the call in the database yet - this happens
+      // AFTER the caller joins to ensure proper call flow
       const callUrl = `${data.url}?t=${data.token}`;
       setPendingMeetingUrl(callUrl);
       setShowPreMeetingDialog(true);
@@ -922,18 +995,30 @@ export default function ChatLayout({
       return;
     }
     
-    // Construct URL with audio/video parameters
-    const urlObj = new URL(callData.callUrl);
-    if (!videoEnabled) {
-      urlObj.searchParams.set('video', 'false');
-    }
-    if (!audioEnabled) {
-      urlObj.searchParams.set('mic', 'false');
-    }
+    // Build URL for custom call page with all parameters
+    const baseUrl = `${window.location.origin}/call.html`;
+    const callPageUrl = new URL(baseUrl);
     
-    const finalUrl = urlObj.toString();
+    // Extract token from Daily.co URL
+    const dailyUrl = new URL(callData.callUrl);
+    const token = dailyUrl.searchParams.get('t');
     
-    // Open window with the final URL - Must be synchronous!
+    // Add all required parameters for custom call page
+    callPageUrl.searchParams.set('roomUrl', callData.roomUrl);
+    if (token) {
+      callPageUrl.searchParams.set('token', token);
+    }
+    callPageUrl.searchParams.set('conversationId', callData.activeConversation.id.toString());
+    callPageUrl.searchParams.set('callType', 'video');
+    callPageUrl.searchParams.set('roomName', callData.roomName);
+    callPageUrl.searchParams.set('userName', currentUser.name);
+    callPageUrl.searchParams.set('video', videoEnabled.toString());
+    callPageUrl.searchParams.set('mic', audioEnabled.toString());
+    
+    const finalUrl = callPageUrl.toString();
+    console.log('[Call Flow] Opening custom call page:', finalUrl);
+    
+    // Open window with the custom call page - Must be synchronous!
     const callWindow = openCallWindow(finalUrl);
     
     if (!callWindow) {
@@ -955,9 +1040,6 @@ export default function ChatLayout({
       roomName: callData.roomName,
       roomUrl: callData.roomUrl
     });
-    
-    // NOTE: Don't send incoming_call WebSocket here - backend /api/calls already broadcasts it
-    // This prevents duplicate notifications to receiving users
 
     // Start outgoing call ringtone
     setOutgoingCall({
@@ -967,6 +1049,10 @@ export default function ChatLayout({
       roomName: callData.roomName,
       roomUrl: callData.roomUrl
     });
+    
+    // NOTE: Call registration will happen via postMessage when user actually joins
+    // The call.html page will send 'call-user-joined' message after Daily.co 'joined-meeting' event
+    console.log('[Call Flow] Call window opened, waiting for user to join before notifying others');
     
     // Clean up
     delete (window as any).pendingCallData;
@@ -1005,53 +1091,26 @@ export default function ChatLayout({
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Register the call in the database
-      try {
-        const callResponse = await apiRequest('POST', '/api/calls', {
-          roomName,
-          roomUrl: data.url,
-          conversationId,
-          callType: 'audio',
-        });
-        
-        // Check if the response indicates busy status
-        if (!callResponse.ok) {
-          if (callResponse.status === 409) {
-            const errorData = await callResponse.json();
-            
-            callWindow.close();
-            playBusyTone();
-            
-            toast({
-              title: 'Line busy',
-              description: errorData.error || 'All recipients are currently on another call',
-              variant: 'destructive'
-            });
-            
-            return;
-          }
-          throw new Error('Failed to register call');
-        }
-      } catch (dbError) {
-        console.error('Failed to register call in database:', dbError);
-        callWindow.close();
-        toast({
-          title: 'Error',
-          description: 'Failed to initiate call. Please try again.',
-          variant: 'destructive'
-        });
-        return;
+      // Build URL for custom call page
+      const baseUrl = `${window.location.origin}/call.html`;
+      const callPageUrl = new URL(baseUrl);
+      callPageUrl.searchParams.set('roomUrl', data.url);
+      if (data.token) {
+        callPageUrl.searchParams.set('token', data.token);
       }
+      callPageUrl.searchParams.set('conversationId', conversationId.toString());
+      callPageUrl.searchParams.set('callType', 'audio');
+      callPageUrl.searchParams.set('roomName', roomName);
+      callPageUrl.searchParams.set('userName', currentUser.name);
+      callPageUrl.searchParams.set('video', 'false');
+      callPageUrl.searchParams.set('mic', 'true');
       
-      // Navigate the already-open window to the call URL with meeting token
-      const audioCallUrl = `${data.url}?t=${data.token}`;
+      // Navigate the already-open window to custom call page
+      const audioCallUrl = callPageUrl.toString();
       navigateCallWindow(callWindow, audioCallUrl);
       
       // Store window reference to monitor when it's closed
       callWindowRef.current = callWindow;
-      
-      // NOTE: Don't send incoming_call WebSocket here - backend /api/calls already broadcasts it
-      // This prevents duplicate notifications to receiving users
 
       // Start outgoing call ringtone
       const displayName = conversation.title || conversation.members;
@@ -1067,6 +1126,8 @@ export default function ChatLayout({
         title: 'Audio call started',
         description: `Calling ${displayName}...`,
       });
+      
+      console.log('[Quick Audio Call] Call window opened, waiting for user to join before notifying others');
     } catch (error) {
       console.error('Error creating room:', error);
       callWindow.close();
@@ -1132,27 +1193,22 @@ export default function ChatLayout({
       
       console.log('[AUDIO CALL] Room created successfully');
       
-      // Register the call in the database
-      try {
-        await apiRequest('POST', '/api/calls', {
-          roomName,
-          roomUrl: data.url,
-          conversationId: activeConversation.id,
-          callType: 'audio',
-        });
-      } catch (dbError) {
-        console.error('[AUDIO CALL] Failed to register call:', dbError);
-        callWindow.close();
-        toast({
-          title: 'Error',
-          description: 'Failed to initiate call. Please try again.',
-          variant: 'destructive'
-        });
-        return;
+      // Build URL for custom call page
+      const baseUrl = `${window.location.origin}/call.html`;
+      const callPageUrl = new URL(baseUrl);
+      callPageUrl.searchParams.set('roomUrl', data.url);
+      if (data.token) {
+        callPageUrl.searchParams.set('token', data.token);
       }
+      callPageUrl.searchParams.set('conversationId', activeConversation.id.toString());
+      callPageUrl.searchParams.set('callType', 'audio');
+      callPageUrl.searchParams.set('roomName', roomName);
+      callPageUrl.searchParams.set('userName', currentUser.name);
+      callPageUrl.searchParams.set('video', 'false');
+      callPageUrl.searchParams.set('mic', 'true');
       
-      // Navigate the already-open window to the call URL
-      const audioCallUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
+      // Navigate the already-open window to custom call page
+      const audioCallUrl = callPageUrl.toString();
       navigateCallWindow(callWindow, audioCallUrl);
       
       // Store window reference to monitor when it's closed
@@ -1165,9 +1221,6 @@ export default function ChatLayout({
         roomName,
         roomUrl: data.url
       });
-      
-      // NOTE: Don't send incoming_call WebSocket here - backend /api/calls already broadcasts it
-      // This prevents duplicate notifications to receiving users
 
       // Start outgoing call ringtone
       setOutgoingCall({
@@ -1182,7 +1235,7 @@ export default function ChatLayout({
         title: 'Audio call started',
         description: 'Calling ' + (activeConversation.title || activeConversation.members) + '...',
       });
-      console.log('[AUDIO CALL] Call initiated successfully');
+      console.log('[AUDIO CALL] Call window opened, waiting for user to join before notifying others');
     } catch (error) {
       console.error('[AUDIO CALL] Error creating room:', error);
       callWindow.close();

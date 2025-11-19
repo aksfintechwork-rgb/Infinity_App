@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Call in Progress</title>
+  <script crossorigin src="https://unpkg.com/@daily-co/daily-js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    #call-frame {
+      width: 100%;
+      height: 100vh;
+    }
+    
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #1a1a1a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    #loading.hidden {
+      display: none;
+    }
+    
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top: 4px solid #fff;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    #loading p {
+      margin-top: 20px;
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Connecting to call...</p>
+  </div>
+  <div id="call-frame"></div>
+
+  <script>
+    (function() {
+      // CRITICAL: Capture parent origin BEFORE Daily.co loads (which changes window.location.origin)
+      // Use the origin of the page that opened this window
+      const parentOrigin = window.location.origin;
+      
+      console.log('[Call Page] Captured parent origin:', parentOrigin);
+      
+      // Get URL parameters
+      const params = new URLSearchParams(window.location.search);
+      const roomUrl = params.get('roomUrl');
+      const token = params.get('token');
+      const conversationId = params.get('conversationId');
+      const callType = params.get('callType');
+      const roomName = params.get('roomName');
+      const userName = params.get('userName');
+      const videoEnabled = params.get('video') !== 'false';
+      const audioEnabled = params.get('mic') !== 'false';
+      
+      if (!roomUrl) {
+        document.getElementById('loading').querySelector('p').textContent = 'Error: Missing room URL';
+        console.error('Missing required roomUrl parameter');
+        return;
+      }
+      
+      console.log('[Call Page] Initializing Daily call frame with:', {
+        roomUrl,
+        hasToken: !!token,
+        conversationId,
+        callType,
+        roomName,
+        userName,
+        videoEnabled,
+        audioEnabled,
+        parentOrigin
+      });
+      
+      // Create Daily call frame
+      const callFrame = window.DailyIframe.createFrame('call-frame', {
+        showLeaveButton: true,
+        showFullscreenButton: true,
+        iframeStyle: {
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+        },
+      });
+      
+      // Track if we've notified the parent about joining
+      let hasNotifiedJoin = false;
+      
+      // Listen for join event
+      callFrame.on('joined-meeting', (event) => {
+        console.log('[Call Page] User joined meeting:', event);
+        document.getElementById('loading').classList.add('hidden');
+        
+        // Only notify once
+        if (!hasNotifiedJoin && window.opener) {
+          hasNotifiedJoin = true;
+          
+          console.log('[Call Page] Notifying parent window that user joined');
+          
+          // Notify parent window that user has joined
+          // Use captured parentOrigin (not window.location.origin which is now Daily.co)
+          window.opener.postMessage({
+            type: 'call-user-joined',
+            data: {
+              conversationId: conversationId ? parseInt(conversationId) : null,
+              callType: callType || 'video',
+              roomName,
+              roomUrl,
+            }
+          }, parentOrigin);
+        }
+      });
+      
+      // Listen for leave event
+      callFrame.on('left-meeting', (event) => {
+        console.log('[Call Page] User left meeting:', event);
+        
+        if (window.opener) {
+          // Notify parent window that user left
+          // Use captured parentOrigin (not window.location.origin which is now Daily.co)
+          window.opener.postMessage({
+            type: 'call-user-left',
+            data: {
+              conversationId: conversationId ? parseInt(conversationId) : null,
+              callType: callType || 'video',
+              roomName,
+              roomUrl,
+            }
+          }, parentOrigin);
+        }
+        
+        // Close this window
+        window.close();
+      });
+      
+      // Listen for errors
+      callFrame.on('error', (event) => {
+        console.error('[Call Page] Daily error:', event);
+        document.getElementById('loading').querySelector('p').textContent = 'Call error. Please try again.';
+      });
+      
+      // Join the call
+      const joinConfig = {
+        url: roomUrl,
+        videoSource: videoEnabled,
+        audioSource: audioEnabled,
+      };
+      
+      if (token) {
+        joinConfig.token = token;
+      }
+      
+      if (userName) {
+        joinConfig.userName = userName;
+      }
+      
+      console.log('[Call Page] Joining call with config:', {
+        hasUrl: !!joinConfig.url,
+        hasToken: !!joinConfig.token,
+        userName: joinConfig.userName,
+        videoSource: joinConfig.videoSource,
+        audioSource: joinConfig.audioSource,
+      });
+      
+      callFrame.join(joinConfig)
+        .then(() => {
+          console.log('[Call Page] Successfully joined call');
+        })
+        .catch((error) => {
+          console.error('[Call Page] Failed to join call:', error);
+          document.getElementById('loading').querySelector('p').textContent = 'Failed to join call. Please try again.';
+        });
+      
+      // Clean up on window close
+      window.addEventListener('beforeunload', () => {
+        if (callFrame) {
+          callFrame.destroy();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
