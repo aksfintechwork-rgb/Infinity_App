@@ -431,6 +431,28 @@ export type ProjectWithDetails = Project & {
   statusColor: 'green' | 'yellow' | 'red';
 };
 
+export const projectMembers = pgTable("project_members", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  addedAt: timestamp("added_at").notNull().defaultNow(),
+}, (table) => ({
+  projectIdIdx: index("project_members_project_id_idx").on(table.projectId),
+  userIdIdx: index("project_members_user_id_idx").on(table.userId),
+}));
+
+const _baseProjectMemberSchema = createInsertSchema(projectMembers, {});
+
+export const insertProjectMemberSchema = _baseProjectMemberSchema.omit({
+  // @ts-ignore - drizzle-zod type inference issue
+  id: true,
+  // @ts-ignore - drizzle-zod type inference issue
+  addedAt: true,
+});
+
+export type InsertProjectMember = z.infer<typeof insertProjectMemberSchema>;
+export type ProjectMember = typeof projectMembers.$inferSelect;
+
 export const syncStatusEnum = z.enum(["not_synced", "queued", "in_progress", "synced", "error"]);
 export type SyncStatus = z.infer<typeof syncStatusEnum>;
 

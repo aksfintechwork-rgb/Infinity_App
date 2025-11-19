@@ -2721,6 +2721,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/projects/:id/members", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const members = await storage.getProjectMembers(projectId);
+      res.json(members);
+    } catch (error) {
+      console.error("Get project members error:", error);
+      res.status(500).json({ error: "Failed to get project members" });
+    }
+  });
+
+  app.post("/api/projects/:id/members", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const projectId = parseInt(req.params.id);
+      const { userIds } = req.body;
+
+      if (!Array.isArray(userIds)) {
+        return res.status(400).json({ error: "userIds must be an array" });
+      }
+
+      // Clear existing members first
+      await storage.clearProjectMembers(projectId);
+
+      // Add new members if any
+      if (userIds.length > 0) {
+        for (const userId of userIds) {
+          await storage.addProjectMember({ projectId, userId });
+        }
+      }
+
+      const members = await storage.getProjectMembers(projectId);
+      res.json(members);
+
+      broadcastUpdate({
+        type: 'project_members_updated',
+        projectId,
+        members,
+      });
+    } catch (error) {
+      console.error("Update project members error:", error);
+      res.status(500).json({ error: "Failed to update project members" });
+    }
+  });
+
   app.get("/api/calls", authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (!req.userId) {

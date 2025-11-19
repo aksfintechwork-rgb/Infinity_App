@@ -27,6 +27,8 @@ import {
   type Project,
   type InsertProject,
   type ProjectWithDetails,
+  type ProjectMember,
+  type InsertProjectMember,
   type DriveFolder,
   type InsertDriveFolder,
   type DriveFolderWithDetails,
@@ -57,6 +59,7 @@ import {
   taskSupportRequests,
   dailyWorksheets,
   projects,
+  projectMembers,
   driveFolders,
   driveFiles,
   activeCalls,
@@ -147,6 +150,11 @@ export interface IStorage {
   getProjectsByResponsiblePerson(responsiblePersonId: number): Promise<ProjectWithDetails[]>;
   updateProject(id: number, updates: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: number): Promise<void>;
+  
+  addProjectMember(member: InsertProjectMember): Promise<ProjectMember>;
+  getProjectMembers(projectId: number): Promise<Omit<User, 'password'>[]>;
+  removeProjectMember(projectId: number, userId: number): Promise<void>;
+  clearProjectMembers(projectId: number): Promise<void>;
   
   createDriveFolder(folder: InsertDriveFolder): Promise<DriveFolder>;
   getDriveFolderById(id: number): Promise<DriveFolder | undefined>;
@@ -1108,6 +1116,44 @@ export class PostgresStorage implements IStorage {
 
   async deleteProject(id: number): Promise<void> {
     await db.delete(projects).where(eq(projects.id, id));
+  }
+
+  async addProjectMember(member: InsertProjectMember): Promise<ProjectMember> {
+    const result = await db.insert(projectMembers).values(member).returning();
+    return result[0];
+  }
+
+  async getProjectMembers(projectId: number): Promise<Omit<User, 'password'>[]> {
+    const result = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        loginId: users.loginId,
+        email: users.email,
+        role: users.role,
+        designation: users.designation,
+        department: users.department,
+        contactEmail: users.contactEmail,
+        avatar: users.avatar,
+        lastSeenAt: users.lastSeenAt,
+        firstLoginToday: users.firstLoginToday,
+        createdAt: users.createdAt,
+      })
+      .from(projectMembers)
+      .innerJoin(users, eq(projectMembers.userId, users.id))
+      .where(eq(projectMembers.projectId, projectId));
+    
+    return result;
+  }
+
+  async removeProjectMember(projectId: number, userId: number): Promise<void> {
+    await db
+      .delete(projectMembers)
+      .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)));
+  }
+
+  async clearProjectMembers(projectId: number): Promise<void> {
+    await db.delete(projectMembers).where(eq(projectMembers.projectId, projectId));
   }
 
   async createDriveFolder(folder: InsertDriveFolder): Promise<DriveFolder> {

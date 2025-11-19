@@ -10,13 +10,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Menu, Pencil, Trash2, Calendar as CalendarIcon, FileText, AlertCircle, Clock } from 'lucide-react';
+import { Plus, Menu, Pencil, Trash2, Calendar as CalendarIcon, FileText, AlertCircle, Clock, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 interface User {
   id: number;
@@ -82,6 +84,7 @@ type ProjectFormValues = z.infer<typeof projectFormSchema>;
 export default function Projects({ currentUser, allUsers, onOpenMobileMenu }: ProjectsProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectFormSchema),
@@ -101,12 +104,15 @@ export default function Projects({ currentUser, allUsers, onOpenMobileMenu }: Pr
 
   const createMutation = useMutation({
     mutationFn: async (data: ProjectFormValues) => {
-      return await apiRequest('POST', '/api/projects', data);
+      const project = await apiRequest('POST', '/api/projects', data);
+      await apiRequest('POST', `/api/projects/${project.id}/members`, { userIds: selectedMemberIds });
+      return project;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       toast({ title: 'Project created successfully' });
       setIsCreateDialogOpen(false);
+      setSelectedMemberIds([]);
       form.reset();
     },
     onError: () => {
@@ -116,13 +122,16 @@ export default function Projects({ currentUser, allUsers, onOpenMobileMenu }: Pr
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<ProjectFormValues> }) => {
-      return await apiRequest('PUT', `/api/projects/${id}`, data);
+      const project = await apiRequest('PUT', `/api/projects/${id}`, data);
+      await apiRequest('POST', `/api/projects/${id}/members`, { userIds: selectedMemberIds });
+      return project;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       toast({ title: 'Project updated successfully' });
       setEditingProject(null);
       setIsCreateDialogOpen(false);
+      setSelectedMemberIds([]);
       form.reset();
     },
     onError: () => {
@@ -151,7 +160,7 @@ export default function Projects({ currentUser, allUsers, onOpenMobileMenu }: Pr
     }
   };
 
-  const handleEdit = (project: Project) => {
+  const handleEdit = async (project: Project) => {
     setEditingProject(project);
     form.reset({
       projectName: project.projectName,
@@ -171,6 +180,14 @@ export default function Projects({ currentUser, allUsers, onOpenMobileMenu }: Pr
       remarks: project.remarks || '',
       priority: project.priority,
     });
+    
+    try {
+      const members = await apiRequest('GET', `/api/projects/${project.id}/members`);
+      setSelectedMemberIds(members.map((m: User) => m.id));
+    } catch (error) {
+      setSelectedMemberIds([]);
+    }
+    
     setIsCreateDialogOpen(true);
   };
 
@@ -182,6 +199,7 @@ export default function Projects({ currentUser, allUsers, onOpenMobileMenu }: Pr
 
   const handleOpenCreateDialog = () => {
     setEditingProject(null);
+    setSelectedMemberIds([]);
     form.reset({
       projectName: '',
       description: '',
@@ -415,6 +433,41 @@ export default function Projects({ currentUser, allUsers, onOpenMobileMenu }: Pr
                       </FormItem>
                     )}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Team Members (Select Multiple)
+                  </Label>
+                  <div className="border border-border rounded-md p-3 max-h-48 overflow-y-auto space-y-2" data-testid="team-members-list">
+                    {allUsers.map((user) => (
+                      <div key={user.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`member-${user.id}`}
+                          checked={selectedMemberIds.includes(user.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedMemberIds([...selectedMemberIds, user.id]);
+                            } else {
+                              setSelectedMemberIds(selectedMemberIds.filter(id => id !== user.id));
+                            }
+                          }}
+                          data-testid={`checkbox-member-${user.id}`}
+                        />
+                        <Label
+                          htmlFor={`member-${user.id}`}
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          {user.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                  {selectedMemberIds.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {selectedMemberIds.length} member{selectedMemberIds.length > 1 ? 's' : ''} selected
+                    </p>
+                  )}
                 </div>
                 <FormField
                   control={form.control}
