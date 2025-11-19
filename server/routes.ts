@@ -1259,6 +1259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       room_name: string;
       user_name?: string;
       is_owner: boolean;
+      can_admin?: string[];
       enable_screenshare: boolean;
       start_video_off: boolean;
       start_audio_off: boolean;
@@ -1271,6 +1272,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       start_audio_off: false,
       exp: expirationTime
     };
+    
+    // Owners get full admin capabilities (mute/unmute others, remove participants, etc.)
+    // Setting can_admin to ['participants'] explicitly grants participant management rights
+    if (isOwner) {
+      tokenProperties.can_admin = ['participants'];
+    }
     
     // Only include user_name if provided (for authenticated users)
     // Omit for guest tokens to allow reuse by multiple guests
@@ -1328,7 +1335,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Daily.co API key not configured" });
       }
 
-      // Check if user should be owner (admin OR meeting creator OR call initiator)
+      // Check if user should be owner (ONLY admin OR meeting creator)
+      // Regular users do NOT get owner rights, even for ad-hoc calls
       const user = await storage.getUserById(req.userId);
       let isOwner = user?.role === 'admin'; // Admins are always owners
 
@@ -1336,14 +1344,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (meetingId && !isOwner) {
         const meeting = await storage.getMeetingById(parseInt(meetingId));
         if (meeting && meeting.createdBy === req.userId) {
-          isOwner = true;
+          isOwner = true; // Meeting creators are owners
         }
       }
 
-      // If no meetingId, this is an ad-hoc call and the initiator is the owner
-      if (!meetingId && !isOwner && !isShareableLink) {
-        isOwner = true; // Call initiator is the owner
-      }
+      // For ad-hoc calls: only admins get owner rights
+      // Regular users can initiate calls but won't have admin controls
 
       // Create room via Daily.co API
       // Configure room to allow unauthenticated guest access (no token required)
