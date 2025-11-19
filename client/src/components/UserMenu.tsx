@@ -28,6 +28,7 @@ export default function UserMenu({ user, onLogout }: UserMenuProps) {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const initials = user.name
     .split(' ')
@@ -38,7 +39,7 @@ export default function UserMenu({ user, onLogout }: UserMenuProps) {
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
         <DropdownMenuTrigger className="focus:outline-none" data-testid="button-user-menu">
           <Avatar className="w-9 h-9 cursor-pointer hover-elevate">
             <AvatarImage src={user.avatar} />
@@ -60,21 +61,30 @@ export default function UserMenu({ user, onLogout }: UserMenuProps) {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem 
-            onClick={() => setIsProfileOpen(true)}
+            onClick={() => {
+              setIsDropdownOpen(false);
+              setTimeout(() => setIsProfileOpen(true), 0);
+            }}
             data-testid="menu-profile"
           >
             <UserIcon className="w-4 h-4 mr-2" />
             Profile
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => setIsChangePasswordOpen(true)}
+            onClick={() => {
+              setIsDropdownOpen(false);
+              setTimeout(() => setIsChangePasswordOpen(true), 0);
+            }}
             data-testid="menu-change-password"
           >
             <KeyRound className="w-4 h-4 mr-2" />
             Change Password
           </DropdownMenuItem>
           <DropdownMenuItem 
-            onClick={() => setIsSettingsOpen(true)}
+            onClick={() => {
+              setIsDropdownOpen(false);
+              setTimeout(() => setIsSettingsOpen(true), 0);
+            }}
             data-testid="menu-settings"
           >
             <Settings className="w-4 h-4 mr-2" />

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { FileText, Download, MoreVertical, Edit2, Forward, Reply, Trash2 } from 'lucide-react';
@@ -46,6 +47,8 @@ export default function Message({
   onReply,
   onDelete,
 }: MessageProps) {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   const initials = senderName
     .split(' ')
     .map((n) => n[0])
@@ -105,7 +108,7 @@ export default function Message({
           )}
           
           <div className="ml-auto opacity-50 group-hover:opacity-100 transition-opacity">
-            <DropdownMenu>
+            <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
@@ -118,7 +121,10 @@ export default function Message({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => onReply?.(id, senderName)}
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    setTimeout(() => onReply?.(id, senderName), 0);
+                  }}
                   data-testid={`button-reply-message-${id}`}
                 >
                   <Reply className="mr-2 h-4 w-4" />
@@ -126,7 +132,10 @@ export default function Message({
                 </DropdownMenuItem>
                 {isCurrentUser && body && (
                   <DropdownMenuItem
-                    onClick={() => onEdit?.(id, body)}
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      setTimeout(() => onEdit?.(id, body), 0);
+                    }}
                     data-testid={`button-edit-message-${id}`}
                   >
                     <Edit2 className="mr-2 h-4 w-4" />
@@ -134,7 +143,10 @@ export default function Message({
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem
-                  onClick={() => onForward?.(id)}
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    setTimeout(() => onForward?.(id), 0);
+                  }}
                   data-testid={`button-forward-message-${id}`}
                 >
                   <Forward className="mr-2 h-4 w-4" />
@@ -142,7 +154,10 @@ export default function Message({
                 </DropdownMenuItem>
                 {isCurrentUser && (
                   <DropdownMenuItem
-                    onClick={() => onDelete?.(id)}
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      setTimeout(() => onDelete?.(id), 0);
+                    }}
                     className="text-destructive focus:text-destructive"
                     data-testid={`button-delete-message-${id}`}
                   >
