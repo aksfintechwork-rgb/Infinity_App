@@ -14,6 +14,7 @@ import { Calendar as CalendarIcon, Plus, Trash2, Video, Clock, User, Users, Repe
 import { toast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { openCallWindow } from '@/lib/callWindow';
+import { PreMeetingDialog } from '@/components/PreMeetingDialog';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, parseISO, addDays, addWeeks, addMonths as addMonthsToDate, isBefore, isAfter } from 'date-fns';
 import { toZonedTime, fromZonedTime, formatInTimeZone } from 'date-fns-tz';
 
@@ -182,6 +183,8 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [instantMeetingLink, setInstantMeetingLink] = useState('');
   const [showInstantMeetingDialog, setShowInstantMeetingDialog] = useState(false);
+  const [showPreMeetingDialog, setShowPreMeetingDialog] = useState(false);
+  const [pendingMeetingUrl, setPendingMeetingUrl] = useState('');
 
   useEffect(() => {
     if (isCreateOpen && !selectedDate) {
@@ -413,24 +416,15 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // For instant meetings (no link provided), show dialog with shareable link (with camera-off parameter)
+      // For instant meetings (no link provided), store shareable link for later
       if (!link) {
         setInstantMeetingLink(addCameraOffParameter(data.url));
-        setShowInstantMeetingDialog(true);
       }
       
-      // Open in new window with meeting token - this gives admin controls to owner/admin
+      // Show pre-meeting dialog instead of immediately opening window
       const meetingUrl = `${data.url}?t=${data.token}`;
-      const newWindow = openCallWindow(meetingUrl);
-      
-      // Check if popup was blocked
-      if (!newWindow) {
-        toast({
-          title: 'Popup blocked',
-          description: 'Please allow popups for this site to join video meetings in a new window.',
-          variant: 'destructive',
-        });
-      }
+      setPendingMeetingUrl(meetingUrl);
+      setShowPreMeetingDialog(true);
     } catch (error) {
       console.error('Error creating room:', error);
       toast({
@@ -555,17 +549,10 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Open in new window with meeting token - this gives admin controls to owner/admin
+      // Show pre-meeting dialog instead of immediately opening window
       const meetingUrl = `${data.url}?t=${data.token}`;
-      const newWindow = openCallWindow(meetingUrl);
-      
-      if (!newWindow) {
-        toast({
-          title: 'Popup blocked',
-          description: 'Please allow popups for this site to join video meetings.',
-          variant: 'destructive',
-        });
-      }
+      setPendingMeetingUrl(meetingUrl);
+      setShowPreMeetingDialog(true);
     } catch (error) {
       console.error('Error joining meeting:', error);
       toast({
@@ -625,6 +612,35 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
         description: 'Failed to copy shareable link. Please try again.',
         variant: 'destructive',
       });
+    }
+  };
+
+  // Handle joining meeting with audio/video settings from pre-meeting dialog
+  // CRITICAL: This function is called synchronously from the Join button click event
+  // DO NOT add any async/await or setTimeout before openCallWindow - it will break
+  // the user gesture chain and trigger popup blockers
+  const handleJoinWithSettings = (videoEnabled: boolean, audioEnabled: boolean) => {
+    // Construct URL with audio/video parameters
+    const urlObj = new URL(pendingMeetingUrl);
+    if (!videoEnabled) {
+      urlObj.searchParams.set('video', 'false');
+    }
+    if (!audioEnabled) {
+      urlObj.searchParams.set('mic', 'false');
+    }
+    
+    const finalUrl = urlObj.toString();
+    const newWindow = openCallWindow(finalUrl); // Must be synchronous!
+    
+    if (!newWindow) {
+      toast({
+        title: 'Popup blocked',
+        description: 'Please allow popups for this site to join video meetings.',
+        variant: 'destructive',
+      });
+    } else if (instantMeetingLink) {
+      // Show the instant meeting dialog after joining (for copy link)
+      setShowInstantMeetingDialog(true);
     }
   };
 
@@ -1263,6 +1279,14 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
           </div>
         </div>
       </div>
+
+      {/* Pre-Meeting Setup Dialog */}
+      <PreMeetingDialog
+        open={showPreMeetingDialog}
+        onOpenChange={setShowPreMeetingDialog}
+        meetingUrl={pendingMeetingUrl}
+        onJoin={handleJoinWithSettings}
+      />
 
       {/* Instant Meeting Link Dialog */}
       <Dialog open={showInstantMeetingDialog} onOpenChange={setShowInstantMeetingDialog}>

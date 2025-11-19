@@ -27,6 +27,7 @@ import EditMessageDialog from './EditMessageDialog';
 import ForwardMessageDialog from './ForwardMessageDialog';
 import InviteToCallDialog from './InviteToCallDialog';
 import { MissedCallsList } from './MissedCallsList';
+import { PreMeetingDialog } from './PreMeetingDialog';
 import { useOutgoingRingtone } from '@/hooks/use-outgoing-ringtone';
 import logoImage from '@assets/image_1763461605012.png';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -115,6 +116,8 @@ export default function ChatLayout({
   const [searchQuery, setSearchQuery] = useState('');
   const [isNewConversationOpen, setIsNewConversationOpen] = useState(false);
   const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
+  const [showPreMeetingDialog, setShowPreMeetingDialog] = useState(false);
+  const [pendingMeetingUrl, setPendingMeetingUrl] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [currentView, setCurrentView] = useState<'chat' | 'admin' | 'calendar' | 'tasks' | 'todo' | 'worksheet' | 'admin-worksheets' | 'projects' | 'drive' | 'dashboard'>('chat');
@@ -821,18 +824,6 @@ export default function ChatLayout({
   const handleStartCall = async () => {
     if (!activeConversation) return;
     
-    // Open blank window IMMEDIATELY to preserve user gesture and avoid popup blockers
-    const callWindow = openCallWindow();
-    
-    if (!callWindow) {
-      toast({
-        title: 'Popup blocked',
-        description: 'Please allow popups for this site to start calls.',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
     // Generate a unique room name for Daily.co with nanoid suffix to prevent duplicates
     const roomName = `supremo-video-${activeConversation.id}-${nanoid(8)}`;
     
@@ -863,7 +854,6 @@ export default function ChatLayout({
           if (callResponse.status === 409) {
             const errorData = await callResponse.json();
             
-            callWindow.close();
             playBusyTone();
             
             toast({
@@ -878,7 +868,6 @@ export default function ChatLayout({
         }
       } catch (dbError) {
         console.error('Failed to register call in database:', dbError);
-        callWindow.close();
         toast({
           title: 'Error',
           description: 'Failed to initiate call. Please try again.',
@@ -887,61 +876,108 @@ export default function ChatLayout({
         return;
       }
       
-      // Navigate the already-open window to the call URL with meeting token
+      // Store the meeting URL and show pre-meeting dialog
       const callUrl = `${data.url}?t=${data.token}`;
-      navigateCallWindow(callWindow, callUrl);
+      setPendingMeetingUrl(callUrl);
+      setShowPreMeetingDialog(true);
       
-      // Store window reference to monitor when it's closed
-      callWindowRef.current = callWindow;
-      
-      // Set active call state to keep Invite button visible
-      setActiveCall({
-        conversationId: activeConversation.id,
-        callType: 'video',
+      // Store call metadata for use when user joins
+      (window as any).pendingCallData = {
+        activeConversation,
         roomName,
-        roomUrl: data.url
-      });
+        roomUrl: data.url,
+        callUrl
+      };
       
-      // Send incoming call notification to other members via WebSocket
-      if (ws?.isConnected) {
-        ws.send({
-          type: 'incoming_call',
-          data: {
-            conversationId: activeConversation.id,
-            roomName: roomName,
-            roomUrl: data.url,
-            callType: 'video',
-            from: {
-              id: currentUser.id,
-              name: currentUser.name,
-              avatar: currentUser.avatar
-            }
-          }
-        });
-      }
-
-      // Start outgoing call ringtone
-      setOutgoingCall({
-        conversationId: activeConversation.id,
-        callType: 'video',
-        calledName: activeConversation.title || activeConversation.members,
-        roomName,
-        roomUrl: data.url
-      });
-      
-      toast({
-        title: 'Video call started',
-        description: 'Calling ' + (activeConversation.title || activeConversation.members) + '...',
-      });
     } catch (error) {
       console.error('Error creating room:', error);
-      callWindow.close();
       toast({
         title: 'Error',
         description: 'Failed to start video call. Please try again.',
         variant: 'destructive'
       });
     }
+  };
+  
+  // Handle joining call with audio/video settings from pre-meeting dialog
+  // CRITICAL: This function is called synchronously from the Join button click event
+  // DO NOT add any async/await or setTimeout before openCallWindow - it will break
+  // the user gesture chain and trigger popup blockers
+  const handleJoinCallWithSettings = (videoEnabled: boolean, audioEnabled: boolean) => {
+    // Retrieve stored call data
+    const callData = (window as any).pendingCallData;
+    if (!callData) {
+      toast({
+        title: 'Error',
+        description: 'Call data not found. Please try again.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    // Construct URL with audio/video parameters
+    const urlObj = new URL(callData.callUrl);
+    if (!videoEnabled) {
+      urlObj.searchParams.set('video', 'false');
+    }
+    if (!audioEnabled) {
+      urlObj.searchParams.set('mic', 'false');
+    }
+    
+    const finalUrl = urlObj.toString();
+    
+    // Open window with the final URL - Must be synchronous!
+    const callWindow = openCallWindow(finalUrl);
+    
+    if (!callWindow) {
+      toast({
+        title: 'Popup blocked',
+        description: 'Please allow popups for this site to join video meetings.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    // Store window reference to monitor when it's closed
+    callWindowRef.current = callWindow;
+    
+    // Set active call state to keep Invite button visible
+    setActiveCall({
+      conversationId: callData.activeConversation.id,
+      callType: 'video',
+      roomName: callData.roomName,
+      roomUrl: callData.roomUrl
+    });
+    
+    // Send incoming call notification to other members via WebSocket
+    if (ws?.isConnected) {
+      ws.send({
+        type: 'incoming_call',
+        data: {
+          conversationId: callData.activeConversation.id,
+          roomName: callData.roomName,
+          roomUrl: callData.roomUrl,
+          callType: 'video',
+          from: {
+            id: currentUser.id,
+            name: currentUser.name,
+            avatar: currentUser.avatar
+          }
+        }
+      });
+    }
+
+    // Start outgoing call ringtone
+    setOutgoingCall({
+      conversationId: callData.activeConversation.id,
+      callType: 'video',
+      calledName: callData.activeConversation.title || callData.activeConversation.members,
+      roomName: callData.roomName,
+      roomUrl: callData.roomUrl
+    });
+    
+    // Clean up
+    delete (window as any).pendingCallData;
   };
 
   const handleQuickAudioCall = async (conversationId: number) => {
@@ -2110,6 +2146,14 @@ export default function ChatLayout({
           onReject={handleRejectCall}
         />
       )}
+
+      {/* Pre-Meeting Setup Dialog */}
+      <PreMeetingDialog
+        open={showPreMeetingDialog}
+        onOpenChange={setShowPreMeetingDialog}
+        meetingUrl={pendingMeetingUrl}
+        onJoin={handleJoinCallWithSettings}
+      />
 
       {/* Edit Message Dialog */}
       <EditMessageDialog
