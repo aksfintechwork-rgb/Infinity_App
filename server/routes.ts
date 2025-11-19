@@ -1309,17 +1309,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const { roomName, userName, meetingId, isShareableLink } = req.body;
+      let { roomName, userName, meetingId, isShareableLink } = req.body;
       
       if (!roomName) {
         console.error('[DAILY] Missing roomName');
         return res.status(400).json({ error: "Room name is required" });
       }
 
-      // For shareable links, userName is optional
-      if (!isShareableLink && !userName) {
-        console.error('[DAILY] Missing userName');
-        return res.status(400).json({ error: "User name is required" });
+      // Use "guest" as fallback when userName is not provided
+      if (!userName && !isShareableLink) {
+        userName = "guest";
+        console.log('[DAILY] No userName provided, using "guest" as fallback');
       }
 
       const DAILY_API_KEY = process.env.DAILY_API_KEY;
@@ -1429,10 +1429,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const { roomName, userName, meetingId } = req.body;
+      let { roomName, userName, meetingId } = req.body;
       
-      if (!roomName || !userName) {
-        return res.status(400).json({ error: "Room name and user name are required" });
+      if (!roomName) {
+        return res.status(400).json({ error: "Room name is required" });
+      }
+
+      // Use "guest" as fallback when userName is not provided
+      if (!userName) {
+        userName = "guest";
+        console.log('[DAILY] No userName provided for token, using "guest" as fallback');
       }
 
       const DAILY_API_KEY = process.env.DAILY_API_KEY;
