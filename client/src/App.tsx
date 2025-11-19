@@ -517,7 +517,7 @@ function App() {
     setMessages([]);
   };
 
-  console.log('[DEBUG APP] Render state - isLoading:', isLoading, 'currentUser:', currentUser, 'token:', token);
+  console.log('[DEBUG APP] Render state - isLoading:', isLoading, 'hasUser:', !!currentUser, 'hasToken:', !!token);
   
   if (isLoading) {
     console.log('[DEBUG APP] Rendering loading screen');

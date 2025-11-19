@@ -1302,63 +1302,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create Daily.co room dynamically with meeting tokens
   app.post("/api/daily/create-room", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      console.log('[DAILY] Create room request received:', {
-        userId: req.userId,
-        roomName: req.body.roomName,
-        userName: req.body.userName,
-        meetingId: req.body.meetingId,
-        isShareableLink: req.body.isShareableLink
-      });
+      console.log('[DAILY] Create room request:', req.body.roomName);
 
       if (!req.userId) {
-        console.error('[DAILY] Authentication failed - no userId');
+        console.error('[DAILY] Authentication failed');
         return res.status(401).json({ error: "Not authenticated" });
       }
 
       const { roomName, userName, meetingId, isShareableLink } = req.body;
       
       if (!roomName) {
-        console.error('[DAILY] Validation failed - no roomName');
+        console.error('[DAILY] Missing roomName');
         return res.status(400).json({ error: "Room name is required" });
       }
 
       // For shareable links, userName is optional
       if (!isShareableLink && !userName) {
-        console.error('[DAILY] Validation failed - userName required for non-shareable links');
+        console.error('[DAILY] Missing userName');
         return res.status(400).json({ error: "User name is required" });
       }
 
       const DAILY_API_KEY = process.env.DAILY_API_KEY;
       if (!DAILY_API_KEY) {
-        console.error('[DAILY] Configuration error - Daily.co API key not set');
+        console.error('[DAILY] API key not configured');
         return res.status(500).json({ error: "Daily.co API key not configured" });
       }
 
       // Check if user should be owner (admin OR meeting creator OR call initiator)
       const user = await storage.getUserById(req.userId);
       let isOwner = user?.role === 'admin'; // Admins are always owners
-      console.log('[DAILY] User role check:', { userId: req.userId, role: user?.role, isAdmin: isOwner });
 
       // If meetingId is provided, check if user is the meeting creator
       if (meetingId && !isOwner) {
         const meeting = await storage.getMeetingById(parseInt(meetingId));
         if (meeting && meeting.createdBy === req.userId) {
           isOwner = true;
-          console.log('[DAILY] User is meeting creator, granted owner rights');
         }
       }
 
       // If no meetingId, this is an ad-hoc call and the initiator is the owner
       if (!meetingId && !isOwner && !isShareableLink) {
         isOwner = true; // Call initiator is the owner
-        console.log('[DAILY] Ad-hoc call detected, initiator granted owner rights');
       }
-      
-      console.log('[DAILY] Final ownership status:', { isOwner, isShareableLink });
 
       // Create room via Daily.co API
       // Configure room to allow unauthenticated guest access (no token required)
-      console.log('[DAILY] Creating room via Daily.co API:', { roomName });
       const response = await fetch('https://api.daily.co/v1/rooms', {
         method: 'POST',
         headers: {
@@ -1389,15 +1377,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!response.ok) {
         // If room already exists, use existing room
         if (response.status === 409 || (response.status === 400 && data.info?.includes('already exists'))) {
-          console.log('[DAILY] Room already exists, using existing room:', { roomName });
+          console.log('[DAILY] Room exists, reusing:', roomName);
           roomUrl = `https://atulkadam.daily.co/${roomName}`;
         } else {
-          console.error('[DAILY] Daily.co API error:', { status: response.status, data });
+          console.error('[DAILY] API error:', response.status);
           return res.status(response.status).json({ error: data.error || 'Failed to create room' });
         }
       } else {
         roomUrl = data.url;
-        console.log('[DAILY] Room created successfully:', { roomName, url: roomUrl });
+        console.log('[DAILY] Room created:', roomName);
       }
 
       // Generate meeting token
@@ -1405,17 +1393,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For authenticated users: Generate token with appropriate owner permissions
       const effectiveUserName = isShareableLink ? null : userName; // Null for guest tokens allows reuse
       const effectiveIsOwner = isShareableLink ? false : isOwner; // Guests never get owner rights
-      console.log('[DAILY] Generating meeting token:', { 
-        effectiveUserName, 
-        effectiveIsOwner, 
-        isShareableLink 
-      });
       const meetingToken = await generateDailyMeetingToken(roomName, effectiveUserName, effectiveIsOwner, DAILY_API_KEY);
-      console.log('[DAILY] Meeting token generated successfully');
+      console.log('[DAILY] Token generated for:', isShareableLink ? 'guest' : userName);
 
       if (isShareableLink) {
         // Return guest token for shareable links (24hr expiration, no owner rights)
-        console.log('[DAILY] Returning shareable link response');
         res.json({ 
           success: true, 
           url: roomUrl,
@@ -1426,7 +1408,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } else {
         // Return user token with appropriate permissions
-        console.log('[DAILY] Returning authenticated user response:', { isOwner });
         res.json({ 
           success: true, 
           url: roomUrl,
@@ -1436,7 +1417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
     } catch (error) {
-      console.error("[DAILY] Create Daily.co room error:", error);
+      console.error("[DAILY] Error:", error);
       res.status(500).json({ error: "Failed to create room" });
     }
   });

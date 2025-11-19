@@ -1114,13 +1114,7 @@ export default function ChatLayout({
   const handleStartAudioCall = async () => {
     if (!activeConversation) return;
     
-    console.log('[AUDIO CALL] Starting audio call:', {
-      conversationId: activeConversation.id,
-      conversationTitle: activeConversation.title,
-      isGroup: activeConversation.isGroup,
-      currentUserId: currentUser.id,
-      currentUserName: currentUser.name
-    });
+    console.log('[AUDIO CALL] Starting audio call for conversation:', activeConversation.id);
     
     // Open blank window IMMEDIATELY to preserve user gesture and avoid popup blockers
     const callWindow = openCallWindow();
@@ -1135,50 +1129,42 @@ export default function ChatLayout({
       return;
     }
     
-    console.log('[AUDIO CALL] Call window opened successfully');
-    
     // Generate a deterministic room name for Daily.co
     const roomName = `supremo-audio-${activeConversation.id}`;
-    console.log('[AUDIO CALL] Generated room name:', roomName);
     
     try {
       // Create room first via backend API with userName for token generation
-      console.log('[AUDIO CALL] Creating room via API with params:', { roomName, userName: currentUser.name });
+      console.log('[AUDIO CALL] Creating room:', roomName);
       const response = await apiRequest('POST', '/api/daily/create-room', { 
         roomName,
         userName: currentUser.name
       });
       
       const data = await response.json();
-      console.log('[AUDIO CALL] Room creation response:', data);
+      console.log('[AUDIO CALL] Room creation response received:', {
+        success: data.success,
+        hasRoomName: !!data.roomName,
+        hasUrl: !!data.url,
+        hasToken: !!data.token,
+        isOwner: data.isOwner
+      });
       
       if (!data.success) {
         throw new Error(data.error || 'Failed to create room');
       }
       
-      console.log('[AUDIO CALL] Room created successfully:', {
-        roomName: data.roomName,
-        url: data.url,
-        hasToken: !!data.token
-      });
+      console.log('[AUDIO CALL] Room created successfully');
       
       // Register the call in the database
       try {
-        console.log('[AUDIO CALL] Registering call in database:', {
-          roomName,
-          roomUrl: data.url,
-          conversationId: activeConversation.id,
-          callType: 'audio'
-        });
         await apiRequest('POST', '/api/calls', {
           roomName,
           roomUrl: data.url,
           conversationId: activeConversation.id,
           callType: 'audio',
         });
-        console.log('[AUDIO CALL] Call registered successfully');
       } catch (dbError) {
-        console.error('[AUDIO CALL] Failed to register call in database:', dbError);
+        console.error('[AUDIO CALL] Failed to register call:', dbError);
         callWindow.close();
         toast({
           title: 'Error',
@@ -1190,7 +1176,6 @@ export default function ChatLayout({
       
       // Navigate the already-open window to the call URL
       const audioCallUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
-      console.log('[AUDIO CALL] Navigating to call URL (userName and video hidden)');
       navigateCallWindow(callWindow, audioCallUrl);
       
       // Store window reference to monitor when it's closed
@@ -1203,11 +1188,9 @@ export default function ChatLayout({
         roomName,
         roomUrl: data.url
       });
-      console.log('[AUDIO CALL] Active call state set');
       
       // Send incoming call notification to other members via WebSocket
       if (ws?.isConnected) {
-        console.log('[AUDIO CALL] Sending incoming call notification via WebSocket');
         ws.send({
           type: 'incoming_call',
           data: {
@@ -1223,7 +1206,7 @@ export default function ChatLayout({
           }
         });
       } else {
-        console.warn('[AUDIO CALL] WebSocket not connected, unable to send call notification');
+        console.warn('[AUDIO CALL] WebSocket not connected');
       }
 
       // Start outgoing call ringtone
@@ -1234,13 +1217,12 @@ export default function ChatLayout({
         roomName,
         roomUrl: data.url
       });
-      console.log('[AUDIO CALL] Outgoing call ringtone started');
       
       toast({
         title: 'Audio call started',
         description: 'Calling ' + (activeConversation.title || activeConversation.members) + '...',
       });
-      console.log('[AUDIO CALL] Audio call initiated successfully');
+      console.log('[AUDIO CALL] Call initiated successfully');
     } catch (error) {
       console.error('[AUDIO CALL] Error creating room:', error);
       callWindow.close();
