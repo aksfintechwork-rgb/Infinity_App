@@ -69,6 +69,7 @@ interface SupremoDriveProps {
 }
 
 export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoDriveProps) {
+  const { toast } = useToast();
   const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
   const [folderPath, setFolderPath] = useState<Array<{ id: number | null; name: string }>>([{ id: null, name: "Drive" }]);
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
@@ -380,11 +381,11 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
                   <Button variant="outline" onClick={() => {
                     setIsUploadOpen(false);
                     setSelectedFile(null);
-                  }}>
+                  }} disabled={uploadFileMutation.isPending}>
                     Cancel
                   </Button>
-                  <Button onClick={handleFileUpload} disabled={!selectedFile} data-testid="button-submit-upload">
-                    Upload
+                  <Button onClick={handleFileUpload} disabled={!selectedFile || uploadFileMutation.isPending} data-testid="button-submit-upload">
+                    {uploadFileMutation.isPending ? 'Uploading...' : 'Upload'}
                   </Button>
                 </div>
               </div>
