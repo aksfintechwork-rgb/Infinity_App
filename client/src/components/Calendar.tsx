@@ -368,15 +368,6 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
     });
   };
 
-  // Helper function to ensure camera-off parameter is added to Daily.co URLs
-  const ensureCameraOff = (url: string, userName: string) => {
-    const urlObj = new URL(url);
-    urlObj.searchParams.set('userName', userName);
-    // Always set video to false (camera off by default)
-    urlObj.searchParams.set('video', 'false');
-    return urlObj.toString();
-  };
-
   // Helper to add only camera-off parameter (for shareable links without userName)
   const addCameraOffParameter = (url: string) => {
     const urlObj = new URL(url);
@@ -384,23 +375,27 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
     return urlObj.toString();
   };
 
-  const handleJoinMeeting = async (link?: string) => {
+  const handleJoinMeeting = async (link?: string, meetingId?: number) => {
     let roomName: string;
     
     if (link) {
       // Extract room name from link or use link directly
-      const match = link.match(/daily\.co\/(.+)$/);
-      roomName = match ? match[1] : `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      const match = link.match(/daily\.co\/(.+)(\?.*)?$/);
+      roomName = match ? match[1].split('?')[0] : `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     } else {
       // Generate a random room for Daily.co
       roomName = `supremo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     }
     
     try {
-      // Create room first via backend API
+      // Create room first via backend API with userName and meetingId for owner detection
       const response = await fetch('/api/daily/create-room', {
         method: 'POST',
-        body: JSON.stringify({ roomName }),
+        body: JSON.stringify({ 
+          roomName,
+          userName: currentUser.name,
+          meetingId: meetingId
+        }),
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -424,8 +419,8 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
         setShowInstantMeetingDialog(true);
       }
       
-      // Open in new window with user name and camera off by default - Daily.co instant join with NO lobby!
-      const meetingUrl = ensureCameraOff(data.url, currentUser.name);
+      // Open in new window with meeting token - this gives admin controls to owner/admin
+      const meetingUrl = `${data.url}?t=${data.token}`;
       const newWindow = openCallWindow(meetingUrl);
       
       // Check if popup was blocked
@@ -531,14 +526,18 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
 
   const handleQuickStartMeeting = async (meeting: Meeting) => {
     const roomName = meeting.meetingLink 
-      ? meeting.meetingLink.match(/daily\.co\/(.+)$/)?.[1] || `supremo-meeting-${meeting.id}`
+      ? meeting.meetingLink.match(/daily\.co\/(.+)(\?.*)?$/)?.[1].split('?')[0] || `supremo-meeting-${meeting.id}`
       : `supremo-meeting-${meeting.id}`;
     
     try {
-      // Create room first via backend API
+      // Create room first via backend API with userName and meetingId
       const response = await fetch('/api/daily/create-room', {
         method: 'POST',
-        body: JSON.stringify({ roomName }),
+        body: JSON.stringify({ 
+          roomName,
+          userName: currentUser.name,
+          meetingId: meeting.id
+        }),
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -556,8 +555,8 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Open in new window with user name and camera off by default
-      const meetingUrl = ensureCameraOff(data.url, currentUser.name);
+      // Open in new window with meeting token - this gives admin controls to owner/admin
+      const meetingUrl = `${data.url}?t=${data.token}`;
       const newWindow = openCallWindow(meetingUrl);
       
       if (!newWindow) {
@@ -579,14 +578,18 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
 
   const handleCopyShareableLink = async (meeting: Meeting) => {
     const roomName = meeting.meetingLink 
-      ? meeting.meetingLink.match(/daily\.co\/(.+)$/)?.[1] || `supremo-meeting-${meeting.id}`
+      ? meeting.meetingLink.match(/daily\.co\/(.+)(\?.*)?$/)?.[1].split('?')[0] || `supremo-meeting-${meeting.id}`
       : `supremo-meeting-${meeting.id}`;
     
     try {
-      // Create room first via backend API
+      // Create room for shareable link (no token, open to all)
       const response = await fetch('/api/daily/create-room', {
         method: 'POST',
-        body: JSON.stringify({ roomName }),
+        body: JSON.stringify({ 
+          roomName,
+          meetingId: meeting.id,
+          isShareableLink: true  // Flag to skip token generation
+        }),
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -604,8 +607,9 @@ export default function Calendar({ currentUser, onOpenMobileMenu }: CalendarProp
         throw new Error(data.error || 'Failed to create room');
       }
       
-      // Create shareable link with camera-off parameter (no userName)
-      const shareableLink = addCameraOffParameter(data.url);
+      // Create shareable link with guest token and camera-off parameter
+      // Guest token allows join but has no owner permissions (24hr expiration)
+      const shareableLink = `${data.url}?t=${data.token}&video=false`;
       
       // Copy to clipboard
       await navigator.clipboard.writeText(shareableLink);

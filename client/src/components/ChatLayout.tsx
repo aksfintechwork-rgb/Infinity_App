@@ -728,6 +728,18 @@ export default function ChatLayout({
         throw new Error('Call not found or missing room URL');
       }
       
+      // Generate a meeting token for this participant
+      const tokenResponse = await apiRequest('POST', '/api/daily/generate-token', {
+        roomName: incomingCall.roomName,
+        userName: currentUser.name
+      });
+      
+      const tokenData = await tokenResponse.json();
+      
+      if (!tokenData.success) {
+        throw new Error('Failed to generate meeting token');
+      }
+      
       // Send call answered notification to caller via WebSocket (stops their outgoing ringtone)
       if (ws?.isConnected) {
         ws.send({
@@ -740,10 +752,10 @@ export default function ChatLayout({
         });
       }
       
-      // Navigate the already-open window to the call URL
-      const callUrl = `${incomingCall.roomUrl}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
+      // Navigate the already-open window to the call URL with meeting token
+      const callUrl = `${incomingCall.roomUrl}?t=${tokenData.token}`;
       
-      console.log('[CALL DEBUG] Navigating call window to URL:', callUrl);
+      console.log('[CALL DEBUG] Navigating call window to URL with token');
       
       navigateCallWindow(callWindow, callUrl);
       
@@ -825,8 +837,11 @@ export default function ChatLayout({
     const roomName = `supremo-video-${activeConversation.id}-${nanoid(8)}`;
     
     try {
-      // Create room first via backend API
-      const response = await apiRequest('POST', '/api/daily/create-room', { roomName });
+      // Create room first via backend API with userName for token generation
+      const response = await apiRequest('POST', '/api/daily/create-room', { 
+        roomName,
+        userName: currentUser.name
+      });
       
       const data = await response.json();
       
@@ -872,8 +887,8 @@ export default function ChatLayout({
         return;
       }
       
-      // Navigate the already-open window to the call URL
-      const callUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
+      // Navigate the already-open window to the call URL with meeting token
+      const callUrl = `${data.url}?t=${data.token}`;
       navigateCallWindow(callWindow, callUrl);
       
       // Store window reference to monitor when it's closed
@@ -950,8 +965,11 @@ export default function ChatLayout({
     const roomName = `supremo-audio-${conversationId}-${nanoid(8)}`;
     
     try {
-      // Create room first via backend API
-      const response = await apiRequest('POST', '/api/daily/create-room', { roomName });
+      // Create room first via backend API with userName for token generation
+      const response = await apiRequest('POST', '/api/daily/create-room', { 
+        roomName,
+        userName: currentUser.name
+      });
       
       const data = await response.json();
       
@@ -997,8 +1015,8 @@ export default function ChatLayout({
         return;
       }
       
-      // Navigate the already-open window to the call URL
-      const audioCallUrl = `${data.url}?userName=${encodeURIComponent(currentUser.name)}&video=false`;
+      // Navigate the already-open window to the call URL with meeting token
+      const audioCallUrl = `${data.url}?t=${data.token}`;
       navigateCallWindow(callWindow, audioCallUrl);
       
       // Store window reference to monitor when it's closed
