@@ -86,6 +86,12 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
     queryKey: ['/api/drive/files', currentFolderId],
   });
 
+  const { data: googleAccount } = useQuery<any>({
+    queryKey: ['/api/drive/google/account'],
+    retry: false,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
   const createFolderMutation = useMutation({
     mutationFn: async (name: string) => {
       return await apiRequest('POST', '/api/drive/folders', {
@@ -317,7 +323,15 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <h1 className="text-xl font-semibold" data-testid="text-supremo-drive-title">Infinity Drive</h1>
+          <div className="flex flex-col">
+            <h1 className="text-xl font-semibold" data-testid="text-supremo-drive-title">Infinity Drive</h1>
+            {googleAccount?.user && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                <Cloud className="w-3 h-3" />
+                <span>Linked: {googleAccount.user.emailAddress}</span>
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
           <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
@@ -367,14 +381,26 @@ export default function SupremoDrive({ currentUser, onOpenMobileMenu }: SupremoD
                 <DialogTitle>Upload File</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 mt-4">
-                <Input
-                  type="file"
-                  onChange={handleFileChange}
-                  data-testid="input-file-upload"
-                />
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="file-upload" className="cursor-pointer">
+                    <div className="flex items-center justify-center gap-2 px-4 py-3 bg-card border-2 border-dashed border-border rounded-md hover-elevate active-elevate-2 transition-all">
+                      <Upload className="w-5 h-5 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">
+                        {selectedFile ? 'Change file' : 'Choose file'}
+                      </span>
+                    </div>
+                  </label>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    data-testid="input-file-upload"
+                  />
+                </div>
                 {selectedFile && (
-                  <div className="text-sm text-muted-foreground">
-                    Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
+                  <div className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-md border border-border">
+                    <span className="font-medium text-foreground">Selected:</span> {selectedFile.name} ({formatFileSize(selectedFile.size)})
                   </div>
                 )}
                 <div className="flex justify-end gap-2">

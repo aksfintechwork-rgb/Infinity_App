@@ -123,3 +123,13 @@ export async function createGoogleDriveFolder(folderName: string, parentFolderId
 
   return response.data;
 }
+
+export async function getGoogleDriveAccountInfo() {
+  const drive = await getUncachableGoogleDriveClient();
+  
+  const response = await drive.about.get({
+    fields: 'user(displayName, emailAddress, photoLink), storageQuota(limit, usage, usageInDrive)',
+  });
+
+  return response.data;
+}

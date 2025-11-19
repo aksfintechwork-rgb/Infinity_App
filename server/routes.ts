@@ -1672,6 +1672,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Google Drive Integration Routes
+  app.get("/api/drive/google/account", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { getGoogleDriveAccountInfo } = await import("./googleDrive");
+      const accountInfo = await getGoogleDriveAccountInfo();
+      res.json(accountInfo);
+    } catch (error) {
+      console.error("Get Google Drive account info error:", error);
+      res.status(500).json({ error: "Failed to get Google Drive account info", connected: false });
+    }
+  });
+
   app.get("/api/drive/google/files", authMiddleware, async (req: AuthRequest, res) => {
     try {
       if (!req.userId) {
