@@ -418,12 +418,15 @@ export default function ChatLayout({
     if (hasConversationChanged) {
       lastConversationIdRef.current = activeConversationId;
       // Always scroll to bottom when switching conversations
+      // Use multiple animation frames and setTimeout to ensure DOM is fully rendered
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (scrollContainer) {
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
-            setShowScrollButton(false);
-          }
+          setTimeout(() => {
+            if (scrollContainer) {
+              scrollContainer.scrollTop = scrollContainer.scrollHeight;
+              setShowScrollButton(false);
+            }
+          }, 50);
         });
       });
       return;
