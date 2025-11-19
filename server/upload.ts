@@ -64,10 +64,36 @@ export const upload = multer({
       'audio/wav',
       'audio/webm',
       'audio/ogg',
+      // Generic/Binary - validate by extension
+      'application/octet-stream',
     ];
 
+    const allowedExtensions = [
+      // Images
+      '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp',
+      // Documents
+      '.pdf', '.doc', '.docx', '.txt', '.csv',
+      // Excel
+      '.xls', '.xlsx',
+      // Videos
+      '.mp4', '.mpeg', '.mov', '.avi', '.wmv', '.webm',
+      // Audio
+      '.mp3', '.wav', '.ogg',
+    ];
+
+    const ext = path.extname(file.originalname).toLowerCase();
+
     if (allowedMimes.includes(file.mimetype)) {
-      cb(null, true);
+      // If mime type is octet-stream, validate by extension
+      if (file.mimetype === 'application/octet-stream') {
+        if (allowedExtensions.includes(ext)) {
+          cb(null, true);
+        } else {
+          cb(new Error(`Invalid file extension: ${ext}. Please upload images, videos, documents, or Excel files.`));
+        }
+      } else {
+        cb(null, true);
+      }
     } else {
       cb(new Error(`Invalid file type: ${file.mimetype}. Please upload images, videos, documents, or Excel files.`));
     }
