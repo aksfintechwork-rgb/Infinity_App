@@ -1,0 +1,55 @@
+========================================
+SUPREMO TRADERS LOGIN TEST SUITE
+Started: Wed Oct 29 01:33:32 PM UTC 2025
+========================================
+
+Testing: admin
+----------------------------------------
+✅ SUCCESS - HTTP 200
+   Response: {"user":{"id":10,"name":"Admin User","loginId":"admin","email":"admin@supremotraders.com","role":"admin","avatar":null,"createdAt":"2025-10-28T16:38:17.329Z"},"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwLCJpYXQiOjE3NjE3NDQ4MTQsImV4cCI6MTc2MjM0OTYxNH0.vim099i1LX1p2bg2BOFM3kWrGf5kmJLjBVlWbN6ufzo"}
+
+Testing: user
+----------------------------------------
+✅ SUCCESS - HTTP 200
+   Response: {"user":{"id":11,"name":"Regular User","loginId":"user","email":"user@supremotraders.com","role":"user","avatar":null,"createdAt":"2025-10-28T16:38:17.544Z"},"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjExLCJpYXQiOjE3NjE3NDQ4MTUsImV4cCI6MTc2MjM0OTYxNX0.RWSW-6NAKXiRuoDzoXHYWs3bhyYL-rzqSedObbhKBWA"}
+
+Testing: Shubham
+----------------------------------------
+✅ SUCCESS - HTTP 200
+   Response: {"user":{"id":24,"name":"Shubham Khamitker","loginId":"Shubham","email":null,"role":"user","avatar":null,"createdAt":"2025-10-29T08:11:10.682Z"},"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjI0LCJpYXQiOjE3NjE3NDQ4MTUsImV4cCI6MTc2MjM0OTYxNX0.2IpBD1uLSKOFNr2zLGV6kvaId_d-m9O-QnFKDg0UtFs"}
+
+Testing: Ravi
+----------------------------------------
+✅ SUCCESS - HTTP 200
+   Response: {"user":{"id":23,"name":"Ravi Mule","loginId":"Ravi","email":null,"role":"user","avatar":null,"createdAt":"2025-10-29T08:10:53.236Z"},"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIzLCJpYXQiOjE3NjE3NDQ4MTYsImV4cCI6MTc2MjM0OTYxNn0.J4yy9Ukyjp8NGtsNdJOtQtFFp44MtS-r-UcIPzHsSpM"}
+
+Testing: atul
+----------------------------------------
+❌ FAILED - HTTP 401
+   LoginID: atul
+   Password Length: 7
+   Response: {"error":"Invalid credentials"}
+
+Testing: Pratik
+----------------------------------------
+❌ FAILED - HTTP 401
+   LoginID: Pratik
+   Password Length: 9
+   Response: {"error":"Invalid credentials"}
+
+Testing: testuser
+----------------------------------------
+✅ SUCCESS - HTTP 200
+   Response: {"user":{"id":22,"name":"Test Employee","loginId":"testuser","email":null,"role":"user","avatar":null,"createdAt":"2025-10-29T07:31:24.247Z"},"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIyLCJpYXQiOjE3NjE3NDQ4MTcsImV4cCI6MTc2MjM0OTYxN30.Qy5DJey0Ga2WvKt04eb2qsnILWSuS24Z19GRL9YNAPQ"}
+
+========================================
+TEST SUMMARY
+========================================
+✅ Successful: 5
+❌ Failed: 2
+Total Tests: 7
+
+Completed: Wed Oct 29 01:33:37 PM UTC 2025
+Log saved to: login_test_results_2025-10-29_13-33-32.log
+
+⚠️  Some tests failed. Check log for details.
